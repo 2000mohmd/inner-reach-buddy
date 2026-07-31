@@ -1,0 +1,50 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+/**
+ * Proactive-coaching sweep. Callable by pg_cron with the project publishable
+ * key in an `apikey` header; evaluates users with recent activity.
+ */
+export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const key = request.headers.get("apikey");
+        if (!key || key !== process.env["SUPABASE_PUBLISHABLE_KEY"]) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { evaluateNudgesFor } = await import("@/lib/nudges.server");
+
+        const since = new Date(Date.now() - 30 * 86400000).toISOString();
+        const { data, error } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("onboarding_completed", true)
+          .gte("updated_at", since)
+          .limit(500);
+        if (error) {
+          console.error("nudge sweep query failed", error);
+          return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        }
+
+        let created = 0;
+        for (const row of data ?? []) {
+          try {
+            const result = await evaluateNudgesFor(supabaseAdmin, row.id);
+            created += result.created;
+          } catch (sweepError) {
+            console.error("nudge sweep failed for user", row.id, sweepError);
+          }
+        }
+
+        return new Response(JSON.stringify({ ok: true, users: data?.length ?? 0, created }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    },
+  },
+});
