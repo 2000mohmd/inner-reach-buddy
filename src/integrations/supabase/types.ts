@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      care_resources: {
+        Row: {
+          contact_or_url: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string | null
+          region: string | null
+          resource_type: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          contact_or_url: string
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id?: string | null
+          region?: string | null
+          resource_type: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_or_url?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string | null
+          region?: string | null
+          resource_type?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -116,6 +158,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exercise_completions: {
+        Row: {
+          completed_at: string
+          created_at: string
+          exercise_id: string
+          id: string
+          mood_after: number | null
+          mood_before: number | null
+          response_data: Json
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          exercise_id: string
+          id?: string
+          mood_after?: number | null
+          mood_before?: number | null
+          response_data?: Json
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          mood_after?: number | null
+          mood_before?: number | null
+          response_data?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_completions_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercises: {
+        Row: {
+          age_mode: string
+          category: string
+          created_at: string
+          estimated_minutes: number
+          id: string
+          intro_text: string
+          slug: string
+          sort_order: number
+          steps: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          age_mode?: string
+          category: string
+          created_at?: string
+          estimated_minutes?: number
+          id?: string
+          intro_text: string
+          slug: string
+          sort_order?: number
+          steps?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          age_mode?: string
+          category?: string
+          created_at?: string
+          estimated_minutes?: number
+          id?: string
+          intro_text?: string
+          slug?: string
+          sort_order?: number
+          steps?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       habit_logs: {
         Row: {
@@ -224,6 +349,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nudges: {
+        Row: {
+          acted_on: boolean
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          message: string
+          resource_ids: string[]
+          suggested_exercise_slug: string | null
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          acted_on?: boolean
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          message: string
+          resource_ids?: string[]
+          suggested_exercise_slug?: string | null
+          trigger_type: string
+          user_id: string
+        }
+        Update: {
+          acted_on?: boolean
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          message?: string
+          resource_ids?: string[]
+          suggested_exercise_slug?: string | null
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
@@ -269,6 +430,39 @@ export type Database = {
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           timezone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      screener_responses: {
+        Row: {
+          created_at: string
+          id: string
+          responses: Json
+          screener_type: string
+          severity: string
+          taken_at: string
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          responses?: Json
+          screener_type: string
+          severity: string
+          taken_at?: string
+          total_score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          responses?: Json
+          screener_type?: string
+          severity?: string
+          taken_at?: string
+          total_score?: number
+          user_id?: string
         }
         Relationships: []
       }

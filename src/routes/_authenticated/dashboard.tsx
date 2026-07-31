@@ -3,13 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { MessageCircle, Sparkles, Wind } from "lucide-react";
+import { ClipboardList, Sparkles, Wind } from "lucide-react";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { logMood } from "@/lib/mood.functions";
 import { AppShell } from "@/components/AppShell";
+import { NudgeFeed } from "@/components/NudgeFeed";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -100,6 +102,10 @@ function DashboardPage() {
             </p>
           </header>
 
+          <NudgeFeed />
+
+
+
           <section className="surface-soft p-6 sm:p-8">
             <h2 className="text-xl">How are you feeling right now?</h2>
             <div className="mt-5 grid grid-cols-5 gap-2">
@@ -172,19 +178,28 @@ function DashboardPage() {
             </div>
 
             <div className="surface-soft p-6">
-              <h2 className="text-lg">Coming next to Kalm</h2>
+              <h2 className="text-lg">Where to next</h2>
               <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-3">
-                  <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  An AI companion that already knows your introduction
+                  <Wind className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <Link to="/exercises" className="underline underline-offset-4">
+                    Guided exercises
+                  </Link>{" "}
+                  — thought records, behavioral activation, grounding, breathing
                 </li>
                 <li className="flex items-start gap-3">
-                  <Wind className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  Guided breathing, grounding and sleep exercises
+                  <ClipboardList className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <Link to="/check-ins" className="underline underline-offset-4">
+                    Periodic check-ins
+                  </Link>{" "}
+                  — PHQ-9 and GAD-7 every couple of weeks, to see patterns
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  Live voice and avatar sessions
+                  <Link to="/care" className="underline underline-offset-4">
+                    Talking to a person
+                  </Link>{" "}
+                  — therapist directories and lower-cost options
                 </li>
               </ul>
               <Link
@@ -194,6 +209,7 @@ function DashboardPage() {
                 Review your profile and data
               </Link>
             </div>
+
           </section>
         </div>
       )}
