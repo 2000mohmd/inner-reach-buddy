@@ -14,6 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          flagged_crisis: boolean
+          id: string
+          quick_action: string | null
+          sender: Database["public"]["Enums"]["chat_sender"]
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          flagged_crisis?: boolean
+          id?: string
+          quick_action?: string | null
+          sender: Database["public"]["Enums"]["chat_sender"]
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          flagged_crisis?: boolean
+          id?: string
+          quick_action?: string | null
+          sender?: Database["public"]["Enums"]["chat_sender"]
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crisis_events: {
+        Row: {
+          created_at: string
+          id: string
+          matched_terms: string[]
+          message_id: string | null
+          reviewed: boolean
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched_terms?: string[]
+          message_id?: string | null
+          reviewed?: boolean
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched_terms?: string[]
+          message_id?: string | null
+          reviewed?: boolean
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crisis_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habit_logs: {
+        Row: {
+          completed: boolean
+          created_at: string
+          habit_id: string
+          id: string
+          log_date: string
+          logged_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          habit_id: string
+          id?: string
+          log_date?: string
+          logged_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          habit_id?: string
+          id?: string
+          log_date?: string
+          logged_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          category: string | null
+          created_at: string
+          frequency_target: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          frequency_target?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          frequency_target?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mood_logs: {
         Row: {
           created_at: string
@@ -171,6 +348,7 @@ export type Database = {
     Enums: {
       account_type: "general" | "condition" | "teen" | "org_member"
       app_role: "user" | "org_admin" | "admin"
+      chat_sender: "user" | "assistant" | "system"
       subscription_tier: "free" | "premium" | "org"
     }
     CompositeTypes: {
@@ -301,6 +479,7 @@ export const Constants = {
     Enums: {
       account_type: ["general", "condition", "teen", "org_member"],
       app_role: ["user", "org_admin", "admin"],
+      chat_sender: ["user", "assistant", "system"],
       subscription_tier: ["free", "premium", "org"],
     },
   },

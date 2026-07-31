@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LifeBuoy, LayoutDashboard, Settings, LogOut, Leaf } from "lucide-react";
+import { LifeBuoy, LayoutDashboard, MessageCircle, ListChecks, Settings, LogOut, Leaf } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SafetyFooter } from "./SafetyFooter";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/chat", label: "Companion", icon: MessageCircle },
+  { to: "/habits", label: "Habits", icon: ListChecks },
   { to: "/settings", label: "Profile", icon: Settings },
   { to: "/crisis", label: "Support", icon: LifeBuoy },
 ] as const;
