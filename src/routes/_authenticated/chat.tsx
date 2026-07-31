@@ -78,7 +78,8 @@ function ChatPage() {
   });
 
   useEffect(() => {
-    if (!threadId && threads && threads.length > 0) setThreadId(threads[0].id);
+    const first = threads?.[0];
+    if (!threadId && first) setThreadId(first.id);
   }, [threadId, threads]);
 
   const messages = history?.messages ?? [];
