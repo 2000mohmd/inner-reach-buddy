@@ -3,13 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { MessageCircle, Sparkles, Wind } from "lucide-react";
+import { ClipboardList, Sparkles, Wind } from "lucide-react";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { logMood } from "@/lib/mood.functions";
 import { AppShell } from "@/components/AppShell";
+import { NudgeFeed } from "@/components/NudgeFeed";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
