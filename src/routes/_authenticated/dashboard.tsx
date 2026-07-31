@@ -102,6 +102,10 @@ function DashboardPage() {
             </p>
           </header>
 
+          <NudgeFeed />
+
+
+
           <section className="surface-soft p-6 sm:p-8">
             <h2 className="text-xl">How are you feeling right now?</h2>
             <div className="mt-5 grid grid-cols-5 gap-2">
@@ -174,19 +178,28 @@ function DashboardPage() {
             </div>
 
             <div className="surface-soft p-6">
-              <h2 className="text-lg">Coming next to Kalm</h2>
+              <h2 className="text-lg">Where to next</h2>
               <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-3">
-                  <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  An AI companion that already knows your introduction
+                  <Wind className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <Link to="/exercises" className="underline underline-offset-4">
+                    Guided exercises
+                  </Link>{" "}
+                  — thought records, behavioral activation, grounding, breathing
                 </li>
                 <li className="flex items-start gap-3">
-                  <Wind className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  Guided breathing, grounding and sleep exercises
+                  <ClipboardList className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <Link to="/check-ins" className="underline underline-offset-4">
+                    Periodic check-ins
+                  </Link>{" "}
+                  — PHQ-9 and GAD-7 every couple of weeks, to see patterns
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  Live voice and avatar sessions
+                  <Link to="/care" className="underline underline-offset-4">
+                    Talking to a person
+                  </Link>{" "}
+                  — therapist directories and lower-cost options
                 </li>
               </ul>
               <Link
@@ -196,6 +209,7 @@ function DashboardPage() {
                 Review your profile and data
               </Link>
             </div>
+
           </section>
         </div>
       )}
