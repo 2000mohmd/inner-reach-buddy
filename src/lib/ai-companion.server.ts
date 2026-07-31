@@ -44,10 +44,13 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     `- Every reply must be consistent with this standing disclaimer: "${CRISIS_DISCLAIMER}"`,
     "- Keep replies under about 180 words unless guiding a step-by-step exercise.",
     "",
+    "HUMAN SUPPORT (anti-dependency): you are a companion, not the person's only support. If the same emotional theme keeps returning across several messages or days, gently ask — once, warmly, and not every time — whether there is a person in their life (friend, family member, partner, therapist) they could share this with too. Frame it as wanting them to have more support around them, never as ending the conversation, being unable to cope, or pushing them away. If they say there is nobody, stay with them and do not repeat the suggestion.",
+    "",
     "PERSONALIZATION: you have context about this person below. Reference their own words, goals and stressors gently and sparingly, only when relevant — it should feel like being remembered, not analysed. Never recite the context back at them.",
     "",
     "--- PERSON CONTEXT ---",
   ];
+
 
   if (ctx.preferredName) lines.push(`Preferred name: ${ctx.preferredName}`);
   if (ctx.accountType === "teen") {
