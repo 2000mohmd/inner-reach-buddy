@@ -132,3 +132,45 @@ export async function generateCompanionReply(ctx: CompanionContext, userMessage:
   if (!content) throw new Error("The companion couldn't reply just now. Please try again.");
   return content;
 }
+
+/**
+ * Proactive coaching: uses the SAME prompt-assembly pattern as chat so nudges
+ * reference the person's own context instead of generic copy.
+ */
+export async function generateNudgeMessage(
+  ctx: CompanionContext,
+  instruction: string,
+): Promise<string> {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey) throw new Error("AI companion is not configured");
+
+  const messages = [
+    { role: "system" as const, content: buildSystemPrompt(ctx) },
+    {
+      role: "user" as const,
+      content: [
+        "You are writing a short proactive message that will appear in the app as a gentle nudge — the person did not ask a question.",
+        "Rules: 2-4 sentences maximum. Warm, unhurried, never guilt-inducing, never alarming, no bullet points, no headings, no sign-off.",
+        "Do not diagnose, do not imply failure, and do not mention that this was triggered by data analysis.",
+        "",
+        `Situation: ${instruction}`,
+      ].join("\n"),
+    },
+  ];
+
+  const response = await fetch(GATEWAY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+    body: JSON.stringify({ model: MODEL, messages }),
+  });
+
+  if (!response.ok) {
+    console.error("AI gateway nudge error", response.status, await response.text());
+    throw new Error("Could not generate a nudge right now.");
+  }
+
+  const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+  const content = payload.choices?.[0]?.message?.content?.trim();
+  if (!content) throw new Error("Could not generate a nudge right now.");
+  return content;
+}
