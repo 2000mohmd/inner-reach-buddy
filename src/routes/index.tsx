@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "An AI wellness companion with mood tracking, guided exercises and always-available crisis resources.",
+          "Kalm blends an AI companion, mood and habit tracking, and guided CBT exercises into one calm daily wellness practice.",
       },
     ],
   }),

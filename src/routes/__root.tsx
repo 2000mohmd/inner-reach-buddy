@@ -79,21 +79,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Kalm — AI mental wellness companion" },
+      { title: "Kalm — Calm, private AI mental wellness support" },
       {
         name: "description",
         content:
-          "Kalm is an AI mental wellness companion with mood tracking, guided exercises and calm daily support.",
+          "Kalm blends an AI companion, mood and habit tracking, and guided CBT exercises into one calm daily wellness practice.",
       },
       { name: "author", content: "Kalm" },
-      { property: "og:title", content: "Kalm — AI mental wellness companion" },
+      { property: "og:title", content: "Kalm — Calm, private AI mental wellness support" },
       {
         property: "og:description",
         content:
-          "Kalm is an AI mental wellness companion with mood tracking, guided exercises and calm daily support.",
+          "Kalm blends an AI companion, mood and habit tracking, and guided CBT exercises into one calm daily wellness practice.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Kalm — Calm, private AI mental wellness support" },
+      { name: "twitter:description", content: "Kalm blends an AI companion, mood and habit tracking, and guided CBT exercises into one calm daily wellness practice." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b8a8eb2d-a030-4e5c-83ae-7e57cff9537b/id-preview-3d90d89c--3ccb18b6-d5dd-414d-a598-ddc4028d95df.lovable.app-1785497759896.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b8a8eb2d-a030-4e5c-83ae-7e57cff9537b/id-preview-3d90d89c--3ccb18b6-d5dd-414d-a598-ddc4028d95df.lovable.app-1785497759896.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
