@@ -121,6 +121,63 @@ export type Database = {
         }
         Relationships: []
       }
+      commitments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string
+          due_at: string | null
+          exercise_id: string | null
+          id: string
+          source: Database["public"]["Enums"]["commitment_source"]
+          status: Database["public"]["Enums"]["commitment_status"]
+          thread_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description: string
+          due_at?: string | null
+          exercise_id?: string | null
+          id?: string
+          source?: Database["public"]["Enums"]["commitment_source"]
+          status?: Database["public"]["Enums"]["commitment_status"]
+          thread_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_at?: string | null
+          exercise_id?: string | null
+          id?: string
+          source?: Database["public"]["Enums"]["commitment_source"]
+          status?: Database["public"]["Enums"]["commitment_status"]
+          thread_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitments_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commitments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crisis_events: {
         Row: {
           created_at: string
@@ -158,6 +215,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      effectiveness_insights: {
+        Row: {
+          avg_mood_delta: number
+          computed_at: string
+          confidence: string
+          created_at: string
+          id: string
+          sample_size: number
+          subject_key: string
+          subject_label: string
+          subject_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_mood_delta?: number
+          computed_at?: string
+          confidence?: string
+          created_at?: string
+          id?: string
+          sample_size?: number
+          subject_key: string
+          subject_label: string
+          subject_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_mood_delta?: number
+          computed_at?: string
+          confidence?: string
+          created_at?: string
+          id?: string
+          sample_size?: number
+          subject_key?: string
+          subject_label?: string
+          subject_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       exercise_completions: {
         Row: {
@@ -543,6 +642,8 @@ export type Database = {
       account_type: "general" | "condition" | "teen" | "org_member"
       app_role: "user" | "org_admin" | "admin"
       chat_sender: "user" | "assistant" | "system"
+      commitment_source: "chat" | "exercise"
+      commitment_status: "pending" | "done" | "skipped"
       subscription_tier: "free" | "premium" | "org"
     }
     CompositeTypes: {
@@ -674,6 +775,8 @@ export const Constants = {
       account_type: ["general", "condition", "teen", "org_member"],
       app_role: ["user", "org_admin", "admin"],
       chat_sender: ["user", "assistant", "system"],
+      commitment_source: ["chat", "exercise"],
+      commitment_status: ["pending", "done", "skipped"],
       subscription_tier: ["free", "premium", "org"],
     },
   },
