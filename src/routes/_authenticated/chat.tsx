@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import {
   listThreads,
   sendMessage,
 } from "@/lib/chat.functions";
+import type { CompanionAction } from "@/lib/companion-tools.server";
 import { CRISIS_RESOURCES, CRISIS_DISCLAIMER } from "@/lib/crisis";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { AppShell } from "@/components/AppShell";
@@ -67,6 +68,7 @@ function ChatPage() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [quickAction, setQuickAction] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [actions, setActions] = useState<CompanionAction[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data: threads } = useQuery({ queryKey: ["chat-threads"], queryFn: () => fetchThreads() });
@@ -99,6 +101,7 @@ function ChatPage() {
       }),
     onSuccess: async (result) => {
       setInput("");
+      setActions(result.reply.type === "message" ? result.reply.actions : []);
       setQuickAction(null);
       setThreadId(result.thread_id);
       await Promise.all([
@@ -203,6 +206,31 @@ function ChatPage() {
                   {message.content}
                 </div>
               ),
+            )}
+            {actions.length > 0 && (
+              <div className="space-y-2 rounded-3xl border border-primary/25 bg-primary/5 p-4">
+                {actions.map((action, index) => (
+                  <div key={`${action.type}-${index}`} className="text-sm">
+                    <p>{action.summary}</p>
+                    {action.type === "exercise_launch" && (
+                      <Link
+                        to="/exercises"
+                        className="mt-1 inline-block rounded-full bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+                      >
+                        Open {action.title}
+                      </Link>
+                    )}
+                    {action.type === "stepup_suggested" && (
+                      <Link
+                        to="/care"
+                        className="mt-1 inline-block rounded-full border border-border bg-card px-3 py-1.5 text-xs"
+                      >
+                        See support options
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
             {mutation.isPending && (
               <p className="text-sm text-muted-foreground">Kalm is thinking…</p>
