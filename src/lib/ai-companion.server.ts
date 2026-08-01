@@ -1,8 +1,22 @@
-// Server-only AI companion logic: prompt assembly + Lovable AI Gateway call.
+// Server-only AI companion logic: prompt assembly + Anthropic Messages API call
+// with native Claude tool use. The deterministic crisis gate (detectCrisis in
+// crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
+import {
+  CHAT_TOOLS,
+  NUDGE_TOOLS,
+  runCompanionTool,
+  type AnthropicTool,
+  type CompanionAction,
+  type ToolContext,
+} from "./companion-tools.server";
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3.6-flash";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
+const MODEL = "claude-sonnet-4-5";
+const MAX_TOKENS = 1024;
+const MAX_TOOL_ITERATIONS = 3;
+
 
 export type CompanionContext = {
   preferredName: string | null;
