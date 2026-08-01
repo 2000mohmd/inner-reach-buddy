@@ -16,7 +16,7 @@ export type CompanionAction =
 export type ToolContext = {
   supabase: Client;
   userId: string;
-  threadId: string;
+  threadId: string | null;
 };
 
 export type AnthropicTool = {
