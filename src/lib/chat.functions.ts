@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { buildCrisisResponse, detectCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
+import type { CompanionAction } from "./companion-tools.server";
 
 const HISTORY_LIMIT = 20;
 
@@ -87,7 +88,13 @@ export type SendMessageResult = {
     created_at: string;
   };
   reply:
-    | { type: "message"; id: string; content: string; created_at: string }
+    | {
+        type: "message";
+        id: string;
+        content: string;
+        created_at: string;
+        actions: CompanionAction[];
+      }
     | (CrisisResponse & { id: string; created_at: string });
 };
 
@@ -206,7 +213,7 @@ export const sendMessage = createServerFn({ method: "POST" })
     const consented = profile.data?.ai_context_consent !== false;
     const { generateCompanionReply } = await import("./ai-companion.server");
 
-    const replyText = await generateCompanionReply(
+    const reply = await generateCompanionReply(
       {
         preferredName: profile.data?.preferred_name ?? null,
         accountType: profile.data?.account_type ?? null,
@@ -224,7 +231,14 @@ export const sendMessage = createServerFn({ method: "POST" })
         quickAction: data.quick_action ?? null,
       },
       data.content,
+      { supabase, userId, threadId },
     );
+
+    // Make tool-driven actions visible in the transcript, never silent.
+    const actionLines = reply.actions.map((action) => `• ${action.summary}`);
+    const replyText = actionLines.length
+      ? `${reply.text}\n\n${actionLines.join("\n")}`
+      : reply.text;
 
     const savedReply = await supabase
       .from("chat_messages")
@@ -251,6 +265,7 @@ export const sendMessage = createServerFn({ method: "POST" })
         id: savedReply.data.id,
         content: savedReply.data.content,
         created_at: savedReply.data.created_at,
+        actions: reply.actions,
       },
     };
   });

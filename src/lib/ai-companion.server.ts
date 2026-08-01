@@ -1,8 +1,22 @@
-// Server-only AI companion logic: prompt assembly + Lovable AI Gateway call.
+// Server-only AI companion logic: prompt assembly + Anthropic Messages API call
+// with native Claude tool use. The deterministic crisis gate (detectCrisis in
+// crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
+import {
+  CHAT_TOOLS,
+  NUDGE_TOOLS,
+  runCompanionTool,
+  type AnthropicTool,
+  type CompanionAction,
+  type ToolContext,
+} from "./companion-tools.server";
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3.6-flash";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
+const MODEL = "claude-sonnet-4-5";
+const MAX_TOKENS = 1024;
+const MAX_TOOL_ITERATIONS = 3;
+
 
 export type CompanionContext = {
   preferredName: string | null;
@@ -85,6 +99,16 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
 
   lines.push("--- END PERSON CONTEXT ---");
 
+  lines.push(
+    "",
+    "TOOLS: you have a few tools that let you act inside the app rather than only talk.",
+    "- Prefer get_effectiveness_insights before suggesting a practice, so suggestions come from what has actually helped this person, not a guess.",
+    "- Use launch_exercise instead of typing out the steps of a structured exercise.",
+    "- Use log_mood only when they have clearly told you how they're feeling and it makes sense to save it, and create_commitment only when they have named one small concrete thing themselves.",
+    "- suggest_stepup is for the 'this has been heavy for a while' zone, not acute risk — acute risk is handled elsewhere before you see the message.",
+    "- Never announce that you are using a tool. Just do it, then mention plainly what you saved or opened.",
+  );
+
   if (ctx.quickAction && QUICK_ACTION_GUIDANCE[ctx.quickAction]) {
     lines.push("", `QUICK ACTION: ${QUICK_ACTION_GUIDANCE[ctx.quickAction]}`);
   }
@@ -92,12 +116,93 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
   return lines.join("\n");
 }
 
-export async function generateCompanionReply(ctx: CompanionContext, userMessage: string) {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI companion is not configured");
+type AnthropicContentBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool_result"; tool_use_id: string; content: string };
 
-  const messages = [
-    { role: "system" as const, content: buildSystemPrompt(ctx) },
+type AnthropicMessage = { role: "user" | "assistant"; content: string | AnthropicContentBlock[] };
+
+type AnthropicResponse = {
+  content?: AnthropicContentBlock[];
+  stop_reason?: string;
+  error?: { type?: string; message?: string };
+};
+
+function requireApiKey() {
+  const apiKey = process.env["ANTHROPIC_API_KEY"];
+  if (!apiKey) throw new Error("The AI companion isn't configured yet (missing Anthropic key).");
+  return apiKey;
+}
+
+async function callAnthropic(
+  apiKey: string,
+  system: string,
+  messages: AnthropicMessage[],
+  tools: AnthropicTool[],
+): Promise<AnthropicResponse> {
+  const response = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": ANTHROPIC_VERSION,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system,
+      messages,
+      ...(tools.length ? { tools } : {}),
+    }),
+  });
+
+  if (response.ok) return (await response.json()) as AnthropicResponse;
+
+  const body = await response.text();
+  console.error("Anthropic API error", response.status, body);
+
+  // Anthropic signals throttling with 429 and overload with 529.
+  if (response.status === 429 || response.status === 529) {
+    throw new Error("Kalm is a little busy right now. Please try again in a moment.");
+  }
+  // Anthropic reports exhausted balance as a 400 billing error rather than 402.
+  if (
+    response.status === 402 ||
+    (response.status === 400 && /credit balance|billing/i.test(body))
+  ) {
+    throw new Error("The AI companion is out of credits. Please top up to keep chatting.");
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("The AI companion isn't configured yet (invalid Anthropic key).");
+  }
+  throw new Error("The companion couldn't reply just now. Please try again.");
+}
+
+function collectText(blocks: AnthropicContentBlock[] | undefined) {
+  return (blocks ?? [])
+    .filter((block): block is { type: "text"; text: string } => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+}
+
+export type CompanionReply = { text: string; actions: CompanionAction[] };
+
+/**
+ * Runs the standard Anthropic tool-use loop: send with tools, execute any
+ * tool_use blocks server-side, feed tool_result blocks back, repeat up to
+ * MAX_TOOL_ITERATIONS, then fall back to whatever text we have.
+ */
+export async function generateCompanionReply(
+  ctx: CompanionContext,
+  userMessage: string,
+  toolContext: ToolContext,
+): Promise<CompanionReply> {
+  const apiKey = requireApiKey();
+  const system = buildSystemPrompt(ctx);
+
+  const messages: AnthropicMessage[] = [
     ...ctx.history.map((entry) => ({
       role: entry.sender === "assistant" ? ("assistant" as const) : ("user" as const),
       content: entry.content,
@@ -105,47 +210,59 @@ export async function generateCompanionReply(ctx: CompanionContext, userMessage:
     { role: "user" as const, content: userMessage },
   ];
 
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-    },
-    body: JSON.stringify({ model: MODEL, messages }),
-  });
+  const actions: CompanionAction[] = [];
+  let lastText = "";
 
-  if (response.status === 429) {
-    throw new Error("Kalm is a little busy right now. Please try again in a moment.");
-  }
-  if (response.status === 402) {
-    throw new Error("The AI companion is out of credits. Please top up to keep chatting.");
-  }
-  if (!response.ok) {
-    console.error("AI gateway error", response.status, await response.text());
-    throw new Error("The companion couldn't reply just now. Please try again.");
+  for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
+    const payload = await callAnthropic(apiKey, system, messages, CHAT_TOOLS);
+    const blocks = payload.content ?? [];
+    const text = collectText(blocks);
+    if (text) lastText = text;
+
+    const toolUses = blocks.filter(
+      (block): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+        block.type === "tool_use",
+    );
+
+    if (payload.stop_reason !== "tool_use" || toolUses.length === 0 || iteration === MAX_TOOL_ITERATIONS) {
+      if (lastText) return { text: lastText, actions };
+      break;
+    }
+
+    messages.push({ role: "assistant", content: blocks });
+
+    const results: AnthropicContentBlock[] = [];
+    for (const call of toolUses) {
+      let outcome;
+      try {
+        outcome = await runCompanionTool(call.name, call.input ?? {}, toolContext);
+      } catch (error) {
+        console.error("companion tool failed", call.name, error);
+        outcome = { result: "That action failed. Continue the conversation without it." };
+      }
+      if (outcome.action) actions.push(outcome.action);
+      results.push({ type: "tool_result", tool_use_id: call.id, content: outcome.result });
+    }
+    messages.push({ role: "user", content: results });
   }
 
-  const payload = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const content = payload.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error("The companion couldn't reply just now. Please try again.");
-  return content;
+  if (lastText) return { text: lastText, actions };
+  throw new Error("The companion couldn't reply just now. Please try again.");
 }
 
 /**
- * Proactive coaching: uses the SAME prompt-assembly pattern as chat so nudges
- * reference the person's own context instead of generic copy.
+ * Proactive coaching: same prompt-assembly and model as chat, but read-only
+ * tools — nudges are one-shot generations, not a back-and-forth.
  */
 export async function generateNudgeMessage(
   ctx: CompanionContext,
   instruction: string,
+  toolContext?: ToolContext,
 ): Promise<string> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI companion is not configured");
+  const apiKey = requireApiKey();
+  const system = buildSystemPrompt(ctx);
 
-  const messages = [
-    { role: "system" as const, content: buildSystemPrompt(ctx) },
+  const messages: AnthropicMessage[] = [
     {
       role: "user" as const,
       content: [
@@ -158,19 +275,45 @@ export async function generateNudgeMessage(
     },
   ];
 
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
-    body: JSON.stringify({ model: MODEL, messages }),
-  });
+  const tools = toolContext ? NUDGE_TOOLS : [];
+  let lastText = "";
 
-  if (!response.ok) {
-    console.error("AI gateway nudge error", response.status, await response.text());
-    throw new Error("Could not generate a nudge right now.");
+  for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
+    const payload = await callAnthropic(apiKey, system, messages, tools);
+    const blocks = payload.content ?? [];
+    const text = collectText(blocks);
+    if (text) lastText = text;
+
+    const toolUses = blocks.filter(
+      (block): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+        block.type === "tool_use",
+    );
+
+    if (
+      !toolContext ||
+      payload.stop_reason !== "tool_use" ||
+      toolUses.length === 0 ||
+      iteration === MAX_TOOL_ITERATIONS
+    ) {
+      break;
+    }
+
+    messages.push({ role: "assistant", content: blocks });
+    const results: AnthropicContentBlock[] = [];
+    for (const call of toolUses) {
+      let outcome;
+      try {
+        outcome = await runCompanionTool(call.name, call.input ?? {}, toolContext);
+      } catch (error) {
+        console.error("nudge tool failed", call.name, error);
+        outcome = { result: "That lookup failed. Write the nudge without it." };
+      }
+      results.push({ type: "tool_result", tool_use_id: call.id, content: outcome.result });
+    }
+    messages.push({ role: "user", content: results });
   }
 
-  const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-  const content = payload.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error("Could not generate a nudge right now.");
-  return content;
+  if (!lastText) throw new Error("Could not generate a nudge right now.");
+  return lastText;
 }
+

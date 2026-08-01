@@ -179,7 +179,11 @@ export async function evaluateNudgesFor(supabase: Client, userId: string) {
   for (const candidate of pending) {
     let message: string;
     try {
-      message = await generateNudgeMessage(baseContext, candidate.instruction);
+      message = await generateNudgeMessage(baseContext, candidate.instruction, {
+        supabase,
+        userId,
+        threadId: null,
+      });
     } catch (error) {
       console.error("nudge generation failed", candidate.trigger_type, error);
       continue;
