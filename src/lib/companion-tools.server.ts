@@ -86,11 +86,43 @@ const SUGGEST_STEPUP: AnthropicTool = {
   input_schema: { type: "object", properties: {} },
 };
 
+const GET_EXERCISE_STEPS: AnthropicTool = {
+  name: "get_exercise_steps",
+  description:
+    "Read the ordered steps of an exercise so you can walk the person through it inline, one step per message, inside the conversation. Valid slugs: cbt-thought-record, behavioral-activation, grounding-54321, box-breathing, worry-time.",
+  input_schema: {
+    type: "object",
+    properties: { exercise_slug: { type: "string" } },
+    required: ["exercise_slug"],
+  },
+};
+
+const COMPLETE_EXERCISE_IN_CHAT: AnthropicTool = {
+  name: "complete_exercise_in_chat",
+  description:
+    "Record that the person completed an exercise with you inside the conversation, so it counts the same as doing it on the Exercises page. Use only after you have actually walked them through the steps.",
+  input_schema: {
+    type: "object",
+    properties: {
+      exercise_slug: { type: "string" },
+      mood_before: { type: "integer", description: "Mood 1-5 before, if known" },
+      mood_after: { type: "integer", description: "Mood 1-5 after, if known" },
+      response_summary: {
+        type: "string",
+        description: "Brief summary of what they shared during the exercise, not verbatim",
+      },
+    },
+    required: ["exercise_slug"],
+  },
+};
+
 /** Full conversational tool set. */
 export const CHAT_TOOLS: AnthropicTool[] = [
   LOG_MOOD,
   CREATE_COMMITMENT,
   GET_EFFECTIVENESS_INSIGHTS,
+  GET_EXERCISE_STEPS,
+  COMPLETE_EXERCISE_IN_CHAT,
   LAUNCH_EXERCISE,
   SUGGEST_STEPUP,
 ];
