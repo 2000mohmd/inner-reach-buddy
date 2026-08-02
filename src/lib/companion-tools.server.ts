@@ -273,6 +273,82 @@ export async function runCompanionTool(
     };
   }
 
+  if (name === "get_exercise_steps") {
+    const slug = String(input["exercise_slug"] ?? "").trim();
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, slug, title, intro_text, steps, estimated_minutes")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) return { result: `Could not look up that exercise: ${error.message}` };
+    if (!data) return { result: `No exercise exists with slug "${slug}". Do not offer it.` };
+
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const rendered = steps
+      .map((step, index) => {
+        const obj = (step ?? {}) as Record<string, unknown>;
+        const prompt = String(obj["prompt"] ?? obj["text"] ?? obj["label"] ?? "");
+        const inputType = obj["input_type"] ?? obj["inputType"];
+        return `${index + 1}. ${prompt}${inputType ? ` [expects: ${String(inputType)}]` : ""}`;
+      })
+      .join("\n");
+
+    return {
+      result: [
+        `Exercise "${data.title}" (id: ${data.id}, slug: ${data.slug}). Intro: ${data.intro_text}`,
+        rendered || "(no steps recorded)",
+        "",
+        "Walk the person through these steps ONE AT A TIME in the conversation, in your own words, waiting for their reply before moving to the next step. Do not paste all steps into one message. When you reach the end, use complete_exercise_in_chat to record it.",
+      ].join("\n"),
+    };
+  }
+
+  if (name === "complete_exercise_in_chat") {
+    const slug = String(input["exercise_slug"] ?? "").trim();
+    const { data: exercise, error: lookupError } = await supabase
+      .from("exercises")
+      .select("id, slug, title")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (lookupError) return { result: `Could not look up that exercise: ${lookupError.message}` };
+    if (!exercise) return { result: `No exercise exists with slug "${slug}".` };
+
+    const clamp = (value: unknown) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return null;
+      return Math.min(5, Math.max(1, Math.round(num)));
+    };
+    const moodBefore = clamp(input["mood_before"]);
+    const moodAfter = clamp(input["mood_after"]);
+    const summary =
+      typeof input["response_summary"] === "string"
+        ? input["response_summary"].slice(0, 1000)
+        : null;
+
+    const { error } = await supabase.from("exercise_completions").insert({
+      user_id: userId,
+      exercise_id: exercise.id,
+      mood_before: moodBefore,
+      mood_after: moodAfter,
+      response_data: {
+        source: "chat",
+        thread_id: ctx.threadId,
+        ...(summary ? { response_summary: summary } : {}),
+      },
+    });
+    if (error) return { result: `Could not record the exercise: ${error.message}` };
+
+    return {
+      result: `Recorded that they completed ${exercise.title} with you in chat. Mention plainly that you saved it, then stay with them.`,
+      action: {
+        type: "exercise_completed",
+        slug: exercise.slug,
+        title: exercise.title,
+        summary: `Saved that you completed "${exercise.title}" here in chat.`,
+      },
+    };
+  }
+
   if (name === "launch_exercise") {
     const slug = String(input["exercise_slug"] ?? "").trim();
     const { data, error } = await supabase
