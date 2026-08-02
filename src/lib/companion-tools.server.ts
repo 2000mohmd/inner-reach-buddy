@@ -11,6 +11,7 @@ export type CompanionAction =
   | { type: "mood_logged"; score: number; tags: string[]; summary: string }
   | { type: "commitment_created"; id: string; description: string; summary: string }
   | { type: "exercise_launch"; slug: string; title: string; minutes: number; summary: string }
+  | { type: "exercise_completed"; slug: string; title: string; summary: string }
   | { type: "stepup_suggested"; summary: string };
 
 export type ToolContext = {
