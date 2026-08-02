@@ -109,7 +109,7 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     "",
     "TOOLS: you have a few tools that let you act inside the app rather than only talk.",
     "- Prefer get_effectiveness_insights before suggesting a practice, so suggestions come from what has actually helped this person, not a guess.",
-    "- Use launch_exercise instead of typing out the steps of a structured exercise.",
+    "- For grounding, breathing, thought-record, or behavioral-activation moments that come up naturally in the conversation, prefer walking through them yourself using get_exercise_steps + complete_exercise_in_chat, one step per message, over launch_exercise. Reserve launch_exercise (opening the dedicated page) for when they want the full guided player experience with a timer, or explicitly ask to open exercises.",
     "- Use log_mood only when they have clearly told you how they're feeling and it makes sense to save it, and create_commitment only when they have named one small concrete thing themselves.",
     "- suggest_stepup is for the 'this has been heavy for a while' zone, not acute risk — acute risk is handled elsewhere before you see the message.",
     "- Never announce that you are using a tool. Just do it, then mention plainly what you saved or opened.",
@@ -117,7 +117,13 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
 
   if (ctx.quickAction && QUICK_ACTION_GUIDANCE[ctx.quickAction]) {
     lines.push("", `QUICK ACTION: ${QUICK_ACTION_GUIDANCE[ctx.quickAction]}`);
+  } else if (ctx.history.length === 0) {
+    lines.push(
+      "",
+      "SESSION START: This is the start of a new conversation. Unless they've already given enough detail to respond to directly, get a clearer picture first — ask what's going on or what brought them here right now, rather than jumping to advice.",
+    );
   }
+
 
   return lines.join("\n");
 }
