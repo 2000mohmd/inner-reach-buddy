@@ -11,6 +11,7 @@ export type CompanionAction =
   | { type: "mood_logged"; score: number; tags: string[]; summary: string }
   | { type: "commitment_created"; id: string; description: string; summary: string }
   | { type: "exercise_launch"; slug: string; title: string; minutes: number; summary: string }
+  | { type: "exercise_completed"; slug: string; title: string; summary: string }
   | { type: "stepup_suggested"; summary: string };
 
 export type ToolContext = {
@@ -85,11 +86,43 @@ const SUGGEST_STEPUP: AnthropicTool = {
   input_schema: { type: "object", properties: {} },
 };
 
+const GET_EXERCISE_STEPS: AnthropicTool = {
+  name: "get_exercise_steps",
+  description:
+    "Read the ordered steps of an exercise so you can walk the person through it inline, one step per message, inside the conversation. Valid slugs: cbt-thought-record, behavioral-activation, grounding-54321, box-breathing, worry-time.",
+  input_schema: {
+    type: "object",
+    properties: { exercise_slug: { type: "string" } },
+    required: ["exercise_slug"],
+  },
+};
+
+const COMPLETE_EXERCISE_IN_CHAT: AnthropicTool = {
+  name: "complete_exercise_in_chat",
+  description:
+    "Record that the person completed an exercise with you inside the conversation, so it counts the same as doing it on the Exercises page. Use only after you have actually walked them through the steps.",
+  input_schema: {
+    type: "object",
+    properties: {
+      exercise_slug: { type: "string" },
+      mood_before: { type: "integer", description: "Mood 1-5 before, if known" },
+      mood_after: { type: "integer", description: "Mood 1-5 after, if known" },
+      response_summary: {
+        type: "string",
+        description: "Brief summary of what they shared during the exercise, not verbatim",
+      },
+    },
+    required: ["exercise_slug"],
+  },
+};
+
 /** Full conversational tool set. */
 export const CHAT_TOOLS: AnthropicTool[] = [
   LOG_MOOD,
   CREATE_COMMITMENT,
   GET_EFFECTIVENESS_INSIGHTS,
+  GET_EXERCISE_STEPS,
+  COMPLETE_EXERCISE_IN_CHAT,
   LAUNCH_EXERCISE,
   SUGGEST_STEPUP,
 ];
@@ -237,6 +270,82 @@ export async function runCompanionTool(
             `${row.subject_label} (slug: ${row.subject_key}) — average mood change ${row.avg_mood_delta > 0 ? "+" : ""}${row.avg_mood_delta} across ${row.sample_size} completions, confidence ${row.confidence}`,
         )
         .join("\n"),
+    };
+  }
+
+  if (name === "get_exercise_steps") {
+    const slug = String(input["exercise_slug"] ?? "").trim();
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, slug, title, intro_text, steps, estimated_minutes")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) return { result: `Could not look up that exercise: ${error.message}` };
+    if (!data) return { result: `No exercise exists with slug "${slug}". Do not offer it.` };
+
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const rendered = steps
+      .map((step, index) => {
+        const obj = (step ?? {}) as Record<string, unknown>;
+        const prompt = String(obj["prompt"] ?? obj["text"] ?? obj["label"] ?? "");
+        const inputType = obj["input_type"] ?? obj["inputType"];
+        return `${index + 1}. ${prompt}${inputType ? ` [expects: ${String(inputType)}]` : ""}`;
+      })
+      .join("\n");
+
+    return {
+      result: [
+        `Exercise "${data.title}" (id: ${data.id}, slug: ${data.slug}). Intro: ${data.intro_text}`,
+        rendered || "(no steps recorded)",
+        "",
+        "Walk the person through these steps ONE AT A TIME in the conversation, in your own words, waiting for their reply before moving to the next step. Do not paste all steps into one message. When you reach the end, use complete_exercise_in_chat to record it.",
+      ].join("\n"),
+    };
+  }
+
+  if (name === "complete_exercise_in_chat") {
+    const slug = String(input["exercise_slug"] ?? "").trim();
+    const { data: exercise, error: lookupError } = await supabase
+      .from("exercises")
+      .select("id, slug, title")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (lookupError) return { result: `Could not look up that exercise: ${lookupError.message}` };
+    if (!exercise) return { result: `No exercise exists with slug "${slug}".` };
+
+    const clamp = (value: unknown) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return null;
+      return Math.min(5, Math.max(1, Math.round(num)));
+    };
+    const moodBefore = clamp(input["mood_before"]);
+    const moodAfter = clamp(input["mood_after"]);
+    const summary =
+      typeof input["response_summary"] === "string"
+        ? input["response_summary"].slice(0, 1000)
+        : null;
+
+    const { error } = await supabase.from("exercise_completions").insert({
+      user_id: userId,
+      exercise_id: exercise.id,
+      mood_before: moodBefore,
+      mood_after: moodAfter,
+      response_data: {
+        source: "chat",
+        thread_id: ctx.threadId,
+        ...(summary ? { response_summary: summary } : {}),
+      },
+    });
+    if (error) return { result: `Could not record the exercise: ${error.message}` };
+
+    return {
+      result: `Recorded that they completed ${exercise.title} with you in chat. Mention plainly that you saved it, then stay with them.`,
+      action: {
+        type: "exercise_completed",
+        slug: exercise.slug,
+        title: exercise.title,
+        summary: `Saved that you completed "${exercise.title}" here in chat.`,
+      },
     };
   }
 
