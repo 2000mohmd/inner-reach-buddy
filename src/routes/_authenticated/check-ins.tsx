@@ -11,6 +11,7 @@ import {
   maxScore,
   type ScreenerType,
 } from "@/lib/screeners";
+import type { CrisisResponse } from "@/lib/crisis";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
