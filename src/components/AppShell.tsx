@@ -2,30 +2,25 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LifeBuoy,
-  LayoutDashboard,
   MessageCircle,
-  ListChecks,
   Settings,
   LogOut,
   Leaf,
   Wind,
-  ClipboardList,
+  LineChart,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SafetyFooter } from "./SafetyFooter";
 import { Button } from "@/components/ui/button";
 
+// Primary destinations. Mirrors the future mobile bottom tab bar.
 const NAV = [
-  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
   { to: "/chat", label: "Companion", icon: MessageCircle },
+  { to: "/insights", label: "Insights", icon: LineChart },
   { to: "/exercises", label: "Exercises", icon: Wind },
-  { to: "/habits", label: "Habits", icon: ListChecks },
-  { to: "/check-ins", label: "Check-ins", icon: ClipboardList },
   { to: "/settings", label: "Profile", icon: Settings },
-  { to: "/crisis", label: "Support", icon: LifeBuoy },
 ] as const;
-
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -43,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/dashboard" className="flex items-center gap-2 font-display text-xl">
+          <Link to="/chat" className="flex items-center gap-2 font-display text-xl">
             <Leaf className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
@@ -62,6 +57,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="hidden sm:inline">{label}</span>
               </Link>
             ))}
+            {/* Support is always one tap away, but not a primary nav item. */}
+            <Link
+              to="/crisis"
+              aria-label="Immediate support"
+              title="Immediate support"
+              className={`flex items-center justify-center rounded-full p-2 ${
+                pathname === "/crisis"
+                  ? "bg-crisis-surface text-crisis"
+                  : "text-crisis hover:bg-crisis-surface"
+              }`}
+            >
+              <LifeBuoy className="size-5" aria-hidden />
+            </Link>
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="rounded-full">
               <LogOut className="size-4" aria-hidden />
               <span className="hidden sm:inline">Sign out</span>
@@ -75,3 +83,4 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

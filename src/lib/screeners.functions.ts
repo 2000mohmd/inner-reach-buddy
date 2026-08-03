@@ -1,13 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { buildCrisisResponse, type CrisisResponse } from "./crisis";
 import {
   SCREENERS,
   SCREENER_INTERVAL_DAYS,
-  scoreSeverity,
   type ScreenerType,
 } from "./screeners";
+
 
 const SubmitInput = z.object({
   screener_type: z.enum(["phq9", "gad7"]),
@@ -51,43 +50,8 @@ export const submitScreener = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SubmitInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const expected = SCREENERS[data.screener_type].items.length;
-    if (data.responses.length !== expected) {
-      throw new Error("Please answer every item before submitting.");
-    }
-
-    const total = data.responses.reduce((sum, value) => sum + value, 0);
-    const severity = scoreSeverity(data.screener_type, total);
-
-    const saved = await supabase
-      .from("screener_responses")
-      .insert({
-        user_id: userId,
-        screener_type: data.screener_type,
-        responses: data.responses,
-        total_score: total,
-        severity,
-      })
-      .select("id, total_score, severity, taken_at")
-      .single();
-    if (saved.error) throw saved.error;
-
-    // PHQ-9 item 9 ("better off dead or of hurting yourself") escalates on its
-    // own, independent of total score or severity band. A low total must never
-    // suppress this.
-    let crisis: CrisisResponse | null = null;
-    if (data.screener_type === "phq9" && (data.responses[8] ?? 0) >= 1) {
-      crisis = buildCrisisResponse(["phq9_item9"]);
-      const logged = await supabase.from("crisis_events").insert({
-        user_id: userId,
-        matched_terms: ["phq9_item9"],
-        severity: "high",
-        source: "phq9_item9",
-      });
-      if (logged.error) console.error("crisis_events insert failed", logged.error);
-    }
-
-    return { ...saved.data, crisisTriggered: crisis !== null, crisis };
+    const { submitScreenerCore } = await import("./screeners.server");
+    return submitScreenerCore(context.supabase, context.userId, data);
   });
+
 

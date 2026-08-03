@@ -209,9 +209,24 @@ export const sendMessage = createServerFn({ method: "POST" })
       };
     }
 
+    // --- Cross-session memory: summarize the thread they just left, once ---
+    const { ensureThreadSummary, fetchRecentSummaries, findPreviousThread } = await import(
+      "./thread-summary.server"
+    );
+    try {
+      const previousThreadId = await findPreviousThread(supabase, userId, threadId);
+      if (previousThreadId) {
+        await ensureThreadSummary(supabase, userId, previousThreadId);
+      }
+    } catch (error) {
+      console.error("thread summary step failed", error);
+    }
+
     // --- Normal path: assemble personalized context, then call the model ---
 
-    const [profile, intro, moods, history] = await Promise.all([
+    const { getScreenersDue } = await import("./screeners.server");
+
+    const [profile, intro, moods, history, pastSummaries, screeners] = await Promise.all([
       supabase
         .from("profiles")
         .select("preferred_name, account_type, ai_context_consent")
@@ -238,6 +253,8 @@ export const sendMessage = createServerFn({ method: "POST" })
         .neq("id", savedUser.data.id)
         .order("created_at", { ascending: false })
         .limit(HISTORY_LIMIT),
+      fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
+      getScreenersDue(supabase, userId).catch(() => []),
     ]);
 
     const consented = profile.data?.ai_context_consent !== false;
@@ -259,10 +276,17 @@ export const sendMessage = createServerFn({ method: "POST" })
           .reverse()
           .map((entry) => ({ sender: entry.sender, content: entry.content })),
         quickAction: data.quick_action ?? null,
+        pastSummaries: consented ? pastSummaries : [],
+        screenersDue: screeners.map((entry) => ({
+          label: entry.label,
+          due: entry.due,
+          lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
+        })),
       },
       data.content,
       { supabase, userId, threadId },
     );
+
 
     // Make tool-driven actions visible in the transcript, never silent.
     const actionLines = reply.actions.map((action) => `• ${action.summary}`);

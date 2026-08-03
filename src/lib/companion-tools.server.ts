@@ -3,6 +3,13 @@
 // detectCrisis() gate in crisis.ts runs before this file is ever reached.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  SCREENERS,
+  SCREENER_CHOICES,
+  SCREENER_FRAMING,
+  type ScreenerType,
+} from "./screeners";
+
 
 type Client = SupabaseClient<Database>;
 
@@ -12,7 +19,16 @@ export type CompanionAction =
   | { type: "commitment_created"; id: string; description: string; summary: string }
   | { type: "exercise_launch"; slug: string; title: string; minutes: number; summary: string }
   | { type: "exercise_completed"; slug: string; title: string; summary: string }
+  | {
+      type: "screener_completed";
+      screener_type: "phq9" | "gad7";
+      total_score: number;
+      severity: string;
+      crisis: boolean;
+      summary: string;
+    }
   | { type: "stepup_suggested"; summary: string };
+
 
 export type ToolContext = {
   supabase: Client;
@@ -116,6 +132,31 @@ const COMPLETE_EXERCISE_IN_CHAT: AnthropicTool = {
   },
 };
 
+const GET_SCREENER_QUESTIONS: AnthropicTool = {
+  name: "get_screener_questions",
+  description:
+    "Read the standard item text of a validated check-in questionnaire (PHQ-9 for low mood, GAD-7 for anxiety) so you can ask the items conversationally, one at a time, inside the chat.",
+  input_schema: {
+    type: "object",
+    properties: { screener_type: { type: "string", enum: ["phq9", "gad7"] } },
+    required: ["screener_type"],
+  },
+};
+
+const SUBMIT_SCREENER_IN_CHAT: AnthropicTool = {
+  name: "submit_screener_in_chat",
+  description:
+    "Record a completed check-in questionnaire the person answered with you in conversation. Responses are 0-3 per item in the original item order (0 = not at all, 1 = several days, 2 = more than half the days, 3 = nearly every day). PHQ-9 needs 9 responses, GAD-7 needs 7. Only use this after they have actually answered every item.",
+  input_schema: {
+    type: "object",
+    properties: {
+      screener_type: { type: "string", enum: ["phq9", "gad7"] },
+      responses: { type: "array", items: { type: "integer" } },
+    },
+    required: ["screener_type", "responses"],
+  },
+};
+
 /** Full conversational tool set. */
 export const CHAT_TOOLS: AnthropicTool[] = [
   LOG_MOOD,
@@ -123,9 +164,12 @@ export const CHAT_TOOLS: AnthropicTool[] = [
   GET_EFFECTIVENESS_INSIGHTS,
   GET_EXERCISE_STEPS,
   COMPLETE_EXERCISE_IN_CHAT,
+  GET_SCREENER_QUESTIONS,
+  SUBMIT_SCREENER_IN_CHAT,
   LAUNCH_EXERCISE,
   SUGGEST_STEPUP,
 ];
+
 
 /** Nudges are one-shot generations: read-only tools only. */
 export const NUDGE_TOOLS: AnthropicTool[] = [GET_EFFECTIVENESS_INSIGHTS];
@@ -348,6 +392,70 @@ export async function runCompanionTool(
       },
     };
   }
+
+  if (name === "get_screener_questions") {
+    const type = String(input["screener_type"] ?? "") as ScreenerType;
+    const screener = SCREENERS[type];
+    if (!screener) return { result: `Unknown screener type "${type}". Use phq9 or gad7.` };
+
+    return {
+      result: [
+        `${screener.label}. Framing: ${screener.prompt} ${SCREENER_FRAMING}`,
+        "Items, in order (index 0 first):",
+        ...screener.items.map((item, index) => `${index}. ${item}`),
+        `Answer scale per item: ${SCREENER_CHOICES.map((choice) => `${choice.value} = ${choice.label}`).join(", ")}.`,
+        "",
+        "Ask ONE question at a time, in your own words, waiting for a reply before the next — do not list all questions in one message. Keep track of each answer as a 0-3 value in item order, and when every item is answered call submit_screener_in_chat with the full array.",
+      ].join("\n"),
+    };
+  }
+
+  if (name === "submit_screener_in_chat") {
+    const type = String(input["screener_type"] ?? "") as ScreenerType;
+    const screener = SCREENERS[type];
+    if (!screener) return { result: `Unknown screener type "${type}". Use phq9 or gad7.` };
+
+    const raw = Array.isArray(input["responses"]) ? (input["responses"] as unknown[]) : [];
+    const responses = raw.map((value) => {
+      const num = Number(value);
+      return Math.min(3, Math.max(0, Number.isFinite(num) ? Math.round(num) : 0));
+    });
+    if (responses.length !== screener.items.length) {
+      return {
+        result: `That is ${responses.length} answers but ${screener.label} has ${screener.items.length} items. Ask the remaining questions one at a time before recording it.`,
+      };
+    }
+
+    // Same underlying logic the check-ins page uses, including the PHQ-9
+    // item-9 crisis escalation. Never reimplemented here.
+    const { submitScreenerCore } = await import("./screeners.server");
+    let saved;
+    try {
+      saved = await submitScreenerCore(supabase, userId, { screener_type: type, responses });
+    } catch (error) {
+      return {
+        result: `Could not record the check-in: ${error instanceof Error ? error.message : "unknown error"}`,
+      };
+    }
+
+    const base = `Recorded ${screener.label}: ${saved.total_score} of ${screener.items.length * 3}, ${saved.severity} range. Share the score plainly and warmly, remind them it is a pattern signal and not a diagnosis, and stay in the conversation.`;
+
+    return {
+      result: saved.crisisTriggered
+        ? `${base}\n\nIMPORTANT: their answer to the self-harm item was above zero. The app is showing crisis resources alongside your reply. Respond with care, name it directly and gently, encourage them to reach out to 988 or local emergency services or someone they trust right now, and do not move on to other topics.`
+        : base,
+      action: {
+        type: "screener_completed",
+        screener_type: type,
+        total_score: saved.total_score,
+        severity: saved.severity,
+        crisis: saved.crisisTriggered,
+        summary: `Saved your ${screener.label} check-in — ${saved.total_score} (${saved.severity} range).`,
+      },
+    };
+  }
+
+
 
   if (name === "launch_exercise") {
     const slug = String(input["exercise_slug"] ?? "").trim();

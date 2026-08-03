@@ -30,7 +30,10 @@ export type CompanionContext = {
   recentMoods: { score: number; note: string | null; tags: string[]; logged_at: string }[];
   history: { sender: string; content: string }[];
   quickAction: string | null;
+  pastSummaries?: { summary: string; when: string; commitmentNote: string | null }[];
+  screenersDue?: { label: string; due: boolean; lastTaken: string | null }[];
 };
+
 
 const QUICK_ACTION_GUIDANCE: Record<string, string> = {
   anxious:
@@ -103,6 +106,31 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     lines.push("No mood check-ins logged yet.");
   }
 
+  if (ctx.pastSummaries?.length) {
+    lines.push("", "--- RECENT PAST CONVERSATIONS ---");
+    for (const entry of ctx.pastSummaries) {
+      lines.push(
+        `(${entry.when}) ${entry.summary}${entry.commitmentNote ? ` Follow-through: ${entry.commitmentNote}` : ""}`,
+      );
+    }
+    lines.push(
+      "You have summaries of recent past conversations above. Reference them naturally when relevant, the way someone remembers a past conversation with a person they check in with regularly — don't recite them verbatim or announce that you're reading notes.",
+      "--- END RECENT PAST CONVERSATIONS ---",
+    );
+  }
+
+  if (ctx.screenersDue?.length) {
+    lines.push(
+      "",
+      `Periodic check-in status: ${ctx.screenersDue
+        .map(
+          (entry) =>
+            `${entry.label} — ${entry.due ? "due now" : "not due"}${entry.lastTaken ? ` (last taken ${entry.lastTaken})` : " (never taken)"}`,
+        )
+        .join("; ")}`,
+    );
+  }
+
   lines.push("--- END PERSON CONTEXT ---");
 
   lines.push(
@@ -111,9 +139,11 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     "- Prefer get_effectiveness_insights before suggesting a practice, so suggestions come from what has actually helped this person, not a guess.",
     "- For grounding, breathing, thought-record, or behavioral-activation moments that come up naturally in the conversation, prefer walking through them yourself using get_exercise_steps + complete_exercise_in_chat, one step per message, over launch_exercise. Reserve launch_exercise (opening the dedicated page) for when they want the full guided player experience with a timer, or explicitly ask to open exercises.",
     "- Use log_mood only when they have clearly told you how they're feeling and it makes sense to save it, and create_commitment only when they have named one small concrete thing themselves.",
+    "- If a screener is due (same logic the check-ins page uses — roughly every 2 weeks) and it fits naturally in the conversation, you can offer to do it right here in chat instead of sending them to a separate page, using get_screener_questions and then submit_screener_in_chat. Ask one item at a time in your own words. Never force it if the conversation is focused elsewhere.",
     "- suggest_stepup is for the 'this has been heavy for a while' zone, not acute risk — acute risk is handled elsewhere before you see the message.",
     "- Never announce that you are using a tool. Just do it, then mention plainly what you saved or opened.",
   );
+
 
   if (ctx.quickAction && QUICK_ACTION_GUIDANCE[ctx.quickAction]) {
     lines.push("", `QUICK ACTION: ${QUICK_ACTION_GUIDANCE[ctx.quickAction]}`);
