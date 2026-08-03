@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { buildCrisisResponse, detectCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
+import { checkRateLimit, RATE_LIMIT_MESSAGE } from "./chat-rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
 
 const HISTORY_LIMIT = 20;
