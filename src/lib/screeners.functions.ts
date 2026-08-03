@@ -72,5 +72,21 @@ export const submitScreener = createServerFn({ method: "POST" })
       .single();
     if (saved.error) throw saved.error;
 
-    return saved.data;
+    // PHQ-9 item 9 ("better off dead or of hurting yourself") escalates on its
+    // own, independent of total score or severity band. A low total must never
+    // suppress this.
+    let crisis: CrisisResponse | null = null;
+    if (data.screener_type === "phq9" && (data.responses[8] ?? 0) >= 1) {
+      crisis = buildCrisisResponse(["phq9_item9"]);
+      const logged = await supabase.from("crisis_events").insert({
+        user_id: userId,
+        matched_terms: ["phq9_item9"],
+        severity: "high",
+        source: "phq9_item9",
+      });
+      if (logged.error) console.error("crisis_events insert failed", logged.error);
+    }
+
+    return { ...saved.data, crisisTriggered: crisis !== null, crisis };
   });
+
