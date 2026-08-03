@@ -48,6 +48,7 @@ function CheckInsPage() {
 
   const [activeType, setActiveType] = useState<ScreenerType | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [crisis, setCrisis] = useState<CrisisResponse | null>(null);
 
   const save = useMutation({
     mutationFn: () =>
