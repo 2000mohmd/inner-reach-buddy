@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { buildCrisisResponse, detectCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
+import { checkRateLimit, RATE_LIMIT_MESSAGE } from "./chat-rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
 
 const HISTORY_LIMIT = 20;
@@ -180,7 +181,36 @@ export const sendMessage = createServerFn({ method: "POST" })
       };
     }
 
+    // --- Per-user rate limit (normal chat path only; never gates crisis) ---
+    const limit = await checkRateLimit(supabase, userId);
+    if (!limit.allowed) {
+      const savedLimit = await supabase
+        .from("chat_messages")
+        .insert({
+          thread_id: threadId,
+          user_id: userId,
+          sender: "system",
+          content: RATE_LIMIT_MESSAGE,
+        })
+        .select("id, content, created_at")
+        .single();
+      if (savedLimit.error) throw savedLimit.error;
+
+      return {
+        thread_id: threadId,
+        userMessage: { ...savedUser.data, sender: "user" as const },
+        reply: {
+          type: "message",
+          id: savedLimit.data.id,
+          content: savedLimit.data.content,
+          created_at: savedLimit.data.created_at,
+          actions: [],
+        },
+      };
+    }
+
     // --- Normal path: assemble personalized context, then call the model ---
+
     const [profile, intro, moods, history] = await Promise.all([
       supabase
         .from("profiles")

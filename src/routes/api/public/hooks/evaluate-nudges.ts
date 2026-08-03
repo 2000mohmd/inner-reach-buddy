@@ -1,20 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * Proactive-coaching sweep. Callable by pg_cron with the project publishable
- * key in an `apikey` header; evaluates users with recent activity.
+ * Proactive-coaching sweep. Callable by pg_cron / an external scheduler with
+ * the dedicated NUDGE_SWEEP_SECRET in an `x-sweep-secret` header.
+ *
+ * NOTE: this previously checked SUPABASE_PUBLISHABLE_KEY, which is NOT a secret
+ * — the publishable/anon key ships in the client bundle, so anyone could have
+ * triggered the sweep. It is now a dedicated server-only secret.
  */
 export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const key = request.headers.get("apikey");
-        if (!key || key !== process.env["SUPABASE_PUBLISHABLE_KEY"]) {
+        const provided = request.headers.get("x-sweep-secret");
+        const expected = process.env["NUDGE_SWEEP_SECRET"];
+        if (!expected || !provided || provided !== expected) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
         }
+
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { evaluateNudgesFor } = await import("@/lib/nudges.server");

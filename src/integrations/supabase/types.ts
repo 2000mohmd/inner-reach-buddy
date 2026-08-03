@@ -97,6 +97,30 @@ export type Database = {
           },
         ]
       }
+      chat_rate_limits: {
+        Row: {
+          count: number
+          created_at: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       chat_threads: {
         Row: {
           created_at: string
@@ -186,6 +210,7 @@ export type Database = {
           message_id: string | null
           reviewed: boolean
           severity: string
+          source: string
           user_id: string
         }
         Insert: {
@@ -195,6 +220,7 @@ export type Database = {
           message_id?: string | null
           reviewed?: boolean
           severity?: string
+          source?: string
           user_id: string
         }
         Update: {
@@ -204,6 +230,7 @@ export type Database = {
           message_id?: string | null
           reviewed?: boolean
           severity?: string
+          source?: string
           user_id?: string
         }
         Relationships: [

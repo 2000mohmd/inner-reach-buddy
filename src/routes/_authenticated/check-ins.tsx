@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import {
   maxScore,
   type ScreenerType,
 } from "@/lib/screeners";
+import type { CrisisResponse } from "@/lib/crisis";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +49,7 @@ function CheckInsPage() {
 
   const [activeType, setActiveType] = useState<ScreenerType | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [crisis, setCrisis] = useState<CrisisResponse | null>(null);
 
   const save = useMutation({
     mutationFn: () =>
@@ -62,10 +64,46 @@ function CheckInsPage() {
       await queryClient.invalidateQueries({ queryKey: ["nudges"] });
       setActiveType(null);
       setAnswers([]);
+      if (result.crisisTriggered && result.crisis) {
+        setCrisis(result.crisis);
+        return;
+      }
       toast.success(`Saved — ${result.total_score} (${result.severity} range).`);
     },
     onError: () => toast.error("We couldn't save that. Please try again."),
   });
+
+  if (crisis) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-2xl space-y-6">
+          <div className="rounded-3xl border border-crisis/40 bg-crisis-surface p-6 text-crisis">
+            <h1 className="text-2xl">You don't have to sit with this alone</h1>
+            <p className="mt-3">{crisis.message}</p>
+          </div>
+          <ul className="space-y-3">
+            {crisis.resources.map((resource) => (
+              <li key={resource.name} className="surface-soft p-5">
+                <p className="font-semibold">{resource.name}</p>
+                <p className="mt-1 text-sm">{resource.contact}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{resource.detail}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-muted-foreground">{crisis.disclaimer}</p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild className="rounded-full px-6">
+              <Link to="/crisis">See all crisis resources</Link>
+            </Button>
+            <Button variant="ghost" className="rounded-full" onClick={() => setCrisis(null)}>
+              Back to check-ins
+            </Button>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
 
   if (isPending) {
     return (
