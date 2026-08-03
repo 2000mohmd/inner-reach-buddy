@@ -592,6 +592,41 @@ export type Database = {
         }
         Relationships: []
       }
+      thread_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          open_commitment_ids: string[] | null
+          summary_text: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          open_commitment_ids?: string[] | null
+          summary_text: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          open_commitment_ids?: string[] | null
+          summary_text?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_summaries_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           communication_preference: string | null

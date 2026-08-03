@@ -104,7 +104,7 @@ function OnboardingPage() {
 
   useEffect(() => {
     if (data?.profile?.onboarding_completed) {
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/chat", replace: true });
     }
     if (data?.profile?.preferred_name && !preferredName) {
       setPreferredName(data.profile.preferred_name);
@@ -135,7 +135,7 @@ function OnboardingPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       toast.success("You're all set. Welcome to Kalm.");
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/chat", replace: true });
     },
     onError: () => toast.error("We couldn't save your profile. Please try again."),
   });

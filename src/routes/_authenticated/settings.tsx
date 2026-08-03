@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { deleteMyData, getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/AppShell";
+import { YourDataSection } from "@/components/YourDataSection";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -125,7 +127,10 @@ function SettingsPage() {
             </div>
           </section>
 
+          <YourDataSection />
+
           <section className="surface-soft p-6">
+
             <h2 className="text-lg">Delete your data</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               This removes every check-in and clears your self-introduction. Your account stays, so

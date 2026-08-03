@@ -1,5 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMyProfile } from "@/lib/onboarding.functions";
+
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -58,7 +60,9 @@ function CrisisCard() {
 }
 
 function ChatPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fetchProfile = useServerFn(getMyProfile);
   const fetchThreads = useServerFn(listThreads);
   const fetchHistory = useServerFn(getThreadHistory);
   const newThread = useServerFn(createThread);
@@ -70,6 +74,21 @@ function ChatPage() {
   const [input, setInput] = useState("");
   const [actions, setActions] = useState<CompanionAction[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Chat is the default authenticated landing page, so it also carries the
+  // onboarding guard the old dashboard landing had.
+  const { data: profileData } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: () => fetchProfile(),
+  });
+
+  useEffect(() => {
+    if (profileData && !profileData.profile?.onboarding_completed) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [profileData, navigate]);
+
+
 
   const { data: threads } = useQuery({ queryKey: ["chat-threads"], queryFn: () => fetchThreads() });
 
@@ -228,6 +247,22 @@ function ChatPage() {
                         See support options
                       </Link>
                     )}
+                    {action.type === "screener_completed" && (
+                      <>
+                        <Link
+                          to="/insights"
+                          className="mt-1 inline-block rounded-full border border-border bg-card px-3 py-1.5 text-xs"
+                        >
+                          See your check-in history
+                        </Link>
+                        {action.crisis && (
+                          <div className="mt-3">
+                            <CrisisCard />
+                          </div>
+                        )}
+                      </>
+                    )}
+
                   </div>
                 ))}
               </div>

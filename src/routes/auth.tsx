@@ -44,7 +44,7 @@ function AuthPage() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) navigate({ to: "/chat", replace: true });
     });
   }, [navigate]);
 
@@ -71,7 +71,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword(parsed.data);
         if (error) throw error;
       }
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/chat", replace: true });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
@@ -90,7 +90,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/chat", replace: true });
   }
 
   return (
