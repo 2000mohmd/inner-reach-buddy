@@ -69,7 +69,7 @@ export async function ensureThreadSummary(
   const transcript = (messages.data ?? []).filter((entry) => entry.sender !== "system");
   if (transcript.length < 2) return;
 
-  const apiKey = process.env["ANTHROPIC_API_KEY"];
+  const apiKey = process.env["ANTHROPIC_API_KEY"] ?? process.env["claude"];
   if (!apiKey) return;
 
   const openCommitments = (commitments.data ?? []).filter((row) => row.status === "pending");
