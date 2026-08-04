@@ -218,6 +218,11 @@ async function callAnthropic(
   if (response.status === 401 || response.status === 403) {
     throw new Error("The AI companion isn't configured yet (invalid Anthropic key).");
   }
+  if (/identity verification/i.test(body)) {
+    throw new Error(
+      "Anthropic needs your organization to complete identity verification before this model can be used. Verify at console.anthropic.com → Settings, then try again.",
+    );
+  }
   throw new Error("The companion couldn't reply just now. Please try again.");
 }
 
