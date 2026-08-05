@@ -3,6 +3,11 @@
 // crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
 import {
+  callCompanionModel,
+  type LlmContentBlock,
+  type LlmMessage,
+} from "./llm-provider.server";
+import {
   CHAT_TOOLS,
   NUDGE_TOOLS,
   runCompanionTool,
@@ -192,7 +197,6 @@ export async function generateCompanionReply(
   userMessage: string,
   toolContext: ToolContext,
 ): Promise<CompanionReply> {
-  const apiKey = requireApiKey();
   const system = buildSystemPrompt(ctx);
 
   const messages: AnthropicMessage[] = [
@@ -207,7 +211,7 @@ export async function generateCompanionReply(
   let lastText = "";
 
   for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
-    const payload = await callAnthropic(apiKey, system, messages, CHAT_TOOLS);
+    const payload = await callAnthropic(system, messages, CHAT_TOOLS);
     const blocks = payload.content ?? [];
     const text = collectText(blocks);
     if (text) lastText = text;
@@ -252,7 +256,6 @@ export async function generateNudgeMessage(
   instruction: string,
   toolContext?: ToolContext,
 ): Promise<string> {
-  const apiKey = requireApiKey();
   const system = buildSystemPrompt(ctx);
 
   const messages: AnthropicMessage[] = [
@@ -272,7 +275,7 @@ export async function generateNudgeMessage(
   let lastText = "";
 
   for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
-    const payload = await callAnthropic(apiKey, system, messages, tools);
+    const payload = await callAnthropic(system, messages, tools);
     const blocks = payload.content ?? [];
     const text = collectText(blocks);
     if (text) lastText = text;
