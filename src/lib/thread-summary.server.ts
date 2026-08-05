@@ -69,55 +69,39 @@ export async function ensureThreadSummary(
   const transcript = (messages.data ?? []).filter((entry) => entry.sender !== "system");
   if (transcript.length < 2) return;
 
-  const apiKey = process.env["ANTHROPIC_API_KEY"] ?? process.env["claude"];
-  if (!apiKey) return;
-
   const openCommitments = (commitments.data ?? []).filter((row) => row.status === "pending");
   const commitmentLine = openCommitments.length
     ? `\n\nThings they committed to: ${openCommitments.map((row) => row.description).join("; ")}.`
     : "";
 
-  const body = {
-    model: SUMMARY_MODEL,
-    max_tokens: SUMMARY_MAX_TOKENS,
-    system: SUMMARY_SYSTEM,
-    messages: [
-      {
-        role: "user" as const,
-        content: `Conversation transcript:\n${transcript
-          .map((entry) => `${entry.sender === "assistant" ? "Companion" : "Person"}: ${entry.content}`)
-          .join("\n")}${commitmentLine}`,
-      },
-    ],
-  };
-
   let summaryText = "";
   try {
-    const response = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body),
+    const payload = await callCompanionModel({
+      model: SUMMARY_MODEL,
+      maxTokens: SUMMARY_MAX_TOKENS,
+      system: SUMMARY_SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Conversation transcript:\n${transcript
+            .map(
+              (entry) =>
+                `${entry.sender === "assistant" ? "Companion" : "Person"}: ${entry.content}`,
+            )
+            .join("\n")}${commitmentLine}`,
+        },
+      ],
     });
-    if (!response.ok) {
-      console.error("thread summary call failed", response.status, await response.text());
-      return;
-    }
-    const payload = (await response.json()) as {
-      content?: { type: string; text?: string }[];
-    };
-    summaryText = (payload.content ?? [])
-      .filter((block) => block.type === "text")
-      .map((block) => block.text ?? "")
+    summaryText = payload.content
+      .filter((block): block is { type: "text"; text: string } => block.type === "text")
+      .map((block) => block.text)
       .join("\n")
       .trim();
   } catch (error) {
-    console.error("thread summary call threw", error);
+    console.error("thread summary call failed", error);
     return;
   }
+
   if (!summaryText) return;
 
   const { error } = await supabase.from("thread_summaries").insert({
