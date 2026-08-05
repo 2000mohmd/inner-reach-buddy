@@ -3,11 +3,10 @@
 // not the full companion system prompt — and never touches crisis handling.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { callCompanionModel } from "./llm-provider.server";
 
 type Client = SupabaseClient<Database>;
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 const SUMMARY_MODEL = "claude-sonnet-5";
 const SUMMARY_MAX_TOKENS = 300;
 const SUMMARY_SYSTEM =
