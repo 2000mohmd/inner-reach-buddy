@@ -3,6 +3,11 @@
 // crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
 import {
+  callCompanionModel,
+  type LlmContentBlock,
+  type LlmMessage,
+} from "./llm-provider.server";
+import {
   CHAT_TOOLS,
   NUDGE_TOOLS,
   runCompanionTool,
@@ -11,8 +16,6 @@ import {
   type ToolContext,
 } from "./companion-tools.server";
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
 const MAX_TOOL_ITERATIONS = 3;
@@ -158,73 +161,19 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
   return lines.join("\n");
 }
 
-type AnthropicContentBlock =
-  | { type: "text"; text: string }
-  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-  | { type: "tool_result"; tool_use_id: string; content: string };
+type AnthropicContentBlock = LlmContentBlock;
+type AnthropicMessage = LlmMessage;
+type AnthropicResponse = { content?: AnthropicContentBlock[]; stop_reason?: string | null };
 
-type AnthropicMessage = { role: "user" | "assistant"; content: string | AnthropicContentBlock[] };
-
-type AnthropicResponse = {
-  content?: AnthropicContentBlock[];
-  stop_reason?: string;
-  error?: { type?: string; message?: string };
-};
-
-function requireApiKey() {
-  const apiKey = process.env["ANTHROPIC_API_KEY"] ?? process.env["claude"];
-  if (!apiKey) throw new Error("The AI companion isn't configured yet (missing Anthropic key).");
-  return apiKey;
-}
-
+/** Anthropic first, automatic Lovable AI fallback — same tools either way. */
 async function callAnthropic(
-  apiKey: string,
   system: string,
   messages: AnthropicMessage[],
   tools: AnthropicTool[],
 ): Promise<AnthropicResponse> {
-  const response = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system,
-      messages,
-      ...(tools.length ? { tools } : {}),
-    }),
-  });
-
-  if (response.ok) return (await response.json()) as AnthropicResponse;
-
-  const body = await response.text();
-  console.error("Anthropic API error", response.status, body);
-
-  // Anthropic signals throttling with 429 and overload with 529.
-  if (response.status === 429 || response.status === 529) {
-    throw new Error("Kalm is a little busy right now. Please try again in a moment.");
-  }
-  // Anthropic reports exhausted balance as a 400 billing error rather than 402.
-  if (
-    response.status === 402 ||
-    (response.status === 400 && /credit balance|billing/i.test(body))
-  ) {
-    throw new Error("The AI companion is out of credits. Please top up to keep chatting.");
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new Error("The AI companion isn't configured yet (invalid Anthropic key).");
-  }
-  if (/identity verification/i.test(body)) {
-    throw new Error(
-      "Anthropic needs your organization to complete identity verification before this model can be used. Verify at console.anthropic.com → Settings, then try again.",
-    );
-  }
-  throw new Error("The companion couldn't reply just now. Please try again.");
+  return callCompanionModel({ model: MODEL, maxTokens: MAX_TOKENS, system, messages, tools });
 }
+
 
 function collectText(blocks: AnthropicContentBlock[] | undefined) {
   return (blocks ?? [])
@@ -246,7 +195,6 @@ export async function generateCompanionReply(
   userMessage: string,
   toolContext: ToolContext,
 ): Promise<CompanionReply> {
-  const apiKey = requireApiKey();
   const system = buildSystemPrompt(ctx);
 
   const messages: AnthropicMessage[] = [
@@ -261,7 +209,7 @@ export async function generateCompanionReply(
   let lastText = "";
 
   for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
-    const payload = await callAnthropic(apiKey, system, messages, CHAT_TOOLS);
+    const payload = await callAnthropic(system, messages, CHAT_TOOLS);
     const blocks = payload.content ?? [];
     const text = collectText(blocks);
     if (text) lastText = text;
@@ -306,7 +254,6 @@ export async function generateNudgeMessage(
   instruction: string,
   toolContext?: ToolContext,
 ): Promise<string> {
-  const apiKey = requireApiKey();
   const system = buildSystemPrompt(ctx);
 
   const messages: AnthropicMessage[] = [
@@ -326,7 +273,7 @@ export async function generateNudgeMessage(
   let lastText = "";
 
   for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
-    const payload = await callAnthropic(apiKey, system, messages, tools);
+    const payload = await callAnthropic(system, messages, tools);
     const blocks = payload.content ?? [];
     const text = collectText(blocks);
     if (text) lastText = text;
