@@ -9,13 +9,17 @@ import {
   ArrowUp,
   Leaf,
   LifeBuoy,
+  LineChart,
   Loader2,
+  LogOut,
+  MessageCircle,
   Mic,
-  PanelLeftClose,
-  PanelLeftOpen,
+  PanelLeft,
   Plus,
+  Settings,
   Square,
   Trash2,
+  Wind,
 } from "lucide-react";
 import {
   createThread,
@@ -28,10 +32,9 @@ import { transcribeVoiceNote } from "@/lib/voice.functions";
 import type { CompanionAction } from "@/lib/companion-tools.server";
 import { CRISIS_RESOURCES, CRISIS_DISCLAIMER } from "@/lib/crisis";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
-import { AppShell } from "@/components/AppShell";
 import { DailyPromptCard } from "@/components/DailyPromptCard";
 import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
-import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -52,6 +55,13 @@ export const Route = createFileRoute("/_authenticated/chat")({
   }),
   component: ChatPage,
 });
+
+const NAV = [
+  { to: "/chat", label: "Companion", icon: MessageCircle },
+  { to: "/insights", label: "Insights", icon: LineChart },
+  { to: "/exercises", label: "Exercises", icon: Wind },
+  { to: "/settings", label: "Profile", icon: Settings },
+] as const;
 
 function CrisisCard() {
   return (
@@ -158,6 +168,7 @@ function ChatPage() {
   }, [threadId, threads]);
 
   const messages = history?.messages ?? [];
+  const activeThread = (threads ?? []).find((thread) => thread.id === threadId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -215,6 +226,13 @@ function ChatPage() {
     },
   });
 
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   function submit(text: string) {
     const value = text.trim();
     if (!value || mutation.isPending) return;
@@ -224,191 +242,242 @@ function ChatPage() {
 
   const busy = mutation.isPending || voice.isPending;
   const empty = messages.length === 0;
+  const preferredName = profileData?.profile?.preferred_name;
 
   return (
-    <AppShell>
-      <div className="flex min-h-[calc(100vh-14rem)] gap-6">
-        {/* Conversation rail — quiet, collapsible, like Claude's sidebar. */}
-        {sidebarOpen && (
-          <aside className="sticky top-0 h-fit hidden w-56 shrink-0 flex-col gap-2 self-start md:flex">
-            <Button
-              variant="outline"
-              className="w-full justify-start rounded-xl"
-              onClick={() => start.mutate()}
-              disabled={start.isPending}
-            >
-              <Plus className="size-4" aria-hidden /> New chat
-            </Button>
-            <p className="px-2 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Recents
-            </p>
-            <ul className="space-y-0.5">
-              {(threads ?? []).map((thread) => (
-                <li key={thread.id} className="group flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => setThreadId(thread.id)}
-                    className={`flex-1 truncate rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
-                      threadId === thread.id
-                        ? "bg-secondary text-secondary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {thread.title}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Delete conversation"
-                    onClick={() => drop.mutate(thread.id)}
-                    className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-                  >
-                    <Trash2 className="size-3.5" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </aside>
-        )}
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Full-height rail, Claude-style: brand, new chat, nav, recents, account. */}
+      <aside
+        className={`${
+          sidebarOpen ? "w-64 border-r" : "w-0 border-r-0"
+        } hidden shrink-0 flex-col overflow-hidden border-sidebar-border bg-sidebar transition-[width] duration-300 md:flex`}
+      >
+        <div className="flex items-center justify-between px-4 pt-4">
+          <Link to="/chat" className="flex items-center gap-2 font-display text-xl">
+            <Leaf className="size-5 text-primary" aria-hidden />
+            Kalm
+          </Link>
+          <button
+            type="button"
+            aria-label="Hide sidebar"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <PanelLeft className="size-4" aria-hidden />
+          </button>
+        </div>
 
-        <section className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-2 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((open) => !open)}
-              aria-label={sidebarOpen ? "Hide conversations" : "Show conversations"}
-              className="hidden rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:block"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="size-4" aria-hidden />
-              ) : (
-                <PanelLeftOpen className="size-4" aria-hidden />
-              )}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              Support, not therapy — Kalm remembers your check-ins.
+        <div className="px-2 pt-4">
+          <button
+            type="button"
+            onClick={() => start.mutate()}
+            disabled={start.isPending}
+            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent disabled:opacity-50"
+          >
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Plus className="size-3.5" aria-hidden />
             </span>
-          </div>
+            New chat
+          </button>
+          {NAV.filter((item) => item.to !== "/chat").map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            >
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </Link>
+          ))}
+          <Link
+            to="/crisis"
+            className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-crisis hover:bg-crisis-surface"
+          >
+            <LifeBuoy className="size-4" aria-hidden />
+            Immediate support
+          </Link>
+        </div>
 
-          {/* Transcript: assistant text sits plain on the page, user text in a soft bubble. */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-2xl space-y-7 pb-6">
-              {empty && (
-                <div className="flex flex-col items-center gap-4 py-16 text-center">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary">
-                    <Leaf className="size-6 text-primary" aria-hidden />
-                  </span>
-                  <h1 className="font-display text-3xl">
-                    {profileData?.profile?.preferred_name
-                      ? `Hi ${profileData.profile.preferred_name}.`
-                      : "Hi there."}
-                  </h1>
-                  <p className="max-w-sm text-sm text-muted-foreground">
-                    What's on your mind right now? Type it, or hold the mic and just talk.
-                  </p>
-                  <div className="w-full max-w-md pt-4 text-left">
-                    <DailyPromptCard />
-                  </div>
+        <p className="px-4 pb-1 pt-6 text-xs font-medium text-muted-foreground">Recents</p>
+        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+          {(threads ?? []).map((thread) => (
+            <li key={thread.id} className="group flex items-center">
+              <button
+                type="button"
+                onClick={() => setThreadId(thread.id)}
+                className={`flex-1 truncate rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                  threadId === thread.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                }`}
+              >
+                {thread.title}
+              </button>
+              <button
+                type="button"
+                aria-label="Delete conversation"
+                onClick={() => drop.mutate(thread.id)}
+                className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-2.5 border-t border-sidebar-border px-3 py-3">
+          <span className="flex size-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+            {(preferredName ?? "K").slice(0, 2).toUpperCase()}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm">{preferredName ?? "Your account"}</span>
+          <button
+            type="button"
+            aria-label="Sign out"
+            onClick={handleSignOut}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <LogOut className="size-4" aria-hidden />
+          </button>
+        </div>
+      </aside>
+
+      <section className="flex min-w-0 flex-1 flex-col">
+        {/* Thread header, mirroring Claude's title bar. */}
+        <header className="flex items-center gap-3 border-b border-border/70 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-label={sidebarOpen ? "Hide conversations" : "Show conversations"}
+            className={`rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground ${
+              sidebarOpen ? "md:hidden" : ""
+            }`}
+          >
+            <PanelLeft className="size-4" aria-hidden />
+          </button>
+          <h1 className="min-w-0 flex-1 truncate font-display text-base">
+            {activeThread?.title ?? "New conversation"}
+          </h1>
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Support, not therapy
+          </span>
+        </header>
+
+        {/* Transcript: assistant text sits plain on the page, user text in a soft bubble. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4">
+          <div className="mx-auto w-full max-w-2xl space-y-7 py-6">
+            {empty && (
+              <div className="flex flex-col items-center gap-4 py-16 text-center">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary">
+                  <Leaf className="size-6 text-primary" aria-hidden />
+                </span>
+                <h2 className="font-display text-3xl">
+                  {preferredName ? `Hi ${preferredName}.` : "Hi there."}
+                </h2>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  What's on your mind right now? Type it, or hold the mic and just talk.
+                </p>
+                <div className="w-full max-w-md pt-4 text-left">
+                  <DailyPromptCard />
                 </div>
-              )}
+              </div>
+            )}
 
-              {messages.map((message) =>
-                message.content_type === "exercise_widget" ? (
-                  <div key={message.id} className="ml-10">
-                    <InlineExerciseWidget
-                      slug={message.exercise_slug ?? ""}
-                      threadId={threadId}
-                    />
-                  </div>
-                ) : message.content_type === "activity" ? (
-                  <div
-                    key={message.id}
-                    className="mx-auto w-fit rounded-full border border-border bg-muted/50 px-3.5 py-1.5 text-xs text-muted-foreground"
-                  >
+            {messages.map((message) =>
+              message.content_type === "exercise_widget" ? (
+                <div key={message.id} className="ml-10">
+                  <InlineExerciseWidget slug={message.exercise_slug ?? ""} threadId={threadId} />
+                </div>
+              ) : message.content_type === "activity" ? (
+                <div
+                  key={message.id}
+                  className="mx-auto w-fit rounded-full border border-border bg-muted/50 px-3.5 py-1.5 text-xs text-muted-foreground"
+                >
+                  {message.content}
+                </div>
+              ) : message.sender === "system" ? (
+                <div key={message.id} className="space-y-3">
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <CrisisCard />
+                </div>
+              ) : message.sender === "user" ? (
+                <div key={message.id} className="flex justify-end">
+                  <p className="max-w-[85%] whitespace-pre-line rounded-2xl bg-secondary px-4 py-2.5 text-sm leading-relaxed text-secondary-foreground">
                     {message.content}
-                  </div>
-                ) : message.sender === "system" ? (
-                  <div key={message.id} className="space-y-3">
-                    <p className="text-sm leading-relaxed">{message.content}</p>
-                    <CrisisCard />
-                  </div>
-                ) : message.sender === "user" ? (
-                  <div key={message.id} className="flex justify-end">
-                    <p className="max-w-[85%] whitespace-pre-line rounded-2xl bg-secondary px-4 py-2.5 text-sm leading-relaxed text-secondary-foreground">
-                      {message.content}
-                    </p>
-                  </div>
-                ) : (
-                  <div key={message.id} className="flex gap-3">
-                    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/12">
-                      <Leaf className="size-3.5 text-primary" aria-hidden />
-                    </span>
-                    <p className="min-w-0 flex-1 whitespace-pre-line text-[0.95rem] leading-7">
-                      {message.content}
-                    </p>
-                  </div>
-                ),
-              )}
+                  </p>
+                </div>
+              ) : (
+                <div key={message.id} className="flex gap-3">
+                  <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/12">
+                    <Leaf className="size-3.5 text-primary" aria-hidden />
+                  </span>
+                  <p className="min-w-0 flex-1 whitespace-pre-line text-[0.95rem] leading-7">
+                    {message.content}
+                  </p>
+                </div>
+              ),
+            )}
 
-              {actions.length > 0 && (
-                <div className="ml-10 space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                  {actions.map((action, index) => (
-                    <div key={`${action.type}-${index}`} className="text-sm">
-                      <p>{action.summary}</p>
-                      {action.type === "exercise_launch" && (
+            {actions.length > 0 && (
+              <div className="ml-10 space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                {actions.map((action, index) => (
+                  <div key={`${action.type}-${index}`} className="text-sm">
+                    <p>{action.summary}</p>
+                    {action.type === "exercise_launch" && (
+                      <Link
+                        to="/exercises"
+                        className="mt-1 inline-block rounded-full bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+                      >
+                        Open {action.title}
+                      </Link>
+                    )}
+                    {action.type === "stepup_suggested" && (
+                      <Link
+                        to="/care"
+                        className="mt-1 inline-block rounded-full border border-border bg-card px-3 py-1.5 text-xs"
+                      >
+                        See support options
+                      </Link>
+                    )}
+                    {action.type === "screener_completed" && (
+                      <>
                         <Link
-                          to="/exercises"
-                          className="mt-1 inline-block rounded-full bg-primary px-3 py-1.5 text-xs text-primary-foreground"
-                        >
-                          Open {action.title}
-                        </Link>
-                      )}
-                      {action.type === "stepup_suggested" && (
-                        <Link
-                          to="/care"
+                          to="/insights"
                           className="mt-1 inline-block rounded-full border border-border bg-card px-3 py-1.5 text-xs"
                         >
-                          See support options
+                          See your check-in history
                         </Link>
-                      )}
-                      {action.type === "screener_completed" && (
-                        <>
-                          <Link
-                            to="/insights"
-                            className="mt-1 inline-block rounded-full border border-border bg-card px-3 py-1.5 text-xs"
-                          >
-                            See your check-in history
-                          </Link>
-                          {action.crisis && (
-                            <div className="mt-3">
-                              <CrisisCard />
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        {action.crisis && (
+                          <div className="mt-3">
+                            <CrisisCard />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-              {busy && (
-                <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                  {voice.isPending ? "Listening to your note…" : "Kalm is thinking…"}
-                </p>
-              )}
-              <div ref={bottomRef} />
-            </div>
+            {busy && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                {voice.isPending ? "Listening to your note…" : "Kalm is thinking…"}
+              </p>
+            )}
+            <div ref={bottomRef} />
           </div>
+        </div>
 
-          {/* Composer: single rounded card with mic + send inside, Claude-style. */}
-          <div className="sticky bottom-0 mx-auto w-full max-w-2xl bg-background pt-2">
+        {/* Composer: single rounded card with mic + send inside, Claude-style. */}
+        <div className="shrink-0 px-4 pb-3">
+          <div className="mx-auto w-full max-w-2xl">
             <div className="rounded-3xl border border-border bg-card p-2 shadow-sm focus-within:border-primary/40">
               <textarea
                 ref={inputRef}
                 rows={2}
                 maxLength={4000}
                 value={input}
-                placeholder="Message Kalm…"
+                placeholder="Write a message…"
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
@@ -454,7 +523,7 @@ function ChatPage() {
             </div>
 
             {empty && (
-              <div className="mt-3 flex flex-wrap justify-center gap-2 pb-1">
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -471,9 +540,13 @@ function ChatPage() {
                 ))}
               </div>
             )}
+
+            <p className="pt-2 text-center text-[0.7rem] text-muted-foreground">
+              Kalm is an AI companion, not a therapist. In a crisis, use immediate support.
+            </p>
           </div>
-        </section>
-      </div>
-    </AppShell>
+        </div>
+      </section>
+    </div>
   );
 }
