@@ -29,6 +29,8 @@ import type { CompanionAction } from "@/lib/companion-tools.server";
 import { CRISIS_RESOURCES, CRISIS_DISCLAIMER } from "@/lib/crisis";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { AppShell } from "@/components/AppShell";
+import { DailyPromptCard } from "@/components/DailyPromptCard";
+import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -303,11 +305,28 @@ function ChatPage() {
                   <p className="max-w-sm text-sm text-muted-foreground">
                     What's on your mind right now? Type it, or hold the mic and just talk.
                   </p>
+                  <div className="w-full max-w-md pt-4 text-left">
+                    <DailyPromptCard />
+                  </div>
                 </div>
               )}
 
               {messages.map((message) =>
-                message.sender === "system" ? (
+                message.content_type === "exercise_widget" ? (
+                  <div key={message.id} className="ml-10">
+                    <InlineExerciseWidget
+                      slug={message.exercise_slug ?? ""}
+                      threadId={threadId}
+                    />
+                  </div>
+                ) : message.content_type === "activity" ? (
+                  <div
+                    key={message.id}
+                    className="mx-auto w-fit rounded-full border border-border bg-muted/50 px-3.5 py-1.5 text-xs text-muted-foreground"
+                  >
+                    {message.content}
+                  </div>
+                ) : message.sender === "system" ? (
                   <div key={message.id} className="space-y-3">
                     <p className="text-sm leading-relaxed">{message.content}</p>
                     <CrisisCard />
