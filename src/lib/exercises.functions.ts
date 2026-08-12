@@ -8,7 +8,10 @@ const CompleteInput = z.object({
   mood_after: z.number().int().min(1).max(5).nullish(),
   response_data: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   log_mood_after: z.boolean().default(true),
+  /** When completed from an inline chat widget, keep it in that thread. */
+  thread_id: z.string().uuid().nullish(),
 });
+
 
 export const listExercises = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
