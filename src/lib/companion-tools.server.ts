@@ -9,6 +9,7 @@ import {
   SCREENER_FRAMING,
   type ScreenerType,
 } from "./screeners";
+import { isGuidedWidgetCategory } from "./exercise-types";
 
 
 type Client = SupabaseClient<Database>;
@@ -19,6 +20,7 @@ export type CompanionAction =
   | { type: "commitment_created"; id: string; description: string; summary: string }
   | { type: "exercise_launch"; slug: string; title: string; minutes: number; summary: string }
   | { type: "exercise_completed"; slug: string; title: string; summary: string }
+  | { type: "exercise_widget"; slug: string; title: string; summary: string }
   | {
       type: "screener_completed";
       screener_type: "phq9" | "gad7";
@@ -113,6 +115,17 @@ const GET_EXERCISE_STEPS: AnthropicTool = {
   },
 };
 
+const SHOW_EXERCISE_WIDGET: AnthropicTool = {
+  name: "show_exercise_widget",
+  description:
+    "Show a self-contained interactive guided player inline in the chat for a timed or passive exercise — grounding or breathing only (slugs: grounding-54321, box-breathing, teen-grounding-54321). Use this INSTEAD of get_exercise_steps for those, because they need no back-and-forth. The widget handles the steps, the timing and the before/after mood check itself.",
+  input_schema: {
+    type: "object",
+    properties: { exercise_slug: { type: "string" } },
+    required: ["exercise_slug"],
+  },
+};
+
 const COMPLETE_EXERCISE_IN_CHAT: AnthropicTool = {
   name: "complete_exercise_in_chat",
   description:
@@ -163,6 +176,7 @@ export const CHAT_TOOLS: AnthropicTool[] = [
   CREATE_COMMITMENT,
   GET_EFFECTIVENESS_INSIGHTS,
   GET_EXERCISE_STEPS,
+  SHOW_EXERCISE_WIDGET,
   COMPLETE_EXERCISE_IN_CHAT,
   GET_SCREENER_QUESTIONS,
   SUBMIT_SCREENER_IN_CHAT,
@@ -344,6 +358,45 @@ export async function runCompanionTool(
         "",
         "Walk the person through these steps ONE AT A TIME in the conversation, in your own words, waiting for their reply before moving to the next step. Do not paste all steps into one message. When you reach the end, use complete_exercise_in_chat to record it.",
       ].join("\n"),
+    };
+  }
+
+  if (name === "show_exercise_widget") {
+    const slug = String(input["exercise_slug"] ?? "").trim();
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("slug, title, category, intro_text")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) return { result: `Could not look up that exercise: ${error.message}` };
+    if (!data) return { result: `No exercise exists with slug "${slug}". Do not offer it.` };
+    if (!isGuidedWidgetCategory(data.category)) {
+      return {
+        result: `${data.title} is a ${data.category} exercise, which needs a real reply at each step. Use get_exercise_steps and walk through it conversationally instead.`,
+      };
+    }
+    if (!ctx.threadId) {
+      return { result: "There is no active conversation to show the widget in. Use get_exercise_steps instead." };
+    }
+
+    const inserted = await supabase.from("chat_messages").insert({
+      thread_id: ctx.threadId,
+      user_id: userId,
+      sender: "system",
+      content_type: "exercise_widget",
+      exercise_slug: data.slug,
+      content: data.title,
+    });
+    if (inserted.error) return { result: `Could not show the widget: ${inserted.error.message}` };
+
+    return {
+      result: `The guided exercise "${data.title}" is now showing inline below your message — just say something brief and warm introducing it (one sentence), you do not need to narrate the steps yourself.`,
+      action: {
+        type: "exercise_widget",
+        slug: data.slug,
+        title: data.title,
+        summary: `Opened ${data.title} right here.`,
+      },
     };
   }
 
