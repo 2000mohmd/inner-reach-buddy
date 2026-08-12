@@ -113,3 +113,18 @@ export const completeExercise = createServerFn({ method: "POST" })
     return { ok: true, id: saved.data.id, thread_id: chatThreadId };
 
   });
+
+/** Used by the inline chat widget to render the shared step player. */
+export const getExerciseBySlug = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: exercise, error } = await supabase
+      .from("exercises")
+      .select("id, slug, title, category, intro_text, steps, estimated_minutes")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (error) throw error;
+    return exercise;
+  });
