@@ -59,7 +59,9 @@ export type Database = {
       chat_messages: {
         Row: {
           content: string
+          content_type: string
           created_at: string
+          exercise_slug: string | null
           flagged_crisis: boolean
           id: string
           quick_action: string | null
@@ -69,7 +71,9 @@ export type Database = {
         }
         Insert: {
           content: string
+          content_type?: string
           created_at?: string
+          exercise_slug?: string | null
           flagged_crisis?: boolean
           id?: string
           quick_action?: string | null
@@ -79,7 +83,9 @@ export type Database = {
         }
         Update: {
           content?: string
+          content_type?: string
           created_at?: string
+          exercise_slug?: string | null
           flagged_crisis?: boolean
           id?: string
           quick_action?: string | null
@@ -242,6 +248,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_prompt_responses: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_id: string
+          responded_at: string
+          response_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_id: string
+          responded_at?: string
+          response_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_id?: string
+          responded_at?: string
+          response_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_prompt_responses_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "daily_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_prompts: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          prompt_text: string
+          prompt_type: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          prompt_text: string
+          prompt_type?: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          prompt_text?: string
+          prompt_type?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       effectiveness_insights: {
         Row: {
