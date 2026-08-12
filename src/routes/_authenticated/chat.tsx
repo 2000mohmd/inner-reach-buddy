@@ -230,7 +230,7 @@ function ChatPage() {
       <div className="flex min-h-[calc(100vh-14rem)] gap-6">
         {/* Conversation rail — quiet, collapsible, like Claude's sidebar. */}
         {sidebarOpen && (
-          <aside className="hidden w-56 shrink-0 flex-col gap-2 md:flex">
+          <aside className="sticky top-0 h-fit hidden w-56 shrink-0 flex-col gap-2 self-start md:flex">
             <Button
               variant="outline"
               className="w-full justify-start rounded-xl"
