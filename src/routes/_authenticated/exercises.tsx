@@ -3,18 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Timer } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import { completeExercise, listExercises } from "@/lib/exercises.functions";
-import {
-  CATEGORY_LABELS,
-  parseSteps,
-  type ExerciseCategory,
-  type ExerciseStep,
-} from "@/lib/exercise-types";
+import { CATEGORY_LABELS, parseSteps, type ExerciseCategory } from "@/lib/exercise-types";
+import { ExerciseStepPlayer } from "@/components/ExerciseStepPlayer";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/exercises")({
@@ -38,86 +32,6 @@ export const Route = createFileRoute("/_authenticated/exercises")({
   }),
   component: ExercisesPage,
 });
-
-const MOODS = [
-  { score: 1, label: "Really low" },
-  { score: 2, label: "Low" },
-  { score: 3, label: "Okay" },
-  { score: 4, label: "Good" },
-  { score: 5, label: "Great" },
-];
-
-function MoodRow({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (score: number) => void;
-}) {
-  return (
-    <div className="grid grid-cols-5 gap-2">
-      {MOODS.map((mood) => (
-        <button
-          key={mood.score}
-          type="button"
-          onClick={() => onChange(mood.score)}
-          className={`rounded-2xl border px-1 py-3 text-xs ${
-            value === mood.score
-              ? "border-primary bg-secondary font-semibold"
-              : "border-border bg-card hover:bg-muted"
-          }`}
-        >
-          {mood.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function StepField({
-  step,
-  value,
-  onChange,
-}: {
-  step: ExerciseStep;
-  value: string;
-  onChange: (next: string) => void;
-}) {
-  if (step.input === "none") return null;
-  if (step.input === "scale_1_10") {
-    return (
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 10 }, (_, index) => index + 1).map((number) => (
-          <button
-            key={number}
-            type="button"
-            onClick={() => onChange(String(number))}
-            className={`size-10 rounded-full border text-sm ${
-              value === String(number)
-                ? "border-primary bg-secondary font-semibold"
-                : "border-border bg-card hover:bg-muted"
-            }`}
-          >
-            {number}
-          </button>
-        ))}
-      </div>
-    );
-  }
-  if (step.input === "text") {
-    return (
-      <Input value={value} maxLength={300} onChange={(event) => onChange(event.target.value)} />
-    );
-  }
-  return (
-    <Textarea
-      rows={4}
-      maxLength={2000}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    />
-  );
-}
 
 function ExercisesPage() {
   const queryClient = useQueryClient();
