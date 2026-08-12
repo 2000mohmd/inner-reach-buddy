@@ -71,5 +71,45 @@ export const completeExercise = createServerFn({ method: "POST" })
       if (logged.error) console.error("mood log after exercise failed", logged.error);
     }
 
-    return { ok: true, id: saved.data.id };
+    // Completions shouldn't dead-end on the Exercises page: drop a compact
+    // activity card into the person's active conversation, and — only when
+    // there's a mood delta worth reacting to — a short companion reply.
+    let chatThreadId: string | null = null;
+    try {
+      const [exercise, profile] = await Promise.all([
+        supabase
+          .from("exercises")
+          .select("title, category")
+          .eq("id", data.exercise_id)
+          .maybeSingle(),
+        supabase.from("profiles").select("preferred_name").eq("id", userId).maybeSingle(),
+      ]);
+
+      const title = exercise.data?.title ?? "an exercise";
+      const hasMood =
+        typeof data.mood_before === "number" && typeof data.mood_after === "number";
+      const label = hasMood
+        ? `Completed ${title} · mood ${data.mood_before} → ${data.mood_after}`
+        : `Completed ${title}`;
+
+      const { postActivityToChat } = await import("./companion-reaction.server");
+      const posted = await postActivityToChat({
+        supabase,
+        userId,
+        threadId: data.thread_id ?? null,
+        activityLabel: label,
+        preferredName: profile.data?.preferred_name ?? null,
+        reactionInstruction: hasMood
+          ? `They just finished the "${title}" exercise${
+              exercise.data?.category ? ` (a ${exercise.data.category} practice)` : ""
+            } on their own. Their mood went from ${data.mood_before}/5 before to ${data.mood_after}/5 after. React warmly and specifically to that shift — name it plainly (an improvement, a dip, or holding steady) without overclaiming what it means.`
+          : null,
+      });
+      chatThreadId = posted.thread_id;
+    } catch (error) {
+      console.error("exercise activity post failed", error);
+    }
+
+    return { ok: true, id: saved.data.id, thread_id: chatThreadId };
+
   });
