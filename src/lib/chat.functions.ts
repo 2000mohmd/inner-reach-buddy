@@ -54,7 +54,7 @@ export const getThreadHistory = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("chat_messages")
-        .select("id, sender, content, flagged_crisis, quick_action, created_at")
+        .select("id, sender, content, content_type, exercise_slug, flagged_crisis, quick_action, created_at")
         .eq("thread_id", data.thread_id)
         .eq("user_id", userId)
         .order("created_at", { ascending: true }),
@@ -225,8 +225,10 @@ export const sendMessage = createServerFn({ method: "POST" })
     // --- Normal path: assemble personalized context, then call the model ---
 
     const { getScreenersDue } = await import("./screeners.server");
+    const { computeEngagementStreak } = await import("./streak.server");
 
-    const [profile, intro, moods, history, pastSummaries, screeners] = await Promise.all([
+    const [profile, intro, moods, history, pastSummaries, screeners, streakDays, dailyPrompts] =
+      await Promise.all([
       supabase
         .from("profiles")
         .select("preferred_name, account_type, ai_context_consent")
@@ -255,6 +257,13 @@ export const sendMessage = createServerFn({ method: "POST" })
         .limit(HISTORY_LIMIT),
       fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
       getScreenersDue(supabase, userId).catch(() => []),
+      computeEngagementStreak(supabase, userId).catch(() => 0),
+      supabase
+        .from("daily_prompt_responses")
+        .select("response_text, responded_at, daily_prompts(prompt_text)")
+        .eq("user_id", userId)
+        .order("responded_at", { ascending: false })
+        .limit(3),
     ]);
 
     const consented = profile.data?.ai_context_consent !== false;
@@ -277,6 +286,14 @@ export const sendMessage = createServerFn({ method: "POST" })
           .map((entry) => ({ sender: entry.sender, content: entry.content })),
         quickAction: data.quick_action ?? null,
         pastSummaries: consented ? pastSummaries : [],
+        streakDays,
+        dailyPromptResponses: consented
+          ? (dailyPrompts.data ?? []).map((row) => ({
+              prompt: (row.daily_prompts as { prompt_text: string } | null)?.prompt_text ?? "",
+              response: row.response_text,
+              when: row.responded_at.slice(0, 10),
+            }))
+          : [],
         screenersDue: screeners.map((entry) => ({
           label: entry.label,
           due: entry.due,
