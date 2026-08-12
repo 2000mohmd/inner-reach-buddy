@@ -44,11 +44,6 @@ function ExercisesPage() {
   });
 
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [moodBefore, setMoodBefore] = useState<number | null>(null);
-  const [moodAfter, setMoodAfter] = useState<number | null>(null);
-  const [done, setDone] = useState(false);
 
   const active = useMemo(
     () => data?.exercises.find((exercise) => exercise.id === activeId) ?? null,
@@ -58,33 +53,31 @@ function ExercisesPage() {
 
   function reset() {
     setActiveId(null);
-    setStepIndex(0);
-    setAnswers({});
-    setMoodBefore(null);
-    setMoodAfter(null);
-    setDone(false);
   }
 
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (payload: {
+      moodBefore: number | null;
+      moodAfter: number | null;
+      answers: Record<string, string>;
+    }) =>
       finish({
         data: {
           exercise_id: activeId as string,
-          mood_before: moodBefore,
-          mood_after: moodAfter,
-          response_data: answers,
+          mood_before: payload.moodBefore,
+          mood_after: payload.moodAfter,
+          response_data: payload.answers,
           log_mood_after: true,
         },
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["exercises"] });
       await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      toast.success("Saved. Thanks for taking the time.");
+      toast.success("Saved. Your companion has it too.");
       reset();
     },
     onError: () => toast.error("We couldn't save that. Please try again."),
   });
-
   if (isPending) {
     return (
       <AppShell>
@@ -97,7 +90,6 @@ function ExercisesPage() {
   }
 
   if (active) {
-    const step = steps[stepIndex];
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl space-y-6">
@@ -110,87 +102,14 @@ function ExercisesPage() {
             <p className="mt-2 text-muted-foreground">{active.intro_text}</p>
           </header>
 
-          {moodBefore === null && !done ? (
-            <section className="surface-soft space-y-4 p-6">
-              <h2 className="text-lg">Before we start — how are you feeling?</h2>
-              <MoodRow value={moodBefore} onChange={setMoodBefore} />
-              <button
-                type="button"
-                className="text-sm text-muted-foreground underline underline-offset-4"
-                onClick={() => setMoodBefore(3)}
-              >
-                Skip this
-              </button>
-            </section>
-          ) : done ? (
-            <section className="surface-soft space-y-4 p-6">
-              <h2 className="text-lg">And how are you feeling now?</h2>
-              <p className="text-sm text-muted-foreground">
-                Optional — this feeds into your mood trend so patterns show up over time.
-              </p>
-              <MoodRow value={moodAfter} onChange={setMoodAfter} />
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  className="rounded-full px-6"
-                  disabled={save.isPending}
-                  onClick={() => save.mutate()}
-                >
-                  {save.isPending ? "Saving…" : "Finish"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="rounded-full"
-                  disabled={save.isPending}
-                  onClick={() => {
-                    setMoodAfter(null);
-                    save.mutate();
-                  }}
-                >
-                  Finish without mood check
-                </Button>
-              </div>
-            </section>
-          ) : (
-            step && (
-              <section className="surface-soft space-y-5 p-6">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Step {stepIndex + 1} of {steps.length}
-                </p>
-                <p className="text-lg">{step.prompt}</p>
-                {step.timer_seconds ? (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Timer className="size-4" aria-hidden /> Take about {step.timer_seconds} seconds
-                    here.
-                  </p>
-                ) : null}
-                <StepField
-                  step={step}
-                  value={answers[step.key] ?? ""}
-                  onChange={(next) => setAnswers((prev) => ({ ...prev, [step.key]: next }))}
-                />
-                <div className="flex gap-3">
-                  {stepIndex > 0 && (
-                    <Button
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => setStepIndex((index) => index - 1)}
-                    >
-                      Back
-                    </Button>
-                  )}
-                  <Button
-                    className="rounded-full px-6"
-                    onClick={() => {
-                      if (stepIndex + 1 < steps.length) setStepIndex((index) => index + 1);
-                      else setDone(true);
-                    }}
-                  >
-                    {stepIndex + 1 < steps.length ? "Next" : "Done"}
-                  </Button>
-                </div>
-              </section>
-            )
-          )}
+          <ExerciseStepPlayer
+            key={active.id}
+            steps={steps}
+            saving={save.isPending}
+            onComplete={(moodBefore, moodAfter, answers) =>
+              save.mutate({ moodBefore, moodAfter, answers })
+            }
+          />
         </div>
       </AppShell>
     );
