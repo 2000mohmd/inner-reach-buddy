@@ -246,100 +246,40 @@ function ChatPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      {/* Full-height rail, Claude-style: brand, new chat, nav, recents, account. */}
-      <aside
-        className={`${
-          sidebarOpen ? "w-64 border-r" : "w-0 border-r-0"
-        } hidden shrink-0 flex-col overflow-hidden border-sidebar-border bg-sidebar transition-[width] duration-300 md:flex`}
-      >
-        <div className="flex items-center justify-between px-4 pt-4">
-          <Link to="/chat" className="flex items-center gap-2 font-display text-xl">
-            <Leaf className="size-5 text-primary" aria-hidden />
-            Kalm
-          </Link>
-          <button
-            type="button"
-            aria-label="Hide sidebar"
-            onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          >
-            <PanelLeft className="size-4" aria-hidden />
-          </button>
-        </div>
+      <AppSidebar
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen((open) => !open)}
+        onNewChat={() => start.mutate()}
+        newChatDisabled={start.isPending}
+        recents={
+          <ul className="space-y-0.5">
+            {(threads ?? []).map((thread) => (
+              <li key={thread.id} className="group flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setThreadId(thread.id)}
+                  className={`flex-1 truncate rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                    threadId === thread.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  }`}
+                >
+                  {thread.title}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete conversation"
+                  onClick={() => drop.mutate(thread.id)}
+                  className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        }
+      />
 
-        <div className="px-2 pt-4">
-          <button
-            type="button"
-            onClick={() => start.mutate()}
-            disabled={start.isPending}
-            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent disabled:opacity-50"
-          >
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Plus className="size-3.5" aria-hidden />
-            </span>
-            New chat
-          </button>
-          {NAV.filter((item) => item.to !== "/chat").map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            >
-              <Icon className="size-4" aria-hidden />
-              {label}
-            </Link>
-          ))}
-          <Link
-            to="/crisis"
-            className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-crisis hover:bg-crisis-surface"
-          >
-            <LifeBuoy className="size-4" aria-hidden />
-            Immediate support
-          </Link>
-        </div>
-
-        <p className="px-4 pb-1 pt-6 text-xs font-medium text-muted-foreground">Recents</p>
-        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-          {(threads ?? []).map((thread) => (
-            <li key={thread.id} className="group flex items-center">
-              <button
-                type="button"
-                onClick={() => setThreadId(thread.id)}
-                className={`flex-1 truncate rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
-                  threadId === thread.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                }`}
-              >
-                {thread.title}
-              </button>
-              <button
-                type="button"
-                aria-label="Delete conversation"
-                onClick={() => drop.mutate(thread.id)}
-                className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-              >
-                <Trash2 className="size-3.5" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex items-center gap-2.5 border-t border-sidebar-border px-3 py-3">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-            {(preferredName ?? "K").slice(0, 2).toUpperCase()}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-sm">{preferredName ?? "Your account"}</span>
-          <button
-            type="button"
-            aria-label="Sign out"
-            onClick={handleSignOut}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          >
-            <LogOut className="size-4" aria-hidden />
-          </button>
-        </div>
-      </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
         {/* Thread header, mirroring Claude's title bar. */}
