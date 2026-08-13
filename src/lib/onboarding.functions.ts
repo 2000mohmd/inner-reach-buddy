@@ -95,7 +95,12 @@ export const completeOnboarding = createServerFn({ method: "POST" })
       const { generateReaction, resolveActiveThread } = await import(
         "./companion-reaction.server"
       );
-      const threadId = await resolveActiveThread(supabase, userId);
+      const created = await supabase
+        .from("chat_threads")
+        .insert({ user_id: userId, title: "Getting started" })
+        .select("id")
+        .single();
+      const threadId = created.data?.id ?? (await resolveActiveThread(supabase, userId));
       if (threadId) {
         const opening = await generateReaction(
           [
