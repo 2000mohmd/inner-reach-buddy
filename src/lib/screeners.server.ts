@@ -59,6 +59,63 @@ export async function submitScreenerCore(
     if (logged.error) console.error("crisis_events insert failed", logged.error);
   }
 
+  // Ordinary submissions should still land somewhere human: close the loop in
+  // chat with a plain-language activity card and a short reaction referencing
+  // the trend. Elevated/worsening scores are still handled separately by the
+  // screener_step_up nudge trigger.
+  if (!crisis) {
+    try {
+      const [history, profile] = await Promise.all([
+        supabase
+          .from("screener_responses")
+          .select("total_score, severity, taken_at")
+          .eq("user_id", userId)
+          .eq("screener_type", input.screener_type)
+          .neq("id", saved.data.id)
+          .order("taken_at", { ascending: false })
+          .limit(3),
+        supabase.from("profiles").select("preferred_name").eq("id", userId).maybeSingle(),
+      ]);
+
+      const previous = history.data?.[0] ?? null;
+      const max = SCREENERS[input.screener_type].items.length * 3;
+      const share = total / max;
+      const plain =
+        share <= 0.2
+          ? "things have felt mostly steady"
+          : share <= 0.4
+            ? "things have felt a little heavy"
+            : share <= 0.6
+              ? "things have felt heavier than easy lately"
+              : "things have felt really heavy lately";
+      const direction = previous
+        ? total < previous.total_score - 1
+          ? "a bit lighter than last time"
+          : total > previous.total_score + 1
+            ? "a bit heavier than last time"
+            : "about the same as last time"
+        : null;
+
+      const { postActivityToChat } = await import("./companion-reaction.server");
+      await postActivityToChat({
+        supabase,
+        userId,
+        activityLabel: `Checked in: ${plain}${direction ? ` — ${direction}` : ""}`,
+        preferredName: profile.data?.preferred_name ?? null,
+        reactionInstruction: [
+          `They just finished a periodic check-in in the app (${SCREENERS[input.screener_type].label}).`,
+          `In plain terms, ${plain}.`,
+          previous && direction
+            ? `Compared with their previous check-in on ${new Date(previous.taken_at).toISOString().slice(0, 10)}, it's ${direction}.`
+            : "This is their first check-in of this kind, so there's no trend to compare against yet.",
+          "Thank them warmly in one or two sentences and reflect the direction in everyday language. Never quote scores, score names, severity bands or clinical terms. No advice list.",
+        ].join(" "),
+      });
+    } catch (error) {
+      console.error("screener activity post failed", error);
+    }
+  }
+
   return { ...saved.data, crisisTriggered: crisis !== null, crisis };
 }
 
