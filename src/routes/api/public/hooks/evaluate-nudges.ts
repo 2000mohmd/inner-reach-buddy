@@ -39,6 +39,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
         }
 
         let created = 0;
+        let digests = 0;
         for (const row of data ?? []) {
           try {
             const result = await evaluateNudgesFor(supabaseAdmin, row.id);
@@ -46,9 +47,17 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
           } catch (sweepError) {
             console.error("nudge sweep failed for user", row.id, sweepError);
           }
+          // Weekly Progress digest piggybacks on the same cadence; it no-ops
+          // unless 7+ days have passed and the week had some activity.
+          try {
+            const digest = await generateWeeklyDigestFor(supabaseAdmin, row.id);
+            if (digest.created) digests += 1;
+          } catch (digestError) {
+            console.error("weekly digest failed for user", row.id, digestError);
+          }
         }
 
-        return new Response(JSON.stringify({ ok: true, users: data?.length ?? 0, created }), {
+        return new Response(JSON.stringify({ ok: true, users: data?.length ?? 0, created, digests }), {
           headers: { "Content-Type": "application/json" },
         });
       },
