@@ -29,7 +29,6 @@ import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { DailyPromptCard } from "@/components/DailyPromptCard";
 import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
 import { AppSidebar } from "@/components/AppSidebar";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -162,7 +161,7 @@ function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [messages.length, pending]);
 
   const mutation = useMutation({
     mutationFn: (text: string) =>
