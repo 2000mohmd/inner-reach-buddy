@@ -755,6 +755,51 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_digests: {
+        Row: {
+          created_at: string
+          effectiveness_highlights: Json
+          exercises_tried: Json
+          habits_summary: Json
+          id: string
+          mood_summary: Json
+          narrative_text: string
+          previous_focus_followed_up: boolean | null
+          screener_summary: Json | null
+          suggested_focus: string | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          effectiveness_highlights?: Json
+          exercises_tried?: Json
+          habits_summary?: Json
+          id?: string
+          mood_summary?: Json
+          narrative_text: string
+          previous_focus_followed_up?: boolean | null
+          screener_summary?: Json | null
+          suggested_focus?: string | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          effectiveness_highlights?: Json
+          exercises_tried?: Json
+          habits_summary?: Json
+          id?: string
+          mood_summary?: Json
+          narrative_text?: string
+          previous_focus_followed_up?: boolean | null
+          screener_summary?: Json | null
+          suggested_focus?: string | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
