@@ -1,86 +1,46 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  LifeBuoy,
-  MessageCircle,
-  Settings,
-  LogOut,
-  Leaf,
-  Wind,
-  LineChart,
-} from "lucide-react";
-import type { ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { LifeBuoy, Leaf } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { SafetyFooter } from "./SafetyFooter";
-import { Button } from "@/components/ui/button";
-
-// Primary destinations. Mirrors the future mobile bottom tab bar.
-const NAV = [
-  { to: "/chat", label: "Companion", icon: MessageCircle },
-  { to: "/insights", label: "Insights", icon: LineChart },
-  { to: "/exercises", label: "Exercises", icon: Wind },
-  { to: "/settings", label: "Profile", icon: Settings },
-] as const;
+import { AppSidebar, SIDEBAR_NAV } from "./AppSidebar";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  async function handleSignOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/chat" className="flex items-center gap-2 font-display text-xl">
+    <div className="flex min-h-screen w-full bg-background">
+      <AppSidebar open={sidebarOpen} onToggle={() => setSidebarOpen((open) => !open)} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile-only top bar; the rail takes over from md up. */}
+        <header className="sticky top-0 z-20 flex items-center gap-1 border-b border-border/70 bg-background/85 px-3 py-2 backdrop-blur md:hidden">
+          <Link to="/chat" className="mr-auto flex items-center gap-2 font-display text-lg">
             <Leaf className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
-          <nav className="flex items-center gap-1">
-            {NAV.map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm ${
-                  pathname === to
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon className="size-4" aria-hidden />
-                <span className="hidden sm:inline">{label}</span>
-              </Link>
-            ))}
-            {/* Support is always one tap away, but not a primary nav item. */}
+          {SIDEBAR_NAV.map(({ to, label, icon: Icon }) => (
             <Link
-              to="/crisis"
-              aria-label="Immediate support"
-              title="Immediate support"
-              className={`flex items-center justify-center rounded-full p-2 ${
-                pathname === "/crisis"
-                  ? "bg-crisis-surface text-crisis"
-                  : "text-crisis hover:bg-crisis-surface"
+              key={to}
+              to={to}
+              aria-label={label}
+              className={`rounded-full p-2 ${
+                pathname === to
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              <LifeBuoy className="size-5" aria-hidden />
+              <Icon className="size-4" aria-hidden />
             </Link>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="rounded-full">
-              <LogOut className="size-4" aria-hidden />
-              <span className="hidden sm:inline">Sign out</span>
-            </Button>
-          </nav>
-        </div>
-      </header>
+          ))}
+          <Link to="/crisis" aria-label="Immediate support" className="rounded-full p-2 text-crisis">
+            <LifeBuoy className="size-5" aria-hidden />
+          </Link>
+        </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-      <SafetyFooter />
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+        <SafetyFooter />
+      </div>
     </div>
   );
 }
-
