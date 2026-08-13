@@ -18,7 +18,7 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 
 export const SIDEBAR_NAV = [
   { to: "/chat", label: "Companion", icon: MessageCircle },
-  { to: "/insights", label: "Insights", icon: LineChart },
+  { to: "/insights", label: "Progress", icon: LineChart },
   { to: "/exercises", label: "Exercises", icon: Wind },
   { to: "/settings", label: "Profile", icon: Settings },
 ] as const;
