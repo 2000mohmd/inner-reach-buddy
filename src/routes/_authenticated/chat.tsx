@@ -172,8 +172,12 @@ function ChatPage() {
           quick_action: quickAction,
         },
       }),
-    onSuccess: async (result) => {
+    // Show the sent message immediately; the box is cleared before the request.
+    onMutate: (text: string) => {
+      setPending(text);
       setInput("");
+    },
+    onSuccess: async (result) => {
       setActions(result.reply.type === "message" ? result.reply.actions : []);
       setQuickAction(null);
       setThreadId(result.thread_id);
@@ -181,9 +185,13 @@ function ChatPage() {
         queryClient.invalidateQueries({ queryKey: ["chat-threads"] }),
         queryClient.invalidateQueries({ queryKey: ["chat-thread", result.thread_id] }),
       ]);
+      setPending(null);
     },
-    onError: (error: Error) =>
-      toast.error(error.message || "The companion couldn't reply. Please try again."),
+    onError: (error: Error, text) => {
+      setPending(null);
+      setInput((current) => current || text);
+      toast.error(error.message || "The companion couldn't reply. Please try again.");
+    },
   });
 
   const voice = useMutation({
@@ -215,19 +223,13 @@ function ChatPage() {
     },
   });
 
-  async function handleSignOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
   function submit(text: string) {
     const value = text.trim();
     if (!value || mutation.isPending) return;
     setQuickAction(null);
     mutation.mutate(value);
   }
+
 
   const busy = mutation.isPending || voice.isPending;
   const empty = messages.length === 0;
