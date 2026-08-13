@@ -157,7 +157,75 @@ export const logHabit = createServerFn({ method: "POST" })
       { onConflict: "habit_id,log_date" },
     );
     if (error) throw error;
-    return { ok: true, completed: true };
+
+    // Same pattern as completeExercise: a habit tick shouldn't dead-end on the
+    // Insights page. Drop a compact activity card into the active conversation,
+    // and react only when there's actually something to say (a streak, or a
+    // known mood pattern for this habit) — a brand new first log gets no reply.
+    let chatThreadId: string | null = null;
+    try {
+      const habitName = owned.data.name;
+      const [recent, insight, profile] = await Promise.all([
+        supabase
+          .from("habit_logs")
+          .select("log_date")
+          .eq("user_id", userId)
+          .eq("habit_id", data.habit_id)
+          .eq("completed", true)
+          .order("log_date", { ascending: false })
+          .limit(60),
+        supabase
+          .from("effectiveness_insights")
+          .select("subject_label, avg_mood_delta, sample_size, confidence")
+          .eq("user_id", userId)
+          .eq("subject_type", "habit")
+          .eq("subject_key", data.habit_id)
+          .maybeSingle(),
+        supabase.from("profiles").select("preferred_name").eq("id", userId).maybeSingle(),
+      ]);
+
+      const days = new Set((recent.data ?? []).map((row) => row.log_date));
+      let streak = 0;
+      const cursor = new Date(`${day}T00:00:00Z`);
+      while (days.has(isoDay(cursor))) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      const totalLogs = days.size;
+
+      const patternNote =
+        insight.data && (insight.data.sample_size ?? 0) >= 3 && insight.data.avg_mood_delta !== null
+          ? `Their own history shows an average mood change of ${insight.data.avg_mood_delta} on days they keep this habit (${insight.data.sample_size} days of data, ${insight.data.confidence} confidence).`
+          : null;
+
+      const worthReacting = streak >= 2 || totalLogs >= 3 || patternNote !== null;
+
+      const { postActivityToChat } = await import("./companion-reaction.server");
+      const posted = await postActivityToChat({
+        supabase,
+        userId,
+        activityLabel:
+          streak >= 2 ? `Logged ${habitName} · ${streak} days in a row` : `Logged ${habitName}`,
+        preferredName: profile.data?.preferred_name ?? null,
+        reactionInstruction: worthReacting
+          ? [
+              `They just logged the habit "${habitName}"${owned.data.category ? ` (${owned.data.category})` : ""} for today.`,
+              streak >= 2
+                ? `That makes ${streak} days in a row, and ${totalLogs} days logged in the last month.`
+                : `They've logged it ${totalLogs} times in the last month.`,
+              patternNote ?? "",
+              "React in one or two sentences: name the specific habit and the streak or pattern plainly, without overclaiming what it means and without turning it into advice.",
+            ]
+              .filter(Boolean)
+              .join(" ")
+          : null,
+      });
+      chatThreadId = posted.thread_id;
+    } catch (postError) {
+      console.error("habit activity post failed", postError);
+    }
+
+    return { ok: true, completed: true, thread_id: chatThreadId };
   });
 
 export const addSuggestedHabits = createServerFn({ method: "POST" })
