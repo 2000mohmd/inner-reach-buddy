@@ -128,7 +128,7 @@ export const logHabit = createServerFn({ method: "POST" })
 
     const owned = await supabase
       .from("habits")
-      .select("id")
+      .select("id, name, category")
       .eq("id", data.habit_id)
       .eq("user_id", userId)
       .maybeSingle();
