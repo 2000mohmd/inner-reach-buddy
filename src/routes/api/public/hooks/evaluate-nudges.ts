@@ -24,6 +24,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { evaluateNudgesFor } = await import("@/lib/nudges.server");
+        const { generateWeeklyDigestFor } = await import("@/lib/weekly-digest.server");
 
         const since = new Date(Date.now() - 30 * 86400000).toISOString();
         const { data, error } = await supabaseAdmin
