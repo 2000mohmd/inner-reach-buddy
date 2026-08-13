@@ -126,6 +126,7 @@ function ChatPage() {
   const [quickAction, setQuickAction] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [actions, setActions] = useState<CompanionAction[]>([]);
+  const [pending, setPending] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
