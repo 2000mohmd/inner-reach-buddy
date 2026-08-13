@@ -390,12 +390,21 @@ function ChatPage() {
               </div>
             )}
 
+            {pending && (
+              <div className="flex justify-end">
+                <p className="max-w-[85%] whitespace-pre-line rounded-2xl bg-secondary px-4 py-2.5 text-sm leading-relaxed text-secondary-foreground">
+                  {pending}
+                </p>
+              </div>
+            )}
+
             {busy && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
                 {voice.isPending ? "Listening to your note…" : "Kalm is thinking…"}
               </p>
             )}
+
             <div ref={bottomRef} />
           </div>
         </div>
