@@ -44,7 +44,7 @@ export async function generateReaction(
           role: "user",
           content: [
             "You are reacting to something the person just did in the app — they did not send you a message.",
-            "Rules: 1-3 sentences. Warm and specific to what they actually did. No bullet points, no headings, no sign-off, no advice lists, no new exercise suggestions unless it's a single natural offer.",
+            "Rules: 1-4 sentences. Warm and specific to what they actually did. No bullet points, no headings, no sign-off, no advice lists, no new exercise suggestions unless it's a single natural offer.",
             "",
             instruction,
           ].join("\n"),

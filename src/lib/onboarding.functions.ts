@@ -89,6 +89,59 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     });
     if (moodError) throw moodError;
 
+    // The companion opens the conversation rather than dropping the person into
+    // an empty chat: one warm, personal message waiting for them on /chat.
+    try {
+      const { generateReaction, resolveActiveThread } = await import(
+        "./companion-reaction.server"
+      );
+      const created = await supabase
+        .from("chat_threads")
+        .insert({ user_id: userId, title: "Getting started" })
+        .select("id")
+        .single();
+      const threadId = created.data?.id ?? (await resolveActiveThread(supabase, userId));
+      if (threadId) {
+        const opening = await generateReaction(
+          [
+            `${data.preferred_name} has just finished setting up their Kalm profile. This is the very first message in the conversation and they haven't written anything yet — you are opening it.`,
+            data.intro_text ? `In their own words: "${data.intro_text}"` : "",
+            data.goals.length ? `Goals they picked: ${data.goals.join(", ")}.` : "",
+            data.stressors.length ? `Stressors they named: ${data.stressors.join(", ")}.` : "",
+            "Write 3-4 short sentences: welcome them by name, reference one specific thing they told you (a goal or a stressor) so it's clear you read it, briefly mention in one sentence that check-ins, exercises and just talking things through are all possible here (not a feature list), and end with one genuine, easy question.",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          {
+            preferredName: data.preferred_name,
+            accountType: data.account_type,
+            introText: data.intro_text || null,
+            goals: data.goals,
+            stressors: data.stressors,
+            communicationPreference: data.communication_preference || null,
+            topicsToAvoid: data.topics_to_avoid || null,
+            inProfessionalCare: data.in_professional_care,
+          },
+        );
+        if (opening) {
+          const saved = await supabase.from("chat_messages").insert({
+            thread_id: threadId,
+            user_id: userId,
+            sender: "assistant",
+            content_type: "text",
+            content: opening,
+          });
+          if (saved.error) console.error("welcome message insert failed", saved.error);
+          await supabase
+            .from("chat_threads")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", threadId);
+        }
+      }
+    } catch (error) {
+      console.error("welcome message generation failed", error);
+    }
+
     return { ok: true };
   });
 
