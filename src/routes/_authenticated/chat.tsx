@@ -9,17 +9,11 @@ import {
   ArrowUp,
   Leaf,
   LifeBuoy,
-  LineChart,
   Loader2,
-  LogOut,
-  MessageCircle,
   Mic,
   PanelLeft,
-  Plus,
-  Settings,
   Square,
   Trash2,
-  Wind,
 } from "lucide-react";
 import {
   createThread,
@@ -34,6 +28,7 @@ import { CRISIS_RESOURCES, CRISIS_DISCLAIMER } from "@/lib/crisis";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { DailyPromptCard } from "@/components/DailyPromptCard";
 import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
+import { AppSidebar } from "@/components/AppSidebar";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -56,12 +51,6 @@ export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
 });
 
-const NAV = [
-  { to: "/chat", label: "Companion", icon: MessageCircle },
-  { to: "/insights", label: "Insights", icon: LineChart },
-  { to: "/exercises", label: "Exercises", icon: Wind },
-  { to: "/settings", label: "Profile", icon: Settings },
-] as const;
 
 function CrisisCard() {
   return (
