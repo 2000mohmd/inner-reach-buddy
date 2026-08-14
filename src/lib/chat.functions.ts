@@ -181,6 +181,65 @@ export const sendMessage = createServerFn({ method: "POST" })
       };
     }
 
+    // --- Semantic crisis backstop: only runs when the regex gate found nothing.
+    // Fails open (see crisis-classifier.server.ts) so chat is never blocked. ---
+    const { classifyCrisisRisk } = await import("./crisis-classifier.server");
+    const recentTurns = await supabase
+      .from("chat_messages")
+      .select("sender, content")
+      .eq("thread_id", threadId)
+      .eq("user_id", userId)
+      .neq("id", savedUser.data.id)
+      .order("created_at", { ascending: false })
+      .limit(2);
+    const semantic = await classifyCrisisRisk(
+      data.content,
+      (recentTurns.data ?? []).reverse().map((row) => ({ sender: row.sender, content: row.content })),
+    );
+
+    if (semantic.flagged) {
+      const crisis = buildCrisisResponse([]);
+
+      await supabase
+        .from("chat_messages")
+        .update({ flagged_crisis: true })
+        .eq("id", savedUser.data.id);
+
+      const logged = await supabase.from("crisis_events").insert({
+        user_id: userId,
+        message_id: savedUser.data.id,
+        matched_terms: [],
+        severity: "high",
+        source: "semantic_classifier",
+        notes: semantic.reason,
+      });
+      if (logged.error) console.error("crisis_events insert failed", logged.error);
+
+      const savedCrisis = await supabase
+        .from("chat_messages")
+        .insert({
+          thread_id: threadId,
+          user_id: userId,
+          sender: "system",
+          content: crisis.message,
+          flagged_crisis: true,
+        })
+        .select("id, created_at")
+        .single();
+      if (savedCrisis.error) throw savedCrisis.error;
+
+      await supabase
+        .from("chat_threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", threadId);
+
+      return {
+        thread_id: threadId,
+        userMessage: { ...savedUser.data, flagged_crisis: true, sender: "user" as const },
+        reply: { ...crisis, id: savedCrisis.data.id, created_at: savedCrisis.data.created_at },
+      };
+    }
+
     // --- Per-user rate limit (normal chat path only; never gates crisis) ---
     const limit = await checkRateLimit(supabase, userId);
     if (!limit.allowed) {
