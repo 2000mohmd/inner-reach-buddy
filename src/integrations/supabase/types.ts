@@ -214,7 +214,10 @@ export type Database = {
           id: string
           matched_terms: string[]
           message_id: string | null
+          notes: string | null
           reviewed: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
           severity: string
           source: string
           user_id: string
@@ -224,7 +227,10 @@ export type Database = {
           id?: string
           matched_terms?: string[]
           message_id?: string | null
+          notes?: string | null
           reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           severity?: string
           source?: string
           user_id: string
@@ -234,7 +240,10 @@ export type Database = {
           id?: string
           matched_terms?: string[]
           message_id?: string | null
+          notes?: string | null
           reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           severity?: string
           source?: string
           user_id?: string
@@ -540,6 +549,42 @@ export type Database = {
           score?: number
           tags?: string[]
           user_id?: string
+        }
+        Relationships: []
+      }
+      notification_queue: {
+        Row: {
+          body: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          notification_type: string
+          payload: Json
+          subject_user_id: string | null
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          notification_type: string
+          payload?: Json
+          subject_user_id?: string | null
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          notification_type?: string
+          payload?: Json
+          subject_user_id?: string | null
+          target_user_id?: string | null
+          title?: string
         }
         Relationships: []
       }
