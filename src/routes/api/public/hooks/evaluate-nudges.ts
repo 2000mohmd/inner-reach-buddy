@@ -72,9 +72,10 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
           }
         }
 
-        return new Response(JSON.stringify({ ok: true, users: data?.length ?? 0, created, digests }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ ok: true, users: data?.length ?? 0, created, digests, recomputed }),
+          { headers: { "Content-Type": "application/json" } },
+        );
       },
     },
   },
