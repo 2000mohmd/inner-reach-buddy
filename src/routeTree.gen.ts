@@ -23,6 +23,7 @@ import { Route as AuthenticatedHabitsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedAdminCrisisRouteImport } from './routes/_authenticated/admin/crisis'
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
 
 const IndexRoute = IndexRouteImport.update({
@@ -94,6 +95,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminCrisisRoute =
+  AuthenticatedAdminCrisisRouteImport.update({
+    id: '/admin/crisis',
+    path: '/admin/crisis',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksEvaluateNudgesRoute =
   ApiPublicHooksEvaluateNudgesRouteImport.update({
     id: '/api/public/hooks/evaluate-nudges',
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +139,7 @@ export interface FileRoutesByTo {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
 }
 export interface FileRoutesById {
@@ -149,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
 }
 export interface FileRouteTypes {
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/admin/crisis'
     | '/api/public/hooks/evaluate-nudges'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/admin/crisis'
     | '/api/public/hooks/evaluate-nudges'
   id:
     | '__root__'
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/insights'
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
+    | '/_authenticated/admin/crisis'
     | '/api/public/hooks/evaluate-nudges'
   fileRoutesById: FileRoutesById
 }
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/crisis': {
+      id: '/_authenticated/admin/crisis'
+      path: '/admin/crisis'
+      fullPath: '/admin/crisis'
+      preLoaderRoute: typeof AuthenticatedAdminCrisisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/evaluate-nudges': {
       id: '/api/public/hooks/evaluate-nudges'
       path: '/api/public/hooks/evaluate-nudges'
@@ -332,6 +352,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -344,6 +365,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
