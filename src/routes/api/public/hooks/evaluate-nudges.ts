@@ -43,7 +43,19 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
 
         let created = 0;
         let digests = 0;
+        let recomputed = 0;
         for (const row of data ?? []) {
+          // Effectiveness insights: only recompute for people with activity
+          // newer than their last computation.
+          try {
+            if (await hasNewActivitySince(supabaseAdmin, row.id)) {
+              const result = await computeEffectivenessFor(supabaseAdmin, row.id);
+              if (result.written) recomputed += 1;
+            }
+          } catch (effectivenessError) {
+            console.error("effectiveness computation failed for user", row.id, effectivenessError);
+          }
+
           try {
             const result = await evaluateNudgesFor(supabaseAdmin, row.id);
             created += result.created;
