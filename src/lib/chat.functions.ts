@@ -127,7 +127,15 @@ export const sendMessage = createServerFn({ method: "POST" })
     }
 
     // --- Crisis-detection middleware: runs BEFORE any LLM call ---
-    const matched = detectCrisis(data.content);
+    //
+    // ORDERING GUARANTEE (Phase 11) — DO NOT REORDER:
+    // every incoming message runs through the regex gate and, when that is
+    // clear, the semantic backstop, BEFORE the per-user rate limiter is ever
+    // consulted. The rate limit only gates generating an ordinary companion
+    // reply; a flagged message always receives the crisis response even when
+    // the user is currently rate-limited for normal chat.
+    const triage = triageCrisis(data.content);
+    const matched = triage.matched;
     const flagged = matched.length > 0;
 
     const savedUser = await supabase
@@ -144,17 +152,20 @@ export const sendMessage = createServerFn({ method: "POST" })
       .single();
     if (savedUser.error) throw savedUser.error;
 
-    if (flagged) {
-      const crisis = buildCrisisResponse(matched);
+    const { logCrisisEvent } = await import("./crisis-alert.server");
 
-      // Safety review log — never blocks the user.
-      const logged = await supabase.from("crisis_events").insert({
-        user_id: userId,
-        message_id: savedUser.data.id,
-        matched_terms: matched,
-        severity: "high",
+    if (flagged) {
+      const severity = triage.severity ?? "high";
+      const crisis = buildCrisisResponse(matched, severity);
+
+      // Safety review log + admin email alert — never blocks the user.
+      await logCrisisEvent(supabase, {
+        userId,
+        source: "chat",
+        severity,
+        matchedTerms: matched,
+        messageId: savedUser.data.id,
       });
-      if (logged.error) console.error("crisis_events insert failed", logged.error);
 
       const savedCrisis = await supabase
         .from("chat_messages")
@@ -182,7 +193,8 @@ export const sendMessage = createServerFn({ method: "POST" })
     }
 
     // --- Semantic crisis backstop: only runs when the regex gate found nothing.
-    // Fails open (see crisis-classifier.server.ts) so chat is never blocked. ---
+    // Fails open (see crisis-classifier.server.ts) so chat is never blocked.
+    // Still ahead of the rate limiter — see the ordering guarantee above. ---
     const { classifyCrisisRisk } = await import("./crisis-classifier.server");
     const recentTurns = await supabase
       .from("chat_messages")
@@ -198,22 +210,22 @@ export const sendMessage = createServerFn({ method: "POST" })
     );
 
     if (semantic.flagged) {
-      const crisis = buildCrisisResponse([]);
+      const severity = semantic.severity ?? "high";
+      const crisis = buildCrisisResponse([], severity);
 
       await supabase
         .from("chat_messages")
         .update({ flagged_crisis: true })
         .eq("id", savedUser.data.id);
 
-      const logged = await supabase.from("crisis_events").insert({
-        user_id: userId,
-        message_id: savedUser.data.id,
-        matched_terms: [],
-        severity: "high",
+      await logCrisisEvent(supabase, {
+        userId,
         source: "semantic_classifier",
+        severity,
+        matchedTerms: [],
+        messageId: savedUser.data.id,
         notes: semantic.reason,
       });
-      if (logged.error) console.error("crisis_events insert failed", logged.error);
 
       const savedCrisis = await supabase
         .from("chat_messages")
@@ -239,6 +251,10 @@ export const sendMessage = createServerFn({ method: "POST" })
         reply: { ...crisis, id: savedCrisis.data.id, created_at: savedCrisis.data.created_at },
       };
     }
+
+    // --- Per-user rate limit (normal chat path only; never gates crisis).
+    // Both crisis checks above have already run and come up clear. ---
+
 
     // --- Per-user rate limit (normal chat path only; never gates crisis) ---
     const limit = await checkRateLimit(supabase, userId);
