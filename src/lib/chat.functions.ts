@@ -255,7 +255,6 @@ export const sendMessage = createServerFn({ method: "POST" })
     // --- Per-user rate limit (normal chat path only; never gates crisis).
     // Both crisis checks above have already run and come up clear. ---
     const limit = await checkRateLimit(supabase, userId);
-    const limit = await checkRateLimit(supabase, userId);
     if (!limit.allowed) {
       const savedLimit = await supabase
         .from("chat_messages")
