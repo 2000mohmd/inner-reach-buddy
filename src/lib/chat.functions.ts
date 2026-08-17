@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { buildCrisisResponse, detectCrisis, type CrisisResponse } from "./crisis";
+import { buildCrisisResponse, triageCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
 import { checkRateLimit, RATE_LIMIT_MESSAGE } from "./chat-rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
