@@ -146,3 +146,29 @@ Not built yet:
 - Protected server functions use `.middleware([requireSupabaseAuth])` and must not be
   called from public-route loaders.
 - The crisis gate runs first, always, regardless of model or architecture changes.
+
+## Admin roles and bootstrap (Phase 12)
+
+Two tiers live in `user_roles` (`app_role` enum):
+
+- `admin` — day-to-day admin work: crisis review, support replies, Users and
+  Overview pages. An admin cannot grant roles.
+- `super_admin` — required for role management (Team page, Phase 13). Keeping
+  role-granting separate means an admin cannot escalate themselves or others.
+
+There is deliberately **no UI path** to create the first `super_admin` (that
+would be a privilege-escalation route). Bootstrap it with a direct database
+write, once, replacing the email:
+
+```sql
+insert into public.user_roles (user_id, role)
+select id, 'super_admin' from auth.users where email = 'you@example.com'
+on conflict (user_id, role) do nothing;
+```
+
+### Admin audit log
+
+`admin_audit_log` records privileged actions: `viewed_user`,
+`resolved_crisis_event`, and (Phase 13) `replied_support_ticket`,
+`granted_role`. Entries are append-only — admins can read and insert their own
+rows only. Visible at `/admin/audit`, filterable by admin and action.
