@@ -80,8 +80,8 @@ export async function fetchOverviewMetrics(): Promise<OverviewMetrics> {
     }
   }
 
-  const crisisByDay = new Map(
-    days.map((day) => [day, { critical: 0, high: 0, moderate: 0 }] as const),
+  const crisisByDay = new Map<string, { critical: number; high: number; moderate: number }>(
+    days.map((day) => [day, { critical: 0, high: 0, moderate: 0 }]),
   );
   const bySeverity = new Map<string, number>([
     ["critical", 0],
@@ -314,7 +314,7 @@ export async function fetchAdminUserDetail(userId: string): Promise<AdminUserDet
       habits: habits.count ?? 0,
       habitLogs: (habitLogs.data ?? []).length,
       screeners: (screeners.data ?? []).length,
-      lastActive: timestamps.length ? timestamps[timestamps.length - 1] : null,
+      lastActive: timestamps.length ? (timestamps[timestamps.length - 1] ?? null) : null,
     },
     screeners: screeners.data ?? [],
     crisisEvents: (crisis.data ?? []).map((row) => ({
