@@ -47,10 +47,10 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("crisis_events")
       .select("id, user_id, created_at, source, severity, matched_terms, notes, reviewed, reviewed_at")
-      .order("reviewed", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
+
 
     const rows = data ?? [];
     const userIds = [...new Set(rows.map((row) => row.user_id))];
