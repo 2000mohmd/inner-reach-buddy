@@ -3,20 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Leaf,
-  LifeBuoy,
   LineChart,
   LogOut,
   MessageCircle,
   PanelLeft,
   Plus,
   Settings,
-  ShieldAlert,
   Wind,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyProfile } from "@/lib/onboarding.functions";
-import { countUnreviewedCrisisEvents } from "@/lib/admin.functions";
 
 export const SIDEBAR_NAV = [
   { to: "/chat", label: "Companion", icon: MessageCircle },
@@ -55,15 +52,6 @@ export function AppSidebar({
     queryFn: () => fetchProfile(),
   });
   const preferredName = profileData?.profile?.preferred_name;
-
-  // Admin-only safety queue entry, with an unreviewed count badge.
-  const fetchUnreviewed = useServerFn(countUnreviewedCrisisEvents);
-  const { data: adminData } = useQuery({
-    queryKey: ["admin-crisis-unreviewed"],
-    queryFn: () => fetchUnreviewed(),
-    retry: false,
-    staleTime: 60_000,
-  });
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -127,35 +115,6 @@ export function AppSidebar({
             {open && label}
           </Link>
         ))}
-        {adminData?.isAdmin && (
-          <Link
-            to="/admin"
-            title="Admin"
-            className={itemClass(pathname.startsWith("/admin"))}
-          >
-            <ShieldAlert className="size-4 shrink-0" aria-hidden />
-            {open && <span className="flex-1">Admin</span>}
-            {adminData.unreviewed > 0 && (
-              <span
-                className={`rounded-full bg-crisis px-1.5 py-0.5 text-[10px] font-semibold leading-none text-crisis-foreground ${
-                  open ? "" : "absolute"
-                }`}
-              >
-                {adminData.unreviewed}
-              </span>
-            )}
-          </Link>
-        )}
-        <Link
-          to="/crisis"
-          title="Immediate support"
-          className={`flex items-center gap-2.5 rounded-xl py-2 text-sm text-crisis hover:bg-crisis-surface ${
-            open ? "px-2.5" : "justify-center px-0"
-          }`}
-        >
-          <LifeBuoy className="size-4 shrink-0" aria-hidden />
-          {open && "Immediate support"}
-        </Link>
       </div>
 
       {recents && open ? (
