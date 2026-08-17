@@ -192,5 +192,8 @@ export const listAdminAuditLog = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { fetchAuditLog } = await import("./admin-audit.server");
-    return fetchAuditLog({ adminUserId: data.admin_user_id, action: data.action });
+    return fetchAuditLog({
+      adminUserId: data.admin_user_id ?? null,
+      action: data.action ?? null,
+    });
   });
