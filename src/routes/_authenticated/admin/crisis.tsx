@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { CRISIS_SOURCE_LABELS, CrisisSeverityBadge } from "@/components/CrisisSeverityBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { amIAdmin, listCrisisEvents, markCrisisReviewed } from "@/lib/admin.functions";
+import { listCrisisEvents, markCrisisReviewed } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/crisis")({
   head: () => ({
@@ -28,19 +28,6 @@ export const Route = createFileRoute("/_authenticated/admin/crisis")({
   component: CrisisReviewPage,
 });
 
-const SOURCE_LABELS: Record<string, string> = {
-  chat: "Chat (regex gate)",
-  phq9_item9: "PHQ-9 item 9",
-  semantic_classifier: "Semantic backstop",
-  session_drift_sweep: "Session drift sweep",
-};
-
-const SEVERITY_STYLES: Record<string, string> = {
-  critical: "border-crisis/60 bg-crisis-surface text-crisis",
-  high: "border-crisis/30 bg-crisis-surface/60 text-crisis",
-  moderate: "border-border bg-muted text-muted-foreground",
-};
-
 function formatWhen(value: string) {
   return new Date(value).toLocaleString(undefined, {
     month: "short",
@@ -53,20 +40,11 @@ function formatWhen(value: string) {
 function CrisisReviewPage() {
   const fetchEvents = useServerFn(listCrisisEvents);
   const review = useServerFn(markCrisisReviewed);
-  const checkAdmin = useServerFn(amIAdmin);
   const queryClient = useQueryClient();
-
-  const { data: adminData } = useQuery({
-    queryKey: ["admin-status"],
-    queryFn: () => checkAdmin(),
-    retry: false,
-    staleTime: 60_000,
-  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-crisis-events"],
     queryFn: () => fetchEvents(),
-    enabled: adminData?.isAdmin === true,
     retry: false,
   });
 
@@ -78,33 +56,16 @@ function CrisisReviewPage() {
     },
   });
 
-  const forbidden = adminData?.isAdmin === false;
-
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-        <header className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Internal
-          </p>
-          <h1 className="font-display text-3xl">Crisis review</h1>
-          <p className="text-sm text-muted-foreground">
-            Flagged moments that a human should look at. Unreviewed first, most
-            severe first.
-          </p>
-        </header>
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-display text-2xl">Crisis review</h2>
+        <p className="text-sm text-muted-foreground">
+          Flagged moments that a human should look at. Unreviewed first, most severe first.
+        </p>
+      </div>
 
-        {forbidden ? (
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h2 className="font-display text-xl">Not available</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              This page is for administrators only.
-            </p>
-            <Button asChild variant="secondary" className="mt-4">
-              <Link to="/chat">Back to Kalm</Link>
-            </Button>
-          </div>
-        ) : isLoading ? (
+      {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-20 w-full rounded-2xl" />
             <Skeleton className="h-20 w-full rounded-2xl" />
@@ -153,14 +114,8 @@ function CrisisReviewPage() {
                           </span>
                         </p>
                         <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
-                              SEVERITY_STYLES[event.severity] ?? SEVERITY_STYLES["moderate"]
-                            }`}
-                          >
-                            {event.severity}
-                          </span>
-                          <span>{SOURCE_LABELS[event.source] ?? event.source}</span>
+                          <CrisisSeverityBadge severity={event.severity} />
+                          <span>{CRISIS_SOURCE_LABELS[event.source] ?? event.source}</span>
                         </p>
                         {event.matched_terms.length > 0 && (
                           <p className="text-xs text-muted-foreground">
@@ -190,9 +145,8 @@ function CrisisReviewPage() {
                 ))}
               </ul>
             )}
-          </>
-        )}
-      </div>
-    </AppShell>
+        </>
+      )}
+    </div>
   );
 }

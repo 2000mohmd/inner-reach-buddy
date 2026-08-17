@@ -21,9 +21,12 @@ async function assertAdmin(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<void> {
-  const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  const [{ data, error }, superAdmin] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" }),
+  ]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden");
+  if (!data && !superAdmin.data) throw new Error("Forbidden");
 }
 
 /** Cheap check the UI (and the sidebar badge) uses to decide what to render. */
@@ -36,7 +39,12 @@ export const amIAdmin = createServerFn({ method: "GET" })
       _role: "admin",
     });
     if (error) throw error;
-    return { isAdmin: Boolean(data) };
+    const superAdmin = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "super_admin",
+    });
+    if (superAdmin.error) throw superAdmin.error;
+    return { isAdmin: Boolean(data) || Boolean(superAdmin.data), isSuperAdmin: Boolean(superAdmin.data) };
   });
 
 export const listCrisisEvents = createServerFn({ method: "GET" })
@@ -123,5 +131,69 @@ export const markCrisisReviewed = createServerFn({ method: "POST" })
       .update({ reviewed: true, reviewed_by: userId, reviewed_at: new Date().toISOString() })
       .eq("id", data.event_id);
     if (error) throw error;
+
+    const { logAuditEntry } = await import("./admin-audit.server");
+    await logAuditEntry({
+      adminUserId: userId,
+      action: "resolved_crisis_event",
+      targetType: "crisis_event",
+      targetId: data.event_id,
+    });
     return { ok: true };
+  });
+
+/** Aggregate, non-identifying platform metrics for the admin Overview page. */
+export const getAdminOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { fetchOverviewMetrics } = await import("./admin-metrics.server");
+    return fetchOverviewMetrics();
+  });
+
+export const listAdminUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { fetchAdminUsers } = await import("./admin-metrics.server");
+    return { users: await fetchAdminUsers() };
+  });
+
+/** Per-user admin detail. Deliberately excludes chat transcripts. */
+export const getAdminUserDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ user_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const [{ fetchAdminUserDetail }, { logAuditEntry }] = await Promise.all([
+      import("./admin-metrics.server"),
+      import("./admin-audit.server"),
+    ]);
+    const detail = await fetchAdminUserDetail(data.user_id);
+    await logAuditEntry({
+      adminUserId: context.userId,
+      action: "viewed_user",
+      targetType: "user",
+      targetId: data.user_id,
+    });
+    return detail;
+  });
+
+export const listAdminAuditLog = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        admin_user_id: z.string().uuid().nullish(),
+        action: z.string().nullish(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { fetchAuditLog } = await import("./admin-audit.server");
+    return fetchAuditLog({
+      adminUserId: data.admin_user_id ?? null,
+      action: data.action ?? null,
+    });
   });

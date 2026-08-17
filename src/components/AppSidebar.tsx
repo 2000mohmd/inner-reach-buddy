@@ -129,12 +129,12 @@ export function AppSidebar({
         ))}
         {adminData?.isAdmin && (
           <Link
-            to="/admin/crisis"
-            title="Crisis review"
-            className={itemClass(pathname === "/admin/crisis")}
+            to="/admin"
+            title="Admin"
+            className={itemClass(pathname.startsWith("/admin"))}
           >
             <ShieldAlert className="size-4 shrink-0" aria-hidden />
-            {open && <span className="flex-1">Crisis review</span>}
+            {open && <span className="flex-1">Admin</span>}
             {adminData.unreviewed > 0 && (
               <span
                 className={`rounded-full bg-crisis px-1.5 py-0.5 text-[10px] font-semibold leading-none text-crisis-foreground ${

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       care_resources: {
         Row: {
           contact_or_url: string
@@ -869,7 +899,7 @@ export type Database = {
     }
     Enums: {
       account_type: "general" | "condition" | "teen" | "org_member"
-      app_role: "user" | "org_admin" | "admin"
+      app_role: "user" | "org_admin" | "admin" | "super_admin"
       chat_sender: "user" | "assistant" | "system"
       commitment_source: "chat" | "exercise"
       commitment_status: "pending" | "done" | "skipped"
@@ -1002,7 +1032,7 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["general", "condition", "teen", "org_member"],
-      app_role: ["user", "org_admin", "admin"],
+      app_role: ["user", "org_admin", "admin", "super_admin"],
       chat_sender: ["user", "assistant", "system"],
       commitment_source: ["chat", "exercise"],
       commitment_status: ["pending", "done", "skipped"],

@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CrisisRouteImport } from './routes/crisis'
 import { Route as LegalRouteImport } from './routes/legal'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedCareRouteImport } from './routes/_authenticated/care'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCheckInsRouteImport } from './routes/_authenticated/check-ins'
@@ -23,7 +24,11 @@ import { Route as AuthenticatedHabitsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminCrisisRouteImport } from './routes/_authenticated/admin/crisis'
+import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin/users/index'
+import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_authenticated/admin/users/$userId'
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
 
 const IndexRoute = IndexRouteImport.update({
@@ -49,6 +54,11 @@ const LegalRoute = LegalRouteImport.update({
   id: '/legal',
   path: '/legal',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCareRoute = AuthenticatedCareRouteImport.update({
   id: '/care',
@@ -95,11 +105,33 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminCrisisRoute =
   AuthenticatedAdminCrisisRouteImport.update({
-    id: '/admin/crisis',
-    path: '/admin/crisis',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/crisis',
+    path: '/crisis',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminUsersIndexRoute =
+  AuthenticatedAdminUsersIndexRouteImport.update({
+    id: '/users/',
+    path: '/users/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminUsersUserIdRoute =
+  AuthenticatedAdminUsersUserIdRouteImport.update({
+    id: '/users/$userId',
+    path: '/users/$userId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const ApiPublicHooksEvaluateNudgesRoute =
   ApiPublicHooksEvaluateNudgesRouteImport.update({
@@ -113,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/crisis': typeof CrisisRoute
   '/legal': typeof LegalRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/care': typeof AuthenticatedCareRoute
   '/chat': typeof AuthenticatedChatRoute
   '/check-ins': typeof AuthenticatedCheckInsRoute
@@ -122,8 +155,12 @@ export interface FileRoutesByFullPath {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -139,8 +176,12 @@ export interface FileRoutesByTo {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,6 +190,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/crisis': typeof CrisisRoute
   '/legal': typeof LegalRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/care': typeof AuthenticatedCareRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/check-ins': typeof AuthenticatedCheckInsRoute
@@ -158,8 +200,12 @@ export interface FileRoutesById {
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,6 +214,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/crisis'
     | '/legal'
+    | '/admin'
     | '/care'
     | '/chat'
     | '/check-ins'
@@ -177,8 +224,12 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/admin/audit'
     | '/admin/crisis'
+    | '/admin/'
+    | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -194,8 +245,12 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/admin/audit'
     | '/admin/crisis'
+    | '/admin'
+    | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/admin/users'
   id:
     | '__root__'
     | '/'
@@ -203,6 +258,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/crisis'
     | '/legal'
+    | '/_authenticated/admin'
     | '/_authenticated/care'
     | '/_authenticated/chat'
     | '/_authenticated/check-ins'
@@ -212,8 +268,12 @@ export interface FileRouteTypes {
     | '/_authenticated/insights'
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
+    | '/_authenticated/admin/audit'
     | '/_authenticated/admin/crisis'
+    | '/_authenticated/admin/'
+    | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/_authenticated/admin/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -261,6 +321,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/legal'
       preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/care': {
       id: '/_authenticated/care'
@@ -325,12 +392,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/crisis': {
       id: '/_authenticated/admin/crisis'
-      path: '/admin/crisis'
+      path: '/crisis'
       fullPath: '/admin/crisis'
       preLoaderRoute: typeof AuthenticatedAdminCrisisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/users/': {
+      id: '/_authenticated/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AuthenticatedAdminUsersIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/users/$userId': {
+      id: '/_authenticated/admin/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AuthenticatedAdminUsersUserIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/api/public/hooks/evaluate-nudges': {
       id: '/api/public/hooks/evaluate-nudges'
@@ -342,7 +437,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
+  AuthenticatedAdminUsersIndexRoute: typeof AuthenticatedAdminUsersIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+    AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
+    AuthenticatedAdminUsersIndexRoute: AuthenticatedAdminUsersIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedCareRoute: typeof AuthenticatedCareRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCheckInsRoute: typeof AuthenticatedCheckInsRoute
@@ -352,10 +470,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedCareRoute: AuthenticatedCareRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCheckInsRoute: AuthenticatedCheckInsRoute,
@@ -365,7 +483,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
