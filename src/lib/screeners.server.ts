@@ -48,16 +48,22 @@ export async function submitScreenerCore(
   // own, independent of total score or severity band. A low total must never
   // suppress this.
   let crisis: CrisisResponse | null = null;
-  if (input.screener_type === "phq9" && (input.responses[8] ?? 0) >= 1) {
-    crisis = buildCrisisResponse(["phq9_item9"]);
-    const logged = await supabase.from("crisis_events").insert({
-      user_id: userId,
-      matched_terms: ["phq9_item9"],
-      severity: "high",
+  const item9 = input.responses[8] ?? 0;
+  if (input.screener_type === "phq9" && item9 >= 1) {
+    // Triage: answering 2-3 ("more than half the days" / "nearly every day")
+    // is treated as high; 1 ("several days") as passive/moderate ideation.
+    const severity = item9 >= 2 ? "high" : "moderate";
+    crisis = buildCrisisResponse(["phq9_item9"], severity);
+    const { logCrisisEvent } = await import("./crisis-alert.server");
+    await logCrisisEvent(supabase, {
+      userId,
       source: "phq9_item9",
+      severity,
+      matchedTerms: ["phq9_item9"],
+      notes: `PHQ-9 item 9 answered ${item9}/3.`,
     });
-    if (logged.error) console.error("crisis_events insert failed", logged.error);
   }
+
 
   // Ordinary submissions should still land somewhere human: close the loop in
   // chat with a plain-language activity card and a short reaction referencing

@@ -210,7 +210,10 @@ export type Database = {
       }
       crisis_events: {
         Row: {
+          alert_sent_at: string | null
           created_at: string
+          escalation_count: number
+          escalation_sent_at: string | null
           id: string
           matched_terms: string[]
           message_id: string | null
@@ -223,7 +226,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alert_sent_at?: string | null
           created_at?: string
+          escalation_count?: number
+          escalation_sent_at?: string | null
           id?: string
           matched_terms?: string[]
           message_id?: string | null
@@ -236,7 +242,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alert_sent_at?: string | null
           created_at?: string
+          escalation_count?: number
+          escalation_sent_at?: string | null
           id?: string
           matched_terms?: string[]
           message_id?: string | null

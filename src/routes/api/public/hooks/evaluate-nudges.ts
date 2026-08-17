@@ -41,6 +41,17 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         }
 
+        // Crisis escalation: unreviewed crisis events older than 30 minutes get
+        // a repeat, more urgent admin email on every sweep until reviewed.
+        let escalated = 0;
+        try {
+          const { escalateUnreviewedCrisisEvents } = await import("@/lib/crisis-alert.server");
+          const result = await escalateUnreviewedCrisisEvents(supabaseAdmin);
+          escalated = result.escalated;
+        } catch (escalationError) {
+          console.error("crisis escalation sweep failed", escalationError);
+        }
+
         let created = 0;
         let digests = 0;
         let recomputed = 0;
@@ -73,7 +84,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
         }
 
         return new Response(
-          JSON.stringify({ ok: true, users: data?.length ?? 0, created, digests, recomputed }),
+          JSON.stringify({ ok: true, users: data?.length ?? 0, created, digests, recomputed, escalated }),
           { headers: { "Content-Type": "application/json" } },
         );
       },

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { buildCrisisResponse, detectCrisis, type CrisisResponse } from "./crisis";
+import { triageCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
 import { checkRateLimit, RATE_LIMIT_MESSAGE } from "./chat-rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
@@ -126,9 +126,9 @@ export const sendMessage = createServerFn({ method: "POST" })
       threadId = created.data.id;
     }
 
-    // --- Crisis-detection middleware: runs BEFORE any LLM call ---
-    const matched = detectCrisis(data.content);
-    const flagged = matched.length > 0;
+    // --- Crisis gate: runs BEFORE any companion LLM call and BEFORE the
+    // per-user rate limiter (see crisis-gate.server.ts). DO NOT REORDER. ---
+    const triage = triageCrisis(data.content);
 
     const savedUser = await supabase
       .from("chat_messages")
@@ -137,53 +137,13 @@ export const sendMessage = createServerFn({ method: "POST" })
         user_id: userId,
         sender: "user",
         content: data.content,
-        flagged_crisis: flagged,
+        flagged_crisis: triage.matched.length > 0,
         quick_action: data.quick_action ?? null,
       })
       .select("id, content, flagged_crisis, created_at")
       .single();
     if (savedUser.error) throw savedUser.error;
 
-    if (flagged) {
-      const crisis = buildCrisisResponse(matched);
-
-      // Safety review log — never blocks the user.
-      const logged = await supabase.from("crisis_events").insert({
-        user_id: userId,
-        message_id: savedUser.data.id,
-        matched_terms: matched,
-        severity: "high",
-      });
-      if (logged.error) console.error("crisis_events insert failed", logged.error);
-
-      const savedCrisis = await supabase
-        .from("chat_messages")
-        .insert({
-          thread_id: threadId,
-          user_id: userId,
-          sender: "system",
-          content: crisis.message,
-          flagged_crisis: true,
-        })
-        .select("id, created_at")
-        .single();
-      if (savedCrisis.error) throw savedCrisis.error;
-
-      await supabase
-        .from("chat_threads")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", threadId);
-
-      return {
-        thread_id: threadId,
-        userMessage: { ...savedUser.data, sender: "user" as const },
-        reply: { ...crisis, id: savedCrisis.data.id, created_at: savedCrisis.data.created_at },
-      };
-    }
-
-    // --- Semantic crisis backstop: only runs when the regex gate found nothing.
-    // Fails open (see crisis-classifier.server.ts) so chat is never blocked. ---
-    const { classifyCrisisRisk } = await import("./crisis-classifier.server");
     const recentTurns = await supabase
       .from("chat_messages")
       .select("sender, content")
@@ -192,55 +152,37 @@ export const sendMessage = createServerFn({ method: "POST" })
       .neq("id", savedUser.data.id)
       .order("created_at", { ascending: false })
       .limit(2);
-    const semantic = await classifyCrisisRisk(
-      data.content,
-      (recentTurns.data ?? []).reverse().map((row) => ({ sender: row.sender, content: row.content })),
-    );
 
-    if (semantic.flagged) {
-      const crisis = buildCrisisResponse([]);
+    const { runCrisisGate } = await import("./crisis-gate.server");
+    const gated = await runCrisisGate(supabase, {
+      userId,
+      threadId,
+      messageId: savedUser.data.id,
+      content: data.content,
+      recentTurns: (recentTurns.data ?? [])
+        .reverse()
+        .map((row) => ({ sender: row.sender, content: row.content })),
+    });
 
-      await supabase
-        .from("chat_messages")
-        .update({ flagged_crisis: true })
-        .eq("id", savedUser.data.id);
-
-      const logged = await supabase.from("crisis_events").insert({
-        user_id: userId,
-        message_id: savedUser.data.id,
-        matched_terms: [],
-        severity: "high",
-        source: "semantic_classifier",
-        notes: semantic.reason,
-      });
-      if (logged.error) console.error("crisis_events insert failed", logged.error);
-
-      const savedCrisis = await supabase
-        .from("chat_messages")
-        .insert({
-          thread_id: threadId,
-          user_id: userId,
-          sender: "system",
-          content: crisis.message,
-          flagged_crisis: true,
-        })
-        .select("id, created_at")
-        .single();
-      if (savedCrisis.error) throw savedCrisis.error;
-
-      await supabase
-        .from("chat_threads")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", threadId);
-
+    if (gated) {
       return {
         thread_id: threadId,
-        userMessage: { ...savedUser.data, flagged_crisis: true, sender: "user" as const },
-        reply: { ...crisis, id: savedCrisis.data.id, created_at: savedCrisis.data.created_at },
+        userMessage: {
+          ...savedUser.data,
+          flagged_crisis: true,
+          sender: "user" as const,
+        },
+        reply: {
+          ...gated.crisis,
+          id: gated.systemMessage.id,
+          created_at: gated.systemMessage.created_at,
+        },
       };
     }
 
-    // --- Per-user rate limit (normal chat path only; never gates crisis) ---
+
+    // --- Per-user rate limit (normal chat path only; never gates crisis).
+    // Both crisis checks above have already run and come up clear. ---
     const limit = await checkRateLimit(supabase, userId);
     if (!limit.allowed) {
       const savedLimit = await supabase

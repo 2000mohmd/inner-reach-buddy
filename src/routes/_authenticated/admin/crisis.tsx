@@ -32,6 +32,13 @@ const SOURCE_LABELS: Record<string, string> = {
   chat: "Chat (regex gate)",
   phq9_item9: "PHQ-9 item 9",
   semantic_classifier: "Semantic backstop",
+  session_drift_sweep: "Session drift sweep",
+};
+
+const SEVERITY_STYLES: Record<string, string> = {
+  critical: "border-crisis/60 bg-crisis-surface text-crisis",
+  high: "border-crisis/30 bg-crisis-surface/60 text-crisis",
+  moderate: "border-border bg-muted text-muted-foreground",
 };
 
 function formatWhen(value: string) {
@@ -73,7 +80,8 @@ function CrisisReviewPage() {
           </p>
           <h1 className="font-display text-3xl">Crisis review</h1>
           <p className="text-sm text-muted-foreground">
-            Flagged moments that a human should look at. Unreviewed first.
+            Flagged moments that a human should look at. Unreviewed first, most
+            severe first.
           </p>
         </header>
 
@@ -135,8 +143,15 @@ function CrisisReviewPage() {
                             {formatWhen(event.created_at)}
                           </span>
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {SOURCE_LABELS[event.source] ?? event.source} · severity {event.severity}
+                        <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
+                              SEVERITY_STYLES[event.severity] ?? SEVERITY_STYLES["moderate"]
+                            }`}
+                          >
+                            {event.severity}
+                          </span>
+                          <span>{SOURCE_LABELS[event.source] ?? event.source}</span>
                         </p>
                         {event.matched_terms.length > 0 && (
                           <p className="text-xs text-muted-foreground">

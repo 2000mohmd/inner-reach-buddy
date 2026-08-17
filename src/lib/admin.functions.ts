@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { severityRank } from "./crisis";
 
 export type CrisisReviewRow = {
   id: string;
@@ -47,10 +48,10 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("crisis_events")
       .select("id, user_id, created_at, source, severity, matched_terms, notes, reviewed, reviewed_at")
-      .order("reviewed", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
+
 
     const rows = data ?? [];
     const userIds = [...new Set(rows.map((row) => row.user_id))];
@@ -64,8 +65,10 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
       for (const profile of profiles.data ?? []) names.set(profile.id, profile.preferred_name);
     }
 
-    return {
-      events: rows.map((row) => ({
+    // Triage order: unreviewed first, then by severity (critical → high →
+    // moderate), then newest first.
+    const events = rows
+      .map((row) => ({
         id: row.id,
         created_at: row.created_at,
         source: row.source,
@@ -75,9 +78,19 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
         reviewed: row.reviewed,
         reviewed_at: row.reviewed_at ?? null,
         preferred_name: names.get(row.user_id) ?? null,
-      })),
+      }))
+      .sort((a, b) => {
+        if (a.reviewed !== b.reviewed) return a.reviewed ? 1 : -1;
+        const bySeverity = severityRank(a.severity) - severityRank(b.severity);
+        if (bySeverity !== 0) return bySeverity;
+        return b.created_at.localeCompare(a.created_at);
+      });
+
+    return {
+      events,
       unreviewed: rows.filter((row) => !row.reviewed).length,
     };
+
   });
 
 export const countUnreviewedCrisisEvents = createServerFn({ method: "GET" })

@@ -68,6 +68,30 @@ export async function ensureThreadSummary(
   const transcript = (messages.data ?? []).filter((entry) => entry.sender !== "system");
   if (transcript.length < 2) return;
 
+  // --- Session-level drift sweep (Phase 11) ---
+  // Slower complementary net: the per-message backstop only sees ~2 turns, so
+  // risk that builds gradually across a whole conversation can slip past it.
+  // Runs once, after the thread closes. Fails open; never blocks summarizing.
+  try {
+    const { classifySessionDrift } = await import("./crisis-classifier.server");
+    const drift = await classifySessionDrift(
+      transcript.map((entry) => ({ sender: entry.sender, content: entry.content })),
+    );
+    if (drift.flagged) {
+      const { logCrisisEvent } = await import("./crisis-alert.server");
+      await logCrisisEvent(supabase, {
+        userId,
+        source: "session_drift_sweep",
+        severity: drift.severity ?? "high",
+        matchedTerms: [],
+        notes: drift.reason,
+      });
+    }
+  } catch (error) {
+    console.error("session drift sweep failed", error);
+  }
+
+
   const openCommitments = (commitments.data ?? []).filter((row) => row.status === "pending");
   const commitmentLine = openCommitments.length
     ? `\n\nThings they committed to: ${openCommitments.map((row) => row.description).join("; ")}.`
