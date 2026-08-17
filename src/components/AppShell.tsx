@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LifeBuoy, Leaf } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { SafetyFooter } from "./SafetyFooter";
 import { AppSidebar, SIDEBAR_NAV } from "./AppSidebar";
@@ -33,9 +33,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon className="size-4" aria-hidden />
             </Link>
           ))}
-          <Link to="/crisis" aria-label="Immediate support" className="rounded-full p-2 text-crisis">
-            <LifeBuoy className="size-5" aria-hidden />
-          </Link>
         </header>
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>

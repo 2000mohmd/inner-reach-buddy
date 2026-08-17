@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AppShell } from "@/components/AppShell";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { amIAdmin } from "@/lib/admin.functions";
@@ -29,14 +29,26 @@ function AdminLayout() {
   });
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-1">
-        <header className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Internal
-          </p>
-          <h1 className="font-display text-3xl">Kalm admin</h1>
-        </header>
+    <div className="min-h-screen bg-muted/30">
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3">
+          <ShieldAlert className="size-5 text-primary" aria-hidden />
+          <div className="mr-auto">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Internal
+            </p>
+            <p className="font-display text-lg leading-tight">Kalm admin</p>
+          </div>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/chat">
+              <ArrowLeft className="size-4" aria-hidden />
+              Back to app
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
 
         {isLoading ? (
           <Skeleton className="h-24 w-full rounded-2xl" />
@@ -68,6 +80,6 @@ function AdminLayout() {
           </>
         )}
       </div>
-    </AppShell>
+    </div>
   );
 }
