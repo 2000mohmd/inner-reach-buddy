@@ -105,20 +105,42 @@ export const CRISIS_RESOURCES: CrisisResource[] = [
 export const CRISIS_DISCLAIMER =
   "Kalm is a wellness companion, not a therapist or emergency service. Please reach out to a real person or one of the lines above.";
 
-/** Returns the matched crisis phrases; empty array means no crisis language found. */
-export function detectCrisis(text: string): string[] {
+/**
+ * Deterministic regex gate with tiered triage.
+ * `matched` empty means no crisis language found; `severity` is null then.
+ */
+export function triageCrisis(text: string): {
+  matched: string[];
+  severity: CrisisSeverity | null;
+} {
   const matched: string[] = [];
-  for (const pattern of HIGH_RISK_PATTERNS) {
-    const hit = text.match(pattern);
-    if (hit) matched.push(hit[0].toLowerCase());
+  let severity: CrisisSeverity | null = null;
+
+  for (const tier of TIERS) {
+    for (const pattern of tier.patterns) {
+      const hit = text.match(pattern);
+      if (hit) {
+        matched.push(hit[0].toLowerCase());
+        if (!severity) severity = tier.severity;
+      }
+    }
   }
-  return [...new Set(matched)];
+
+  return { matched: [...new Set(matched)], severity };
 }
 
-export function buildCrisisResponse(matched: string[]): CrisisResponse {
+/** Returns the matched crisis phrases; empty array means no crisis language found. */
+export function detectCrisis(text: string): string[] {
+  return triageCrisis(text).matched;
+}
+
+export function buildCrisisResponse(
+  matched: string[],
+  severity: CrisisSeverity = "high",
+): CrisisResponse {
   return {
     type: "crisis",
-    severity: "high",
+    severity,
     message:
       "Thank you for telling me. What you just shared sounds really heavy, and I'm glad you said it out loud rather than carrying it alone. I'm not able to keep this part of the conversation going on my own, because you deserve support from someone trained for moments like this — right now. You are not in trouble, and you have not done anything wrong.",
     matched,
@@ -126,3 +148,4 @@ export function buildCrisisResponse(matched: string[]): CrisisResponse {
     disclaimer: CRISIS_DISCLAIMER,
   };
 }
+
