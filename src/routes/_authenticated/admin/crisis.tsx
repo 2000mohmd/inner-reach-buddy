@@ -5,7 +5,7 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listCrisisEvents, markCrisisReviewed } from "@/lib/admin.functions";
+import { amIAdmin, listCrisisEvents, markCrisisReviewed } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/crisis")({
   head: () => ({
