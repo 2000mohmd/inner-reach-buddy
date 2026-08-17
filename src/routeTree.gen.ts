@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CrisisRouteImport } from './routes/crisis'
 import { Route as LegalRouteImport } from './routes/legal'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedCareRouteImport } from './routes/_authenticated/care'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCheckInsRouteImport } from './routes/_authenticated/check-ins'
@@ -49,6 +50,11 @@ const LegalRoute = LegalRouteImport.update({
   id: '/legal',
   path: '/legal',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCareRoute = AuthenticatedCareRouteImport.update({
   id: '/care',
@@ -97,9 +103,9 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 } as any)
 const AuthenticatedAdminCrisisRoute =
   AuthenticatedAdminCrisisRouteImport.update({
-    id: '/admin/crisis',
-    path: '/admin/crisis',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/crisis',
+    path: '/crisis',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const ApiPublicHooksEvaluateNudgesRoute =
   ApiPublicHooksEvaluateNudgesRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/crisis': typeof CrisisRoute
   '/legal': typeof LegalRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/care': typeof AuthenticatedCareRoute
   '/chat': typeof AuthenticatedChatRoute
   '/check-ins': typeof AuthenticatedCheckInsRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/crisis': typeof CrisisRoute
   '/legal': typeof LegalRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/care': typeof AuthenticatedCareRoute
   '/chat': typeof AuthenticatedChatRoute
   '/check-ins': typeof AuthenticatedCheckInsRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/crisis': typeof CrisisRoute
   '/legal': typeof LegalRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/care': typeof AuthenticatedCareRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/check-ins': typeof AuthenticatedCheckInsRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/crisis'
     | '/legal'
+    | '/admin'
     | '/care'
     | '/chat'
     | '/check-ins'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/crisis'
     | '/legal'
+    | '/admin'
     | '/care'
     | '/chat'
     | '/check-ins'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/crisis'
     | '/legal'
+    | '/_authenticated/admin'
     | '/_authenticated/care'
     | '/_authenticated/chat'
     | '/_authenticated/check-ins'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/legal'
       preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/care': {
       id: '/_authenticated/care'
@@ -327,10 +346,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/crisis': {
       id: '/_authenticated/admin/crisis'
-      path: '/admin/crisis'
+      path: '/crisis'
       fullPath: '/admin/crisis'
       preLoaderRoute: typeof AuthenticatedAdminCrisisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/api/public/hooks/evaluate-nudges': {
       id: '/api/public/hooks/evaluate-nudges'
@@ -342,7 +361,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedCareRoute: typeof AuthenticatedCareRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCheckInsRoute: typeof AuthenticatedCheckInsRoute
@@ -352,10 +386,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedCareRoute: AuthenticatedCareRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCheckInsRoute: AuthenticatedCheckInsRoute,
@@ -365,7 +399,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
