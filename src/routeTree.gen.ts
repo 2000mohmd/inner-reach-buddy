@@ -24,9 +24,12 @@ import { Route as AuthenticatedHabitsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminCrisisRouteImport } from './routes/_authenticated/admin/crisis'
+import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
+import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin/users/index'
 import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_authenticated/admin/users/$userId'
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
@@ -105,6 +108,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -121,6 +129,17 @@ const AuthenticatedAdminCrisisRoute =
     path: '/crisis',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminSupportRoute =
+  AuthenticatedAdminSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminUsersIndexRoute =
   AuthenticatedAdminUsersIndexRouteImport.update({
     id: '/users/',
@@ -155,8 +174,11 @@ export interface FileRoutesByFullPath {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
@@ -176,8 +198,11 @@ export interface FileRoutesByTo {
   '/insights': typeof AuthenticatedInsightsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
@@ -200,8 +225,11 @@ export interface FileRoutesById {
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/crisis': typeof AuthenticatedAdminCrisisRoute
+  '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
@@ -224,8 +252,11 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/support'
     | '/admin/audit'
     | '/admin/crisis'
+    | '/admin/support'
+    | '/admin/team'
     | '/admin/'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
@@ -245,8 +276,11 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/settings'
+    | '/support'
     | '/admin/audit'
     | '/admin/crisis'
+    | '/admin/support'
+    | '/admin/team'
     | '/admin'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
@@ -268,8 +302,11 @@ export interface FileRouteTypes {
     | '/_authenticated/insights'
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
+    | '/_authenticated/support'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/crisis'
+    | '/_authenticated/admin/support'
+    | '/_authenticated/admin/team'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
@@ -392,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
@@ -411,6 +455,20 @@ declare module '@tanstack/react-router' {
       path: '/crisis'
       fullPath: '/admin/crisis'
       preLoaderRoute: typeof AuthenticatedAdminCrisisRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/support': {
+      id: '/_authenticated/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AuthenticatedAdminSupportRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/team': {
+      id: '/_authenticated/admin/team'
+      path: '/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/users/': {
@@ -440,6 +498,8 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminCrisisRoute: typeof AuthenticatedAdminCrisisRoute
+  AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
+  AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
   AuthenticatedAdminUsersIndexRoute: typeof AuthenticatedAdminUsersIndexRoute
@@ -449,6 +509,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
   {
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminCrisisRoute: AuthenticatedAdminCrisisRoute,
+    AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
+    AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
     AuthenticatedAdminUsersIndexRoute: AuthenticatedAdminUsersIndexRoute,
@@ -470,6 +532,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -483,6 +546,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSupportRoute: AuthenticatedSupportRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

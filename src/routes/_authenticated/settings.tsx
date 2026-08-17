@@ -127,6 +127,23 @@ function SettingsPage() {
             </div>
           </section>
 
+          <section className="surface-soft p-6">
+            <h2 className="text-lg">Contact support</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Questions about your account, billing, a bug, or feedback for us? Send a message and
+              we'll reply right inside Kalm. For anything urgent about how you're feeling, use the
+              support resources page instead.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button asChild className="rounded-full">
+                <Link to="/support">Message support</Link>
+              </Button>
+              <Button asChild variant="secondary" className="rounded-full">
+                <Link to="/care">Support resources</Link>
+              </Button>
+            </div>
+          </section>
+
           <YourDataSection />
 
           <section className="surface-soft p-6">
