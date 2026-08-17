@@ -11,10 +11,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_NAV = [
-  { to: "/admin", label: "Overview", exact: true },
-  { to: "/admin/users", label: "Users", exact: false },
-  { to: "/admin/crisis", label: "Crisis", exact: false },
-  { to: "/admin/audit", label: "Audit log", exact: false },
+  { to: "/admin", label: "Overview", exact: true, superOnly: false },
+  { to: "/admin/users", label: "Users", exact: false, superOnly: false },
+  { to: "/admin/crisis", label: "Crisis", exact: false, superOnly: false },
+  { to: "/admin/support", label: "Support", exact: false, superOnly: false },
+  { to: "/admin/team", label: "Team", exact: false, superOnly: true },
+  { to: "/admin/audit", label: "Audit log", exact: false, superOnly: false },
 ] as const;
 
 function AdminLayout() {
@@ -51,7 +53,7 @@ function AdminLayout() {
         ) : (
           <>
             <nav className="flex flex-wrap gap-1 rounded-xl border border-border bg-card p-1">
-              {ADMIN_NAV.map((item) => (
+              {ADMIN_NAV.filter((item) => !item.superOnly || data?.isSuperAdmin).map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -61,12 +63,6 @@ function AdminLayout() {
                   {item.label}
                 </Link>
               ))}
-              <span className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground/50">
-                Support (soon)
-              </span>
-              <span className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground/50">
-                Team (soon)
-              </span>
             </nav>
             <Outlet />
           </>

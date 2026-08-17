@@ -744,6 +744,65 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sender: Database["public"]["Enums"]["support_sender"]
+          thread_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sender: Database["public"]["Enums"]["support_sender"]
+          thread_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sender?: Database["public"]["Enums"]["support_sender"]
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "support_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_threads: {
+        Row: {
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["support_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       thread_summaries: {
         Row: {
           created_at: string
@@ -904,6 +963,8 @@ export type Database = {
       commitment_source: "chat" | "exercise"
       commitment_status: "pending" | "done" | "skipped"
       subscription_tier: "free" | "premium" | "org"
+      support_sender: "user" | "admin"
+      support_status: "open" | "in_progress" | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1037,6 +1098,8 @@ export const Constants = {
       commitment_source: ["chat", "exercise"],
       commitment_status: ["pending", "done", "skipped"],
       subscription_tier: ["free", "premium", "org"],
+      support_sender: ["user", "admin"],
+      support_status: ["open", "in_progress", "resolved"],
     },
   },
 } as const
