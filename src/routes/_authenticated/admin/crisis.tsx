@@ -53,11 +53,20 @@ function formatWhen(value: string) {
 function CrisisReviewPage() {
   const fetchEvents = useServerFn(listCrisisEvents);
   const review = useServerFn(markCrisisReviewed);
+  const checkAdmin = useServerFn(amIAdmin);
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  const { data: adminData } = useQuery({
+    queryKey: ["admin-status"],
+    queryFn: () => checkAdmin(),
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const { data, isLoading } = useQuery({
     queryKey: ["admin-crisis-events"],
     queryFn: () => fetchEvents(),
+    enabled: adminData?.isAdmin === true,
     retry: false,
   });
 
@@ -69,7 +78,7 @@ function CrisisReviewPage() {
     },
   });
 
-  const forbidden = error instanceof Error && /forbidden/i.test(error.message);
+  const forbidden = adminData?.isAdmin === false;
 
   return (
     <AppShell>
