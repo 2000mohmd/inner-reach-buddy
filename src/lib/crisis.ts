@@ -65,7 +65,7 @@ const MODERATE_PATTERNS: RegExp[] = [
   /\bbetter\s+off\s+dead\b/i,
   /\bbetter\s+off\s+without\s+me\b/i,
   /\bwish\s+i\s+(wasn'?t|was\s+not)\s+(here|alive|around|born)\b/i,
-  /\bwish\s+i\s+(could\s+)?(disappear|stop\s+existing|not\s+wake\s+up)\b/i,
+  /\bwish\s+i\s+(could\s+)?(just\s+|simply\s+)?(disappear|vanish|stop\s+existing|not\s+wake\s+up)\b/i,
   /\bdon'?t\s+want\s+to\s+(wake\s+up|be\s+here|exist)\b/i,
   /\bwhat'?s\s+the\s+point\s+of\s+(living|being\s+here|any\s+of\s+it)\b/i,
   /\btired\s+of\s+being\s+alive\b/i,
