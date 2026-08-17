@@ -169,6 +169,38 @@ on conflict (user_id, role) do nothing;
 ### Admin audit log
 
 `admin_audit_log` records privileged actions: `viewed_user`,
-`resolved_crisis_event`, and (Phase 13) `replied_support_ticket`,
-`granted_role`. Entries are append-only — admins can read and insert their own
+`resolved_crisis_event`, `replied_support_ticket`, `granted_role`, and
+`revoked_role`. Entries are append-only — admins can read and insert their own
 rows only. Visible at `/admin/audit`, filterable by admin and action.
+
+## Team & role management (Phase 13)
+
+`/admin/team` is gated at the **server-function** level (`assertSuperAdmin` in
+`src/lib/admin-support.functions.ts`), not just hidden in the nav: a plain
+`admin` calling `listTeam` / `changeUserRole` gets `Forbidden`. Grants and
+revokes run through the service role (`src/lib/admin-team.server.ts`) because
+`user_roles` is read-only for authenticated users, always behind an extra
+confirmation dialog (worded more strongly for `super_admin`), and always
+audit-logged. Revoking the last `super_admin` is refused so the app can't be
+locked out.
+
+## Support channel (Phase 13)
+
+Deliberately separate from `crisis_events` and `chat_messages` — this is
+account/product support, not a mental-health path. The companion and the crisis
+flow remain the routes for anything emotional or safety-related, and the member
+UI links to `/care` for urgent needs.
+
+- `support_threads` (subject, status `open` | `in_progress` | `resolved`) and
+  `support_messages` (`sender` = `user` | `admin`). RLS: members read/write only
+  their own threads; admins read all, reply, and set status. No deletes.
+- Member UI: `/support` (entry point in Settings) — start a thread, read admin
+  replies, reply back. `?thread=<id>` deep-links a conversation, which is the
+  link used in notification emails.
+- Admin UI: `/admin/support` — open-first inbox with member name, latest
+  message preview, status and `updated_at`; thread detail with reply box and
+  status control.
+- On an admin reply: message insert → status bump (`open` → `in_progress`
+  unless explicitly set) → Resend email to the member's account email with a
+  short excerpt plus a link back (never the full reply) →
+  `replied_support_ticket` audit entry. Email failure never blocks the reply.
