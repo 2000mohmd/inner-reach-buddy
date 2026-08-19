@@ -44,9 +44,22 @@ export type SemanticCrisisResult = {
   flagged: boolean;
   severity: CrisisSeverity | null;
   reason: string | null;
+  /**
+   * True when the classifier itself errored and we returned "not flagged"
+   * without an actual verdict. The crisis gate uses this to fail SAFE for
+   * non-English messages, where the regex tier is a weaker net.
+   */
+  failedOpen?: boolean;
 };
 
 const NOT_FLAGGED: SemanticCrisisResult = { flagged: false, severity: null, reason: null };
+
+const CLASSIFIER_ERROR: SemanticCrisisResult = {
+  flagged: false,
+  severity: null,
+  reason: "classifier_unavailable",
+  failedOpen: true,
+};
 
 function parseVerdict(text: string): SemanticCrisisResult {
   const flagged = /^\s*yes\b/i.test(text);
@@ -85,7 +98,7 @@ async function classify(
   } catch (error) {
     // Fail open — log and let the normal conversation continue.
     console.error("semantic crisis classifier failed", error);
-    return NOT_FLAGGED;
+    return CLASSIFIER_ERROR;
   }
 }
 
