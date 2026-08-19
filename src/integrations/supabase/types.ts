@@ -671,6 +671,7 @@ export type Database = {
           consent_accepted_at: string | null
           created_at: string
           id: string
+          language: string
           onboarding_completed: boolean
           org_id: string | null
           preferred_name: string | null
@@ -686,6 +687,7 @@ export type Database = {
           consent_accepted_at?: string | null
           created_at?: string
           id: string
+          language?: string
           onboarding_completed?: boolean
           org_id?: string | null
           preferred_name?: string | null
@@ -701,6 +703,7 @@ export type Database = {
           consent_accepted_at?: string | null
           created_at?: string
           id?: string
+          language?: string
           onboarding_completed?: boolean
           org_id?: string | null
           preferred_name?: string | null
