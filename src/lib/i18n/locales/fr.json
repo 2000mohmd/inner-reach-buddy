@@ -1,0 +1,38 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "continue": "Continuer",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "goHome": "Accueil",
+    "somethingWentWrong": "Une erreur est survenue de notre côté. Vous pouvez rafraîchir la page ou revenir à l'accueil.",
+    "pageNotFound": "Page introuvable",
+    "pageNotFoundBody": "La page que vous cherchez n'existe pas ou a été déplacée.",
+    "pageDidntLoad": "Cette page ne s'est pas chargée"
+  },
+  "nav": {
+    "companion": "Compagnon",
+    "progress": "Progrès",
+    "exercises": "Exercices",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter",
+    "collapseSidebar": "Réduire le menu",
+    "expandSidebar": "Ouvrir le menu",
+    "newConversation": "Nouvelle conversation"
+  },
+  "language": {
+    "sectionTitle": "Langue",
+    "sectionDescription": "Choisissez la langue de l'application et des réponses de votre compagnon.",
+    "label": "Langue de l'application",
+    "saved": "Langue mise à jour",
+    "saveFailed": "Impossible d'enregistrer votre langue. Veuillez réessayer.",
+    "reviewNotice": "Les traductions arabes et françaises sont des brouillons en attente de relecture clinique.",
+    "companionNote": "Votre compagnon répondra dans cette langue."
+  }
+}
