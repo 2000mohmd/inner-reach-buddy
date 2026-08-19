@@ -76,6 +76,8 @@ function parseVerdict(text: string): SemanticCrisisResult {
   return { flagged: true, severity: tier ?? "high", reason };
 }
 
+const MULTILINGUAL_NOTE = `The person may write in English, Arabic (including Levantine or Gulf colloquial) or French, and may mix languages within one message. Judge the meaning in whatever language they used, applying exactly the same thresholds — never treat a non-English message as lower risk because it is harder to read. Always answer in the English format specified above.`;
+
 async function classify(
   system: string,
   userContent: string,
@@ -84,7 +86,7 @@ async function classify(
     const payload = await callCompanionModel({
       model: CLASSIFIER_MODEL,
       maxTokens: CLASSIFIER_MAX_TOKENS,
-      system,
+      system: `${system}\n\n${MULTILINGUAL_NOTE}`,
       messages: [{ role: "user", content: userContent }],
     });
 
