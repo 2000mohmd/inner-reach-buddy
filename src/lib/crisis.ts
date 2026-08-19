@@ -187,9 +187,88 @@ export const CRISIS_RESOURCES: CrisisResource[] = [
 export const CRISIS_DISCLAIMER =
   "Kalm is a wellness companion, not a therapist or emergency service. Please reach out to a real person or one of the lines above.";
 
+const CRISIS_MESSAGE_EN =
+  "Thank you for telling me. What you just shared sounds really heavy, and I'm glad you said it out loud rather than carrying it alone. I'm not able to keep this part of the conversation going on my own, because you deserve support from someone trained for moments like this — right now. You are not in trouble, and you have not done anything wrong.";
+
 /**
- * Deterministic regex gate with tiered triage.
- * `matched` empty means no crisis language found; `severity` is null then.
+ * Localized crisis copy. DRAFT — pending clinician review for ar/fr.
+ * Phone numbers are intentionally left as-is: 988 / 741741 are US lines and
+ * findahelpline.com is the international router for every other locale.
+ */
+const CRISIS_COPY: Record<
+  string,
+  { message: string; disclaimer: string; resources: CrisisResource[] }
+> = {
+  en: {
+    message: CRISIS_MESSAGE_EN,
+    disclaimer: CRISIS_DISCLAIMER,
+    resources: CRISIS_RESOURCES,
+  },
+  ar: {
+    message:
+      "شكراً لأنك أخبرتني. ما شاركته الآن يبدو ثقيلاً جداً، وأنا ممتن أنك قلته بصوت عالٍ بدلاً من أن تحمله وحدك. لا أستطيع متابعة هذا الجزء من الحديث بمفردي، لأنك تستحق دعماً من شخص مدرّب لمثل هذه اللحظات — الآن. أنت لست في مشكلة، ولم تفعل أي شيء خطأ.",
+    disclaimer:
+      "كالم رفيق للعافية النفسية، وليس معالجاً أو خدمة طوارئ. تواصل من فضلك مع شخص حقيقي أو مع أحد الخطوط أعلاه.",
+    resources: [
+      {
+        name: "خط 988 للأزمات ومنع الانتحار (الولايات المتحدة)",
+        contact: "اتصل أو أرسل رسالة إلى 988",
+        detail: "دعم مجاني وسري على مدار الساعة.",
+      },
+      {
+        name: "خط الرسائل للأزمات",
+        contact: "أرسل HOME إلى 741741",
+        detail: "تحدّث بالرسائل مع مستشار أزمات مدرّب، 24/7.",
+      },
+      {
+        name: "خدمات الطوارئ",
+        contact: "اتصل بـ 911 (أو رقم الطوارئ في بلدك)",
+        detail: "إذا كنت في خطر مباشر، اطلب المساعدة الآن.",
+      },
+      {
+        name: "خطوط دعم دولية",
+        contact: "findahelpline.com",
+        detail: "ابحث عن خط دعم مجاني في أي مكان في العالم.",
+      },
+    ],
+  },
+  fr: {
+    message:
+      "Merci de me l'avoir dit. Ce que vous venez de partager semble très lourd, et je suis content que vous l'ayez exprimé plutôt que de le porter seul. Je ne peux pas poursuivre seul cette partie de la conversation, parce que vous méritez le soutien d'une personne formée pour ces moments — maintenant. Vous n'avez aucun ennui, et vous n'avez rien fait de mal.",
+    disclaimer:
+      "Kalm est un compagnon de bien-être, pas un thérapeute ni un service d'urgence. Contactez une personne réelle ou l'une des lignes ci-dessus.",
+    resources: [
+      {
+        name: "Ligne 988 (États-Unis)",
+        contact: "Appelez ou envoyez un SMS au 988",
+        detail: "Soutien gratuit et confidentiel, 24h/24.",
+      },
+      {
+        name: "Crisis Text Line",
+        contact: "Envoyez HOME au 741741",
+        detail: "Échangez par SMS avec un intervenant de crise formé, 24h/24.",
+      },
+      {
+        name: "Services d'urgence",
+        contact: "Appelez le 112 / 911 (ou votre numéro d'urgence local)",
+        detail: "Si vous êtes en danger immédiat, demandez de l'aide maintenant.",
+      },
+      {
+        name: "International",
+        contact: "findahelpline.com",
+        detail: "Trouvez une ligne d'écoute gratuite partout dans le monde.",
+      },
+    ],
+  },
+};
+
+export function crisisCopy(language: string | null | undefined) {
+  return CRISIS_COPY[language ?? "en"] ?? CRISIS_COPY.en;
+}
+
+/**
+ * Deterministic regex gate with tiered triage. Patterns cover English, Arabic
+ * and French; `matched` empty means no crisis language found in any of them.
  */
 export function triageCrisis(text: string): {
   matched: string[];
@@ -219,15 +298,17 @@ export function detectCrisis(text: string): string[] {
 export function buildCrisisResponse(
   matched: string[],
   severity: CrisisSeverity = "high",
+  language: string | null = "en",
 ): CrisisResponse {
+  const copy = crisisCopy(language);
   return {
     type: "crisis",
     severity,
-    message:
-      "Thank you for telling me. What you just shared sounds really heavy, and I'm glad you said it out loud rather than carrying it alone. I'm not able to keep this part of the conversation going on my own, because you deserve support from someone trained for moments like this — right now. You are not in trouble, and you have not done anything wrong.",
+    message: copy.message,
     matched,
-    resources: CRISIS_RESOURCES,
-    disclaimer: CRISIS_DISCLAIMER,
+    resources: copy.resources,
+    disclaimer: copy.disclaimer,
   };
 }
+
 
