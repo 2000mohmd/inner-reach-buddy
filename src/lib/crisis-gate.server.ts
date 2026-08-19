@@ -10,6 +10,7 @@
 // in crisis-gate.test.ts).
 import type { CrisisResponse } from "./crisis";
 import { buildCrisisResponse, triageCrisis } from "./crisis";
+import { detectMessageScript, normalizeLanguage, type Language } from "./i18n/languages";
 
 type AnyClient = { from: (table: string) => any };
 
@@ -30,6 +31,7 @@ async function recordCrisis(
     severity: "critical" | "high" | "moderate";
     matched: string[];
     notes?: string | null;
+    language?: Language;
   },
 ): Promise<{ id: string; created_at: string }> {
   const { logCrisisEvent } = await import("./crisis-alert.server");
@@ -48,7 +50,7 @@ async function recordCrisis(
       thread_id: input.threadId,
       user_id: input.userId,
       sender: "system",
-      content: buildCrisisResponse(input.matched, input.severity).message,
+      content: buildCrisisResponse(input.matched, input.severity, input.language ?? "en").message,
       flagged_crisis: true,
     })
     .select("id, created_at")
@@ -76,8 +78,11 @@ export async function runCrisisGate(
     messageId: string;
     content: string;
     recentTurns: { sender: string; content: string }[];
+    /** The person's selected app language; drives the localized crisis copy. */
+    language?: string | null;
   },
 ): Promise<CrisisGateResult> {
+  const language = normalizeLanguage(input.language);
   const triage = triageCrisis(input.content);
 
   if (triage.matched.length > 0) {
@@ -87,9 +92,10 @@ export async function runCrisisGate(
       source: "chat",
       severity,
       matched: triage.matched,
+      language,
     });
     return {
-      crisis: buildCrisisResponse(triage.matched, severity),
+      crisis: buildCrisisResponse(triage.matched, severity, language),
       systemMessage,
       updatedUserMessage: false,
     };
@@ -97,6 +103,37 @@ export async function runCrisisGate(
 
   const { classifyCrisisRisk } = await import("./crisis-classifier.server");
   const semantic = await classifyCrisisRisk(input.content, input.recentTurns);
+
+  // FAIL-SAFE (multilingual): the regex tier covers English, Arabic and French,
+  // but colloquial and code-switched phrasing outside those patterns leans on
+  // the semantic net. When the classifier is unavailable AND this is not a
+  // plain-English message, surface support instead of silently failing open.
+  if (!semantic.flagged && semantic.failedOpen) {
+    const script = detectMessageScript(input.content);
+    const nonEnglish = language !== "en" || script === "arabic" || script === "other";
+    if (!nonEnglish) return null;
+
+    await supabase
+      .from("chat_messages")
+      .update({ flagged_crisis: true })
+      .eq("id", input.messageId);
+
+    const systemMessage = await recordCrisis(supabase, {
+      ...input,
+      source: "classifier_unavailable_non_english",
+      severity: "moderate",
+      matched: [],
+      notes: `Semantic classifier unavailable for a non-English message (language=${language}, script=${script}); failed safe.`,
+      language,
+    });
+
+    return {
+      crisis: buildCrisisResponse([], "moderate", language),
+      systemMessage,
+      updatedUserMessage: true,
+    };
+  }
+
   if (!semantic.flagged) return null;
 
   const severity = semantic.severity ?? "high";
@@ -111,10 +148,11 @@ export async function runCrisisGate(
     severity,
     matched: [],
     notes: semantic.reason,
+    language,
   });
 
   return {
-    crisis: buildCrisisResponse([], severity),
+    crisis: buildCrisisResponse([], severity, language),
     systemMessage,
     updatedUserMessage: true,
   };
