@@ -1,0 +1,38 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "goHome": "Go home",
+    "somethingWentWrong": "Something went wrong on our end. You can try refreshing or head back home.",
+    "pageNotFound": "Page not found",
+    "pageNotFoundBody": "The page you're looking for doesn't exist or has been moved.",
+    "pageDidntLoad": "This page didn't load"
+  },
+  "nav": {
+    "companion": "Companion",
+    "progress": "Progress",
+    "exercises": "Exercises",
+    "profile": "Profile",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "newConversation": "New conversation"
+  },
+  "language": {
+    "sectionTitle": "Language",
+    "sectionDescription": "Choose the language for the app and for your companion's replies.",
+    "label": "App language",
+    "saved": "Language updated",
+    "saveFailed": "Couldn't save your language. Please try again.",
+    "reviewNotice": "Arabic and French translations are drafts pending clinician review.",
+    "companionNote": "Your companion will reply in this language."
+  }
+}

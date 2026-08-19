@@ -44,9 +44,22 @@ export type SemanticCrisisResult = {
   flagged: boolean;
   severity: CrisisSeverity | null;
   reason: string | null;
+  /**
+   * True when the classifier itself errored and we returned "not flagged"
+   * without an actual verdict. The crisis gate uses this to fail SAFE for
+   * non-English messages, where the regex tier is a weaker net.
+   */
+  failedOpen?: boolean;
 };
 
 const NOT_FLAGGED: SemanticCrisisResult = { flagged: false, severity: null, reason: null };
+
+const CLASSIFIER_ERROR: SemanticCrisisResult = {
+  flagged: false,
+  severity: null,
+  reason: "classifier_unavailable",
+  failedOpen: true,
+};
 
 function parseVerdict(text: string): SemanticCrisisResult {
   const flagged = /^\s*yes\b/i.test(text);
@@ -63,6 +76,8 @@ function parseVerdict(text: string): SemanticCrisisResult {
   return { flagged: true, severity: tier ?? "high", reason };
 }
 
+const MULTILINGUAL_NOTE = `The person may write in English, Arabic (including Levantine or Gulf colloquial) or French, and may mix languages within one message. Judge the meaning in whatever language they used, applying exactly the same thresholds — never treat a non-English message as lower risk because it is harder to read. Always answer in the English format specified above.`;
+
 async function classify(
   system: string,
   userContent: string,
@@ -71,7 +86,7 @@ async function classify(
     const payload = await callCompanionModel({
       model: CLASSIFIER_MODEL,
       maxTokens: CLASSIFIER_MAX_TOKENS,
-      system,
+      system: `${system}\n\n${MULTILINGUAL_NOTE}`,
       messages: [{ role: "user", content: userContent }],
     });
 
@@ -85,7 +100,7 @@ async function classify(
   } catch (error) {
     // Fail open — log and let the normal conversation continue.
     console.error("semantic crisis classifier failed", error);
-    return NOT_FLAGGED;
+    return CLASSIFIER_ERROR;
   }
 }
 
