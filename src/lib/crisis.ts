@@ -72,11 +72,93 @@ const MODERATE_PATTERNS: RegExp[] = [
   /\bnobody\s+would\s+(notice|miss\s+me|care)\s+if\s+i\b/i,
 ];
 
-const TIERS: { severity: CrisisSeverity; patterns: RegExp[] }[] = [
-  { severity: "critical", patterns: CRITICAL_PATTERNS },
-  { severity: "high", patterns: HIGH_RISK_PATTERNS },
-  { severity: "moderate", patterns: MODERATE_PATTERNS },
+// --- Arabic patterns (MSA + common Levantine/Gulf colloquial) ---
+// NOTE: \b is unreliable for Arabic in JS (Arabic letters are not \w), so these
+// patterns rely on the phrases themselves rather than word boundaries.
+const CRITICAL_PATTERNS_AR: RegExp[] = [
+  /(الليلة|اليوم|بكرا|غدا|غدًا|هالأسبوع|هذا الأسبوع)[^.؟!]{0,40}(أنهي|انهي|أموت|اموت|انتحر|أنتحر|أقتل نفسي|بقتل نفسي|بقتل حالي)/,
+  /(أنهي|انهي|أموت|اموت|انتحر|أنتحر|أقتل نفسي|بقتل نفسي|بقتل حالي)[^.؟!]{0,40}(الليلة|اليوم|بكرا|غدا|غدًا)/,
+  /(حبوب|مسدس|سلاح|حبل|شفرة|موس|سكين|مبيد|كلور)[^.؟!]{0,40}(جاهز|جاهزة|عندي|شتريت|اشتريت|خبيت|خبأت|حضرت)/,
+  /(عندي|شتريت|اشتريت|خبيت|خبأت|حضرت|جاهز)[^.؟!]{0,40}(حبوب|مسدس|سلاح|حبل|شفرة|موس|سكين|مبيد|كلور)/,
+  /(كتبت|تركت)[^.؟!]{0,20}(رسالة|وصية|ورقة)/,
+  /خطتي\s+(هي|هي أن|إني|اني)/,
+  /(رح|راح|بدي|سوف)\s*(أ|ا)?(شنق|علق)\s*(نفسي|حالي)/,
 ];
+
+const HIGH_RISK_PATTERNS_AR: RegExp[] = [
+  /(أقتل|اقتل|بقتل|رح أقتل|راح اقتل)\s*(نفسي|حالي)/,
+  /(انتحار|الانتحار|أنتحر|انتحر|إنتحار)/,
+  /(أنهي|انهي|إنهاء|انهاء)\s*(حياتي|كل شي|كل شيء)/,
+  /(بدي|أريد|اريد|نفسي)\s*(أ|ا)?موت/,
+  /(ما بدي|لا أريد|لا اريد|ما بقى بدي)\s*(أعيش|اعيش|أكمل|احيا|أحيا)/,
+  /(ما في|مافي|ليس هناك|ما عندي)\s*(سبب|معنى)\s*(لأعيش|للحياة|للعيش)/,
+  /(أذي|اذي|بأذي|أجرح|اجرح|بجرح)\s*(نفسي|حالي)/,
+  /(إيذاء|ايذاء)\s*(النفس|نفسي|الذات)/,
+  /(جرعة زائدة|أوفر دوز)/,
+  /(أقتل|اقتل|بقتل|أذي|اذي)\s*(حد|واحد|شخص|أهلي|اهلي|الناس)/,
+];
+
+const MODERATE_PATTERNS_AR: RegExp[] = [
+  /(أحسن|احسن|الأفضل|افضل)\s*(لو|إذا|اذا)\s*(مت|أموت|اموت|ما كنت)/,
+  /(أحسن|احسن|الدنيا أحسن)\s*(بدوني|من دوني)/,
+  /(ياريت|يا ريت|أتمنى|اتمنى)\s*(لو)?\s*(ما كنت|أختفي|اختفي|ما فيق|ما أفيق|ما أصحى)/,
+  /(ما بدي|لا أريد|لا اريد)\s*(أفيق|افيق|أصحى|اصحى|أكون هنا|اكون هنا)/,
+  /(شو|ما)\s*(الفايدة|الفائدة|المعنى)\s*(من)?\s*(الحياة|العيش|هالحياة)/,
+  /(تعبت|زهقت|مليت)\s*(من)\s*(الحياة|العيش|كل شي|كل شيء)/,
+  /(ما حد|محد|لا أحد)\s*(بيهتم|يهتم|رح يلاحظ|بيلاحظ)/,
+];
+
+// --- French patterns ---
+const CRITICAL_PATTERNS_FR: RegExp[] = [
+  /\b(ce\s+soir|aujourd'?hui|demain|cette\s+(nuit|semaine)|dans\s+une?\s+heure)\b[^.!?]{0,40}\b(mourir|me\s+tuer|en\s+finir|me\s+suicider|surdose|me\s+pendre|sauter)\b/i,
+  /\b(mourir|me\s+tuer|en\s+finir|me\s+suicider|surdose|me\s+pendre|sauter)\b[^.!?]{0,40}\b(ce\s+soir|aujourd'?hui|demain|cette\s+(nuit|semaine)|dans\s+une?\s+heure)\b/i,
+  /\b(j'?ai|j'?ai\s+déjà)\s+(acheté|préparé|caché|gardé|pris)\b[^.!?]{0,40}\b(cachets|comprimés|médicaments|corde|arme|lame|rasoir|javel)\b/i,
+  /\b(cachets|comprimés|médicaments|corde|arme|lame|rasoir|javel)\b[^.!?]{0,40}\b(prêt|prête|acheté|caché|gardé)\b/i,
+  /\bj'?ai\s+(écrit|laissé)\s+(une|un)\s+(lettre|mot|testament)\b/i,
+  /\bmon\s+plan\s+(c'?est|est)\b/i,
+  /\bje\s+vais\s+(me\s+tuer|me\s+suicider|en\s+finir|me\s+pendre|sauter)\b/i,
+];
+
+const HIGH_RISK_PATTERNS_FR: RegExp[] = [
+  /\bme\s+(tuer|suicider)\b/i,
+  /\bsuicid(e|aire|er)\b/i,
+  /\ben\s+finir\s+(avec\s+(la\s+vie|tout|moi))?/i,
+  /\bmettre\s+fin\s+à\s+(mes\s+jours|ma\s+vie)\b/i,
+  /\bje\s+(veux|voudrais)\s+mourir\b/i,
+  /\bje\s+ne\s+veux\s+plus\s+(vivre|être\s+en\s+vie)\b/i,
+  /\b(plus|aucune)\s+(envie|raison)\s+de\s+vivre\b/i,
+  /\bme\s+faire\s+du\s+mal\b/i,
+  /\b(m'?automutiler|automutilation|scarification)\b/i,
+  /\bsurdose\b/i,
+  /\bfaire\s+du\s+mal\s+à\s+(quelqu'?un|lui|elle|eux|ma|mon|les\s+gens)\b/i,
+];
+
+const MODERATE_PATTERNS_FR: RegExp[] = [
+  /\b(mieux|meilleur)\s+(mort|morte)\b/i,
+  /\b(mieux|meilleur)\s+sans\s+moi\b/i,
+  /\bj'?aimerais\s+(ne\s+pas\s+(être\s+(né|là|ici))|disparaître|ne\s+plus\s+exister|ne\s+pas\s+me\s+réveiller)\b/i,
+  /\bje\s+(veux|voudrais)\s+(juste\s+)?disparaître\b/i,
+  /\bje\s+ne\s+veux\s+pas\s+me\s+réveiller\b/i,
+  /\bà\s+quoi\s+(ça\s+sert|bon)\s+de\s+vivre\b/i,
+  /\bfatigué(e)?\s+d'?(être\s+en\s+vie|exister|vivre)\b/i,
+  /\bpersonne\s+ne\s+(remarquerait|s'?en\s+rendrait\s+compte|me\s+manquerait)\b/i,
+];
+
+const TIERS: { severity: CrisisSeverity; patterns: RegExp[] }[] = [
+  {
+    severity: "critical",
+    patterns: [...CRITICAL_PATTERNS, ...CRITICAL_PATTERNS_AR, ...CRITICAL_PATTERNS_FR],
+  },
+  {
+    severity: "high",
+    patterns: [...HIGH_RISK_PATTERNS, ...HIGH_RISK_PATTERNS_AR, ...HIGH_RISK_PATTERNS_FR],
+  },
+  {
+    severity: "moderate",
+    patterns: [...MODERATE_PATTERNS, ...MODERATE_PATTERNS_AR, ...MODERATE_PATTERNS_FR],
+  },
+];
+
 
 
 export const CRISIS_RESOURCES: CrisisResource[] = [
