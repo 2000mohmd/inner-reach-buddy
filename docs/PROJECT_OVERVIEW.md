@@ -142,9 +142,17 @@ Not built yet:
    and every flag fires an admin email via `src/lib/crisis-alert.server.ts` with a
    30-minute re-escalation for anything still unreviewed. Remaining gap is
    coverage/SLA monitoring, not the absence of a workflow.
-3. Teen mode: `account_type = 'teen'` sets tone and `age_confirmed_13_plus`, but there
-   is no real age gate, parental consent, or under-13 blocking (COPPA/GDPR-K).
-4. Anthropic cost/abuse: no per-user rate limits or token budgeting on chat.
+3. Teen mode: onboarding now collects a real date of birth
+   (`profiles.date_of_birth`) and `completeOnboarding` computes age server-side —
+   under 13 is rejected outright, under 18 is locked to `account_type = 'teen'`
+   regardless of the client's selection, and `age_confirmed_13_plus` is the actual
+   boolean result, not a hardcoded `true`. Real gap now: no parental-consent flow
+   for 13-17-year-olds (COPPA/GDPR-K).
+4. Cost/abuse: `src/lib/rate-limit/` enforces a per-user sliding window (20
+   msgs/10 min) and a daily cap on chat, plus a token/estimated-cost counter
+   (`chat_usage`) surfaced via `getChatUsage`. Postgres-backed for now; a
+   Cloudflare rate-limiting binding is the planned transport when primary write
+   load justifies it.
 5. Model reliability: tool-use loop caps at 3 iterations then returns partial text;
    failure modes surface as generic fallback copy.
 6. PHQ-9 item 9 (self-harm ideation) has its own escalation path in
@@ -153,7 +161,11 @@ Not built yet:
    the answer), independent of the total score.
 7. `effectiveness_insights` reads use an admin (RLS-bypassing) client inside a tool —
    worth an access review.
-8. No automated tests; verification has been manual/browser-driven.
+8. Automated tests exist (`vitest`, run in CI on every push/PR) but are narrow:
+   16 tests, all in `src/lib/crisis-gate.test.ts` (regex severity tiers, the
+   ordering guarantee, the semantic-classifier fail-safe, localized resources).
+   Nothing covers the rate limiter, the job queue, chat flow, or server
+   functions outside crisis handling — verification there is still manual.
 9. Privacy posture is consent-flag based; no encryption-at-rest beyond Postgres
    defaults, no retention/TTL policy on chat transcripts.
 

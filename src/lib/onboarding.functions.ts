@@ -176,3 +176,39 @@ export const deleteMyData = createServerFn({ method: "POST" })
       .eq("user_id", userId);
     return { ok: true };
   });
+
+/**
+ * Full account deletion (item 5) — distinct from deleteMyData, which only wipes
+ * wellness data and keeps the account. This removes the person entirely.
+ *
+ * Two-step, both against the service-role client (needed for the RPC and for
+ * auth.admin.deleteUser; RLS would block a user from either):
+ *   1. delete_account(uuid) — explicit erasure of the tables with no FK to
+ *      auth.users, and anonymizes crisis_events (user_id -> null; the row
+ *      survives, per docs/DATA_RETENTION.md).
+ *   2. auth.admin.deleteUser — deletes the auth user, cascading every
+ *      FK-linked table. admin_audit_log is SET NULL there rather than
+ *      cascade-deleted (see migration 20260902000300_delete_account.sql).
+ */
+export const deleteMyAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // delete_account is added by a migration not yet in the generated Database
+    // types; a loose view of the client keeps this typechecking meanwhile.
+    const rpcClient = supabaseAdmin as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+    const { error: rpcError } = await rpcClient.rpc("delete_account", { p_user_id: userId });
+    if (rpcError) throw new Error(rpcError.message);
+
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authError) throw authError;
+
+    return { ok: true };
+  });

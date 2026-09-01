@@ -1,14 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { toast } from "sonner";
-import { deleteMyData, getMyProfile } from "@/lib/onboarding.functions";
+import { deleteMyAccount, deleteMyData, getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/AppShell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { YourDataSection } from "@/components/YourDataSection";
 import { useTranslation } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -50,9 +53,12 @@ const MODE_LABELS: Record<string, string> = {
 
 function SettingsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchProfile = useServerFn(getMyProfile);
   const wipeData = useServerFn(deleteMyData);
+  const removeAccount = useServerFn(deleteMyAccount);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data, isPending } = useQuery({
     queryKey: ["my-profile"],
@@ -66,6 +72,19 @@ function SettingsPage() {
       toast.success("Your check-ins and self-introduction have been deleted.");
     },
     onError: () => toast.error("We couldn't delete that right now. Please try again."),
+  });
+
+  // Distinct from `mutation` above (data wipe, account stays). This removes the
+  // account entirely, so on success we sign out locally and leave the app.
+  const accountDeletion = useMutation({
+    mutationFn: () => removeAccount(),
+    onSuccess: async () => {
+      queryClient.clear();
+      await supabase.auth.signOut();
+      toast.success("Your account has been deleted.");
+      navigate({ to: "/", replace: true });
+    },
+    onError: () => toast.error("We couldn't delete your account right now. Please try again."),
   });
 
   const profile = data?.profile;
@@ -181,6 +200,53 @@ function SettingsPage() {
                     disabled={mutation.isPending}
                   >
                     {mutation.isPending ? "Deleting…" : "Delete permanently"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </section>
+
+          <section className="surface-soft border border-destructive/30 p-6">
+            <h2 className="text-lg text-destructive">Delete my account</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This is different from — and more permanent than — deleting your data above. It closes
+              your Kalm account entirely: you're signed out everywhere and can no longer sign back
+              in with this email. Your mood check-ins, habits, conversations, exercises and
+              self-introduction are permanently erased. This cannot be undone.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Crisis safety records and admin support-audit entries are kept, with your identity
+              removed from them, as required by our data-retention policy.
+            </p>
+            <AlertDialog onOpenChange={(open) => !open && setDeleteConfirmText("")}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="mt-5 rounded-full">
+                  Delete my account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Permanently delete your account?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your account, profile, conversations, check-ins, habits and exercise history
+                    will be permanently deleted. This is not the same as the data-wipe option — your
+                    account itself will no longer exist. Type <strong>DELETE</strong> to confirm.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                  placeholder="DELETE"
+                  autoComplete="off"
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => accountDeletion.mutate()}
+                    disabled={deleteConfirmText !== "DELETE" || accountDeletion.isPending}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {accountDeletion.isPending ? "Deleting…" : "Permanently delete my account"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
