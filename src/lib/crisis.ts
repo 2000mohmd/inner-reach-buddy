@@ -263,8 +263,9 @@ const CRISIS_COPY: Record<
 };
 
 export function crisisCopy(language: string | null | undefined) {
-  return CRISIS_COPY[language ?? "en"] ?? CRISIS_COPY.en;
+  return CRISIS_COPY[language ?? "en"] ?? CRISIS_COPY["en"]!;
 }
+
 
 /**
  * Deterministic regex gate with tiered triage. Patterns cover English, Arabic

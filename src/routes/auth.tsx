@@ -41,6 +41,29 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  async function handleForgotPassword() {
+    const parsedEmail = z.string().trim().email().safeParse(email);
+    if (!parsedEmail.success) {
+      toast.error("Enter your email address first");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsedEmail.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      toast.success("Password reset link sent");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send the reset link");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -152,7 +175,18 @@ function AuthPage() {
                     >
                       {mode === "signup" ? "Create account" : "Sign in"}
                     </Button>
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleForgotPassword()}
+                        className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                      >
+                        {resetSent ? "Reset link sent — send again" : "Forgot your password?"}
+                      </button>
+                    )}
                   </TabsContent>
+
                 ))}
               </Tabs>
             )}
