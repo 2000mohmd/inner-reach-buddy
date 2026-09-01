@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { triageCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
-import { checkRateLimit, RATE_LIMIT_MESSAGE } from "./chat-rate-limit";
+import { getRateLimiter, RATE_LIMIT_MESSAGE } from "./rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
 
 const HISTORY_LIMIT = 20;
@@ -11,8 +11,19 @@ const HISTORY_LIMIT = 20;
 const SendInput = z.object({
   thread_id: z.string().uuid().optional(),
   content: z.string().trim().min(1).max(4000),
-  quick_action: z.string().refine((value) => QUICK_ACTION_IDS.includes(value)).nullish(),
+  quick_action: z
+    .string()
+    .refine((value) => QUICK_ACTION_IDS.includes(value))
+    .nullish(),
 });
+
+/** Visible per-user token / estimated-cost counter (this UTC day + lifetime). */
+export const getChatUsage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    return getRateLimiter(supabase).getUsage(userId);
+  });
 
 export const listThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -54,7 +65,9 @@ export const getThreadHistory = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("chat_messages")
-        .select("id, sender, content, content_type, exercise_slug, flagged_crisis, quick_action, created_at")
+        .select(
+          "id, sender, content, content_type, exercise_slug, flagged_crisis, quick_action, created_at",
+        )
         .eq("thread_id", data.thread_id)
         .eq("user_id", userId)
         .order("created_at", { ascending: true }),
@@ -144,14 +157,20 @@ export const sendMessage = createServerFn({ method: "POST" })
       .single();
     if (savedUser.error) throw savedUser.error;
 
-    const recentTurns = await supabase
-      .from("chat_messages")
-      .select("sender, content")
-      .eq("thread_id", threadId)
-      .eq("user_id", userId)
-      .neq("id", savedUser.data.id)
-      .order("created_at", { ascending: false })
-      .limit(2);
+    // Fetched in parallel with recentTurns so the crisis gate gets the user's
+    // locale (for localized crisis copy) without adding a round trip. A failure
+    // here just falls back to English copy — never blocks the gate.
+    const [recentTurns, profileLang] = await Promise.all([
+      supabase
+        .from("chat_messages")
+        .select("sender, content")
+        .eq("thread_id", threadId)
+        .eq("user_id", userId)
+        .neq("id", savedUser.data.id)
+        .order("created_at", { ascending: false })
+        .limit(2),
+      supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
+    ]);
 
     const { runCrisisGate } = await import("./crisis-gate.server");
     const gated = await runCrisisGate(supabase, {
@@ -159,6 +178,7 @@ export const sendMessage = createServerFn({ method: "POST" })
       threadId,
       messageId: savedUser.data.id,
       content: data.content,
+      language: profileLang.data?.language ?? null,
       recentTurns: (recentTurns.data ?? [])
         .reverse()
         .map((row) => ({ sender: row.sender, content: row.content })),
@@ -180,10 +200,11 @@ export const sendMessage = createServerFn({ method: "POST" })
       };
     }
 
-
     // --- Per-user rate limit (normal chat path only; never gates crisis).
-    // Both crisis checks above have already run and come up clear. ---
-    const limit = await checkRateLimit(supabase, userId);
+    // Both crisis checks above have already run and come up clear. Enforces a
+    // short sliding window AND a daily message cap; fails open. ---
+    const rateLimiter = getRateLimiter(supabase);
+    const limit = await rateLimiter.checkAndConsume(userId);
     if (!limit.allowed) {
       const savedLimit = await supabase
         .from("chat_messages")
@@ -191,7 +212,7 @@ export const sendMessage = createServerFn({ method: "POST" })
           thread_id: threadId,
           user_id: userId,
           sender: "system",
-          content: RATE_LIMIT_MESSAGE,
+          content: limit.message ?? RATE_LIMIT_MESSAGE,
         })
         .select("id, content, created_at")
         .single();
@@ -210,17 +231,22 @@ export const sendMessage = createServerFn({ method: "POST" })
       };
     }
 
-    // --- Cross-session memory: summarize the thread they just left, once ---
-    const { ensureThreadSummary, fetchRecentSummaries, findPreviousThread } = await import(
-      "./thread-summary.server"
-    );
+    // --- Cross-session memory: summarizing the thread they just left is slow
+    // (an LLM call plus the Phase 11 session-drift sweep) and must never delay
+    // this reply. Enqueue it and move on — enqueueJob does a fast insert, or an
+    // immediate non-blocking fallback. The per-message crisis gate has already
+    // run above, before the rate limiter; the drift sweep it defers is post-hoc
+    // and best-effort, so deferring it does not weaken crisis handling. ---
+    const { fetchRecentSummaries } = await import("./thread-summary.server");
     try {
-      const previousThreadId = await findPreviousThread(supabase, userId, threadId);
-      if (previousThreadId) {
-        await ensureThreadSummary(supabase, userId, previousThreadId);
-      }
+      const { enqueueJob } = await import("@/jobs");
+      await enqueueJob(supabase, {
+        kind: "summarize_thread",
+        userId,
+        sinceThreadId: threadId,
+      });
     } catch (error) {
-      console.error("thread summary step failed", error);
+      console.error("thread summary enqueue failed", error);
     }
 
     // --- Normal path: assemble personalized context, then call the model ---
@@ -230,42 +256,42 @@ export const sendMessage = createServerFn({ method: "POST" })
 
     const [profile, intro, moods, history, pastSummaries, screeners, streakDays, dailyPrompts] =
       await Promise.all([
-      supabase
-        .from("profiles")
-        .select("preferred_name, account_type, ai_context_consent")
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("user_profiles")
-        .select(
-          "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
-        )
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("mood_logs")
-        .select("score, note, tags, logged_at")
-        .eq("user_id", userId)
-        .order("logged_at", { ascending: false })
-        .limit(7),
-      supabase
-        .from("chat_messages")
-        .select("sender, content, created_at")
-        .eq("thread_id", threadId)
-        .eq("user_id", userId)
-        .neq("id", savedUser.data.id)
-        .order("created_at", { ascending: false })
-        .limit(HISTORY_LIMIT),
-      fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
-      getScreenersDue(supabase, userId).catch(() => []),
-      computeEngagementStreak(supabase, userId).catch(() => 0),
-      supabase
-        .from("daily_prompt_responses")
-        .select("response_text, responded_at, daily_prompts(prompt_text)")
-        .eq("user_id", userId)
-        .order("responded_at", { ascending: false })
-        .limit(3),
-    ]);
+        supabase
+          .from("profiles")
+          .select("preferred_name, account_type, ai_context_consent")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("user_profiles")
+          .select(
+            "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
+          )
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("mood_logs")
+          .select("score, note, tags, logged_at")
+          .eq("user_id", userId)
+          .order("logged_at", { ascending: false })
+          .limit(7),
+        supabase
+          .from("chat_messages")
+          .select("sender, content, created_at")
+          .eq("thread_id", threadId)
+          .eq("user_id", userId)
+          .neq("id", savedUser.data.id)
+          .order("created_at", { ascending: false })
+          .limit(HISTORY_LIMIT),
+        fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
+        getScreenersDue(supabase, userId).catch(() => []),
+        computeEngagementStreak(supabase, userId).catch(() => 0),
+        supabase
+          .from("daily_prompt_responses")
+          .select("response_text, responded_at, daily_prompts(prompt_text)")
+          .eq("user_id", userId)
+          .order("responded_at", { ascending: false })
+          .limit(3),
+      ]);
 
     const consented = profile.data?.ai_context_consent !== false;
     const { generateCompanionReply } = await import("./ai-companion.server");
@@ -305,6 +331,13 @@ export const sendMessage = createServerFn({ method: "POST" })
       { supabase, userId, threadId },
     );
 
+    // Token/cost counter — fire-and-forget, never blocks or fails the reply.
+    void rateLimiter.recordUsage(userId, {
+      inputTokens: reply.usage.inputTokens,
+      outputTokens: reply.usage.outputTokens,
+      provider: reply.usage.provider,
+      model: reply.usage.model,
+    });
 
     // Make tool-driven actions visible in the transcript, never silent.
     const actionLines = reply.actions.map((action) => `• ${action.summary}`);
