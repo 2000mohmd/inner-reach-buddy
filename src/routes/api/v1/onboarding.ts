@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { completeOnboarding, getMyProfile } from "@/lib/onboarding.functions";
-import { handle, json } from "./-shared";
+import { handleOnboarding } from "./-handlers";
 
+// POST /api/v1/onboarding — see handleOnboarding. Profile *reads* are done
+// directly via the Supabase SDK (or GET /api/v1/profile), not here.
 export const Route = createFileRoute("/api/v1/onboarding")({
   server: {
     handlers: {
-      GET: async () => handle(async () => json(await getMyProfile())),
-      POST: async ({ request }) =>
-        handle(async () => json(await completeOnboarding({ data: await request.json() }))),
+      POST: ({ request }) => handleOnboarding(request),
     },
   },
 });

@@ -10,8 +10,8 @@ identically to the web.
 - **Transport:** file-based API routes under `src/routes/api/v1/` (the pattern in
   `src/routes/api/public/hooks/evaluate-nudges.ts`). Not a separate Edge
   Functions project.
-- **Status:** Phases 1 & 2 shipped and tested. Phase 3 below is the agreed
-  contract; endpoints land incrementally and this file is updated as they do.
+- **Status:** Phases 1–3 shipped and tested. This document is the complete v1
+  contract for the mobile integration.
 
 ---
 
@@ -44,6 +44,22 @@ In Flutter that token is `Supabase.instance.client.auth.currentSession!.accessTo
 | `404`  | `{ "error" }`                           | resource not found / not owned by the caller    |
 | `501`  | `{ "error" }`                           | endpoint intentionally not implemented yet      |
 | `500`  | `{ "error": "Internal error" }`         | unexpected; details are logged, not returned    |
+
+### All endpoints at a glance
+
+| Method | Path | Auth | Purpose |
+| ------ | ---- | ---- | ------- |
+| POST | `/api/v1/chat/messages` | yes | send a message; crisis-gated, rate-limited |
+| GET  | `/api/v1/crisis-resources` | no | localized crisis resource list |
+| GET  | `/api/v1/entitlements` | yes | tier + "N messages left today" |
+| GET  | `/api/v1/chat/threads` | yes | list the caller's threads |
+| GET  | `/api/v1/chat/threads/:id/messages` | yes | paginated message history |
+| POST | `/api/v1/screeners/:type/responses` | yes | submit PHQ-9 / GAD-7; item-9 escalation |
+| POST | `/api/v1/onboarding` | yes | complete onboarding (server computes age) |
+
+Everything else — profile, mood, habits, exercises — is read/written
+**directly via the Supabase Flutter SDK** under RLS. See
+[Direct Supabase access](#direct-supabase-access).
 
 ---
 
@@ -229,11 +245,13 @@ paging.
 
 ---
 
-## Phase 3 — onboarding & CRUD-shaped screens (planned)
+## Phase 3 — onboarding & CRUD-shaped screens (shipped)
 
 ### `POST /api/v1/onboarding`
 
-Wraps `completeOnboarding` (`src/lib/onboarding.functions.ts`) as-is.
+Calls `completeOnboardingCore` (`src/lib/onboarding.functions.ts`) as-is — the
+core the web RPC `completeOnboarding` also calls. Tests:
+`src/routes/api/v1/-handlers.phase3.test.ts`.
 
 **Auth:** required.
 
@@ -251,32 +269,51 @@ Wraps `completeOnboarding` (`src/lib/onboarding.functions.ts`) as-is.
   "baseline_mood": 1, "baseline_tags": ["string"] }
 ```
 
-> **Contract note (was flagged as a bug — already fixed):** onboarding no longer
-> sends a hardcoded `age_confirmed_13_plus: true`. The client sends a real
-> `date_of_birth`; the **server** computes age, rejects under-13, and forces
-> `account_type` to `teen` for anyone under 18. The mobile app must collect a
-> real DOB and must not send `age_confirmed_13_plus` at all.
+Everything except `intro_text`/`goals`/`stressors`/`existing_diagnosis`/
+`communication_preference`/`topics_to_avoid` (all optional) is required.
+`privacy_consent` must be `true`. `baseline_mood` is `1–5`.
 
-**Response `200`:** `{ "ok": true }`
+> **Contract note (was flagged as a bug — already fixed in the codebase):**
+> onboarding does **not** send a hardcoded `age_confirmed_13_plus: true`. The
+> client sends a real `date_of_birth`; the **server** computes age, rejects
+> under-13, and forces `account_type` to `teen` for anyone under 18. The mobile
+> app must collect a real DOB and must not send `age_confirmed_13_plus` at all.
+
+**Responses:** `200 { "ok": true }` · `400` for a malformed body, a
+non-`YYYY-MM-DD` `date_of_birth`, or an under-13 DOB (`"Kalm is for people aged
+13 and over."`) · `401` without a valid token.
 
 ### Direct Supabase access
 
-These are fully scoped by Postgres RLS to `auth.uid()`. The mobile app should
-read/write them **directly with the Supabase Flutter SDK** using the user's JWT —
-wrapping them in `/api/v1` routes this week would be redundant work with no
-server-side logic to add.
+Every table below is Row-Level-Security-scoped to `auth.uid()` (`FOR ALL` for the
+user's own rows; `exercises` is a read-only catalogue). There are **no database
+triggers** on any of them. The mobile app talks to these **directly with the
+Supabase Flutter SDK** using the user's JWT — no `/api/v1` wrapper is needed.
+Decision confirmed: not building CRUD endpoints for these this pass.
 
-| Table                  | Access               | Notes                                                        |
-| ---------------------- | -------------------- | ----------------------------------------------------------- |
-| `profiles`             | select / update      | one row per user (`id = auth.uid()`)                        |
-| `user_profiles`        | select / upsert      | the free-text intro / goals / stressors                     |
-| `mood_logs`            | select / insert      | check-ins; `is_baseline` set only by onboarding             |
-| `habits`               | select / insert / update | user-owned                                             |
-| `habit_logs`           | select / insert      | user-owned                                                  |
-| `exercises`            | select               | catalogue (read-only)                                       |
-| `exercise_completions` | select / insert      | plain insert — no mood-delta or trigger logic server-side   |
-| `screener_responses`   | select               | history reads; **writes must go through** `POST /api/v1/screeners/:type/responses` for the item-9 escalation |
-| `chat_threads` / `chat_messages` | select     | reads OK directly; **sending must go through** `POST /api/v1/chat/messages` for the crisis gate |
+| Table                            | Direct access | Notes |
+| -------------------------------- | ------------- | ----- |
+| `profiles`                       | select / update | one row per user (`id = auth.uid()`) |
+| `user_profiles`                  | select / upsert | the free-text intro / goals / stressors (`user_id = auth.uid()`) |
+| `mood_logs`                      | select / insert | check-ins; only onboarding sets `is_baseline` — the app inserts with `is_baseline: false` |
+| `habits`                         | select / insert / update / delete | user-owned |
+| `habit_logs`                     | select / **insert (see below)** | user-owned; upsert on `(habit_id, log_date)` |
+| `exercises`                      | select | catalogue, read-only |
+| `exercise_completions`           | select / **insert (see below)** | user-owned |
+| `screener_responses`             | **select only** | writes MUST use `POST /api/v1/screeners/:type/responses` — a direct insert skips the PHQ-9 item-9 crisis escalation |
+| `chat_threads` / `chat_messages` | **select only** | reads OK; sending MUST use `POST /api/v1/chat/messages` — a direct insert skips the crisis gate and rate limiter |
+
+**`exercise_completions` / `habit_logs` — the one caveat.** A direct SDK insert
+stores the row correctly, but the web app's `completeExercise` / `logHabit`
+server functions also do two extra things a direct insert will **not**: (1) an
+optional follow-up `mood_logs` row when the user logs a mood after an exercise,
+and (2) a short "activity card + companion reaction" posted into the user's chat
+thread (streak / effectiveness aware). None of that is required for correctness
+or safety — the data and the Insights screens work fine either way — it's the
+in-chat encouragement loop. If the mobile app wants parity, insert the
+`mood_logs` row itself and skip the chat side; otherwise a dedicated
+`POST /api/v1/exercises/completions` / `POST /api/v1/habits/logs` endpoint can be
+added later. Not built now (agreed low-priority).
 
 Rule of thumb: **reads → Supabase SDK directly; anything that can trigger crisis
 handling, rate limiting, or the companion → the `/api/v1` endpoint.**
@@ -316,3 +353,10 @@ this pass:
   `GET /api/v1/chat/history?thread_id=` still exists but is superseded by
   `…/threads/:id/messages`. Tests: `src/routes/api/v1/-handlers.phase2.test.ts`
   (14), including the PHQ-9 item-9 escalation through the endpoint.
+- **Phase 3** — `POST /api/v1/onboarding` (`completeOnboarding`'s body extracted
+  to `completeOnboardingCore`; `GET /api/v1/onboarding` dropped — profile reads
+  go to `GET /api/v1/profile` or the SDK). Finalized the direct-Supabase-access
+  table: verified RLS on every listed table and that there are no DB triggers;
+  flagged that direct `exercise_completions` / `habit_logs` inserts skip the
+  web's companion-feedback side effects. Tests:
+  `src/routes/api/v1/-handlers.phase3.test.ts` (6). Full suite: 59 passing.

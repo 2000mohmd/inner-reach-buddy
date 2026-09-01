@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getThreadMessagesPageCore, listThreadsCore, sendMessageCore } from "@/lib/chat.functions";
 import { CRISIS_DISCLAIMER, crisisCopy } from "@/lib/crisis";
 import { getEntitlementsFor } from "@/lib/entitlements.server";
+import { completeOnboardingCore } from "@/lib/onboarding.functions";
 import { SCREENERS, type ScreenerType } from "@/lib/screeners";
 import { submitScreenerCore } from "@/lib/screeners.server";
 import { normalizeLanguage } from "@/lib/i18n/languages";
@@ -134,6 +135,36 @@ export function handleChatThreadMessages(request: Request, threadId: string): Pr
         before,
       }),
     );
+  });
+}
+
+/**
+ * POST /api/v1/onboarding
+ *
+ * Wraps completeOnboardingCore as-is. The client sends a real `date_of_birth`
+ * (YYYY-MM-DD) and NO `age_confirmed_13_plus` — the server computes age, rejects
+ * under-13, and forces `account_type: "teen"` for anyone under 18. Returns
+ * `{ ok: true }`.
+ */
+export function handleOnboarding(request: Request): Promise<Response> {
+  return handle(async () => {
+    const { supabase, userId } = await requireAuth(request);
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      throw new ApiError(400, "Invalid JSON body");
+    }
+    try {
+      return json(await completeOnboardingCore(supabase, userId, body));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // Age business-rule rejections are the caller's input problem, not a 500.
+      if (/aged \d+ and over|invalid date of birth/i.test(message)) {
+        throw new ApiError(400, message);
+      }
+      throw err;
+    }
   });
 }
 

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { MINOR_AGE, MIN_AGE, ageFromDateOfBirth } from "./age";
 
 const AccountType = z.enum(["general", "condition", "teen", "org_member"]);
@@ -49,12 +51,20 @@ export const getMyProfile = createServerFn({ method: "GET" })
     };
   });
 
-export const completeOnboarding = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => OnboardingInput.parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+/**
+ * Onboarding, decoupled from transport. The web RPC (`completeOnboarding` below)
+ * and the mobile route (POST /api/v1/onboarding) both call this with an already-
+ * authenticated client + userId. Age is computed here, server-side — the client
+ * only supplies `date_of_birth`; there is no `age_confirmed_13_plus` input.
+ */
+export async function completeOnboardingCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: unknown,
+) {
+  const data = OnboardingInput.parse(input);
 
+  {
     // Age is computed here, server-side — not trusted from the client.
     const age = ageFromDateOfBirth(data.date_of_birth);
     if (age === null) throw new Error("Invalid date of birth");
@@ -156,7 +166,13 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     }
 
     return { ok: true };
-  });
+  }
+}
+
+export const completeOnboarding = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => OnboardingInput.parse(input))
+  .handler(({ data, context }) => completeOnboardingCore(context.supabase, context.userId, data));
 
 export const deleteMyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
