@@ -56,7 +56,9 @@
     "continueWithGoogle": "Continuer avec Google",
     "termsPrefix": "En continuant, vous acceptez nos",
     "termsLink": "conditions et notre avis de confidentialité",
-    "termsSuffix": ". Kalm est un soutien au bien-être, pas une thérapie ni des soins d'urgence."
+    "termsSuffix": ". Kalm est un soutien au bien-être, pas une thérapie ni des soins d'urgence.",
+    "continueWithApple": "Continuer avec Apple",
+    "appleFailed": "La connexion avec Apple n'a pas abouti. Veuillez réessayer."
   },
   "landing": {
     "headline": "Un espace plus calme pour faire le point avec vous-même.",
@@ -127,12 +129,15 @@
       "title": "Avant de commencer",
       "body": "Kalm est un outil de soutien au bien-être — ni thérapie, ni diagnostic, ni service d'urgence. Tout ce que vous écrivez vous appartient : vous pouvez l'exporter ou le supprimer quand vous voulez.",
       "agreePrivacy": "Je comprends que Kalm est un soutien au bien-être, pas des soins médicaux, et j'accepte l'avis de confidentialité et les conditions.",
-      "age": "J'ai 13 ans ou plus.",
-      "aiOptIn": "Facultatif : autoriser Kalm à utiliser mes check-ins et ma présentation pour personnaliser les conversations. Vous pouvez le désactiver à tout moment."
+      "aiOptIn": "Facultatif : autoriser Kalm à utiliser mes check-ins et ma présentation pour personnaliser les conversations. Vous pouvez le désactiver à tout moment.",
+      "dobLabel": "Votre date de naissance",
+      "dobHint": "Elle sert à adapter le contenu et la sécurité à votre âge. Elle n'est pas partagée.",
+      "under13": "Kalm est destiné aux personnes de {{min}} ans et plus."
     },
     "mode": {
       "title": "Qu'est-ce qui vous amène ?",
-      "body": "Cela définit le ton, le contenu et les garde-fous de sécurité que Kalm utilise avec vous."
+      "body": "Cela définit le ton, le contenu et les garde-fous de sécurité que Kalm utilise avec vous.",
+      "teenLocked": "Comme vous avez moins de 18 ans, Kalm utilise le mode ado — langage plus simple et garde-fous de sécurité plus stricts."
     },
     "modes": {
       "general": {

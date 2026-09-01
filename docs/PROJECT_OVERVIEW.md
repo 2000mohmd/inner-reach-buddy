@@ -118,7 +118,9 @@ Not built yet:
 - **Localization** — `care_resources.region` unused; crisis resources are US-only.
 - **Mobile client** — no API keys/versioning story for an external app; server
   functions are RPC-shaped for this web app.
-- **Data export** — deletion exists, export (e.g. therapist-shareable PDF) does not.
+- **Data export** — a downloadable report exists (`src/lib/data-export.functions.ts` →
+  `buildMyReport`, surfaced in `YourDataSection`), but as plain **.txt**, not the
+  therapist-shareable **PDF** originally scoped.
 
 ## 7. Known risks / review areas for an outside reviewer
 
@@ -135,15 +137,20 @@ Not built yet:
    disclaimer, but the resource lines (988, Crisis Text Line 741741) are still
    US-specific — only `findahelpline.com` is region-agnostic. Regex recall on heavy
    sarcasm and untested locales is still the weak spot.
-2. Crisis review workflow: `crisis_events.reviewed` exists, but there is no admin UI
-   or alerting, so nothing operationally reviews flags.
+2. Crisis review workflow: `crisis_events.reviewed` is worked through the admin
+   crisis queue (`src/routes/_authenticated/admin/crisis.tsx`, unreviewed-first),
+   and every flag fires an admin email via `src/lib/crisis-alert.server.ts` with a
+   30-minute re-escalation for anything still unreviewed. Remaining gap is
+   coverage/SLA monitoring, not the absence of a workflow.
 3. Teen mode: `account_type = 'teen'` sets tone and `age_confirmed_13_plus`, but there
    is no real age gate, parental consent, or under-13 blocking (COPPA/GDPR-K).
 4. Anthropic cost/abuse: no per-user rate limits or token budgeting on chat.
 5. Model reliability: tool-use loop caps at 3 iterations then returns partial text;
    failure modes surface as generic fallback copy.
-6. Screener scoring is stored but PHQ-9 item 9 (self-harm ideation) does not trigger
-   its own escalation path.
+6. PHQ-9 item 9 (self-harm ideation) has its own escalation path in
+   `src/lib/screeners.server.ts`: any non-zero answer builds a crisis response and
+   logs a `crisis_events` row (`source: 'phq9_item9'`, severity moderate/high by
+   the answer), independent of the total score.
 7. `effectiveness_insights` reads use an admin (RLS-bypassing) client inside a tool —
    worth an access review.
 8. No automated tests; verification has been manual/browser-driven.

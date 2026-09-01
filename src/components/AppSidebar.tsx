@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyProfile } from "@/lib/onboarding.functions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 
 export const SIDEBAR_NAV = [
@@ -135,14 +136,22 @@ export function AppSidebar({
           open ? "px-3" : "justify-center px-0"
         }`}
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-          {profileLoading ? "" : (preferredName ?? "K").slice(0, 2).toUpperCase()}
-        </span>
+        {profileLoading ? (
+          <Skeleton className="size-8 shrink-0 rounded-full" />
+        ) : (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+            {(preferredName ?? "K").slice(0, 2).toUpperCase()}
+          </span>
+        )}
         {open && (
           <>
-            <span className="min-w-0 flex-1 truncate text-sm">
-              {profileLoading ? "" : (preferredName ?? t("nav.yourAccount"))}
-            </span>
+            {profileLoading ? (
+              <Skeleton className="h-4 min-w-0 flex-1 rounded" />
+            ) : (
+              <span className="min-w-0 flex-1 truncate text-sm">
+                {preferredName ?? t("nav.yourAccount")}
+              </span>
+            )}
             <button
               type="button"
               aria-label={t("nav.signOut")}

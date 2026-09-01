@@ -56,7 +56,9 @@
     "continueWithGoogle": "Continue with Google",
     "termsPrefix": "By continuing you agree to our",
     "termsLink": "terms and privacy notice",
-    "termsSuffix": ". Kalm is wellness support, not therapy or emergency care."
+    "termsSuffix": ". Kalm is wellness support, not therapy or emergency care.",
+    "continueWithApple": "Continue with Apple",
+    "appleFailed": "Apple sign-in didn't complete. Please try again."
   },
   "landing": {
     "headline": "A quieter place to check in with yourself.",
@@ -127,12 +129,15 @@
       "title": "Before we start",
       "body": "Kalm is a wellness support tool — not therapy, not a diagnosis, and not an emergency service. Everything you write stays yours: you can export or delete it whenever you like.",
       "agreePrivacy": "I understand Kalm is wellness support, not medical care, and I agree to the privacy notice and terms.",
-      "age": "I am 13 years old or older.",
-      "aiOptIn": "Optional: let Kalm use my check-ins and self-introduction to personalize conversations. You can turn this off at any time."
+      "aiOptIn": "Optional: let Kalm use my check-ins and self-introduction to personalize conversations. You can turn this off at any time.",
+      "dobLabel": "Your date of birth",
+      "dobHint": "We use this to set age-appropriate content and safety. It is not shared.",
+      "under13": "Kalm is for people aged {{min}} and over."
     },
     "mode": {
       "title": "What brings you here?",
-      "body": "This sets the tone, content and safety guardrails Kalm uses with you."
+      "body": "This sets the tone, content and safety guardrails Kalm uses with you.",
+      "teenLocked": "Because you are under 18, Kalm uses teen mode — simpler language and stricter safety guardrails."
     },
     "modes": {
       "general": {

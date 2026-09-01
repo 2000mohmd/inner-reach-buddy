@@ -104,14 +104,14 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
+  async function handleOAuth(provider: "google" | "apple") {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
+    const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
       setBusy(false);
-      toast.error(t("auth.googleFailed"));
+      toast.error(provider === "apple" ? t("auth.appleFailed") : t("auth.googleFailed"));
       return;
     }
     if (result.redirected) return;
@@ -203,14 +203,24 @@ function AuthPage() {
                   {t("auth.or")}
                   <span className="h-px flex-1 bg-border" />
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-full"
-                  disabled={busy}
-                  onClick={() => void handleGoogle()}
-                >
-                  {t("auth.continueWithGoogle")}
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full"
+                    disabled={busy}
+                    onClick={() => void handleOAuth("google")}
+                  >
+                    {t("auth.continueWithGoogle")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full"
+                    disabled={busy}
+                    onClick={() => void handleOAuth("apple")}
+                  >
+                    {t("auth.continueWithApple")}
+                  </Button>
+                </div>
               </>
             )}
           </div>

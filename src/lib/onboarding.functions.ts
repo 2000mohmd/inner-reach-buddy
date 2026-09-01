@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { MINOR_AGE, MIN_AGE, ageFromDateOfBirth } from "./age";
 
 const AccountType = z.enum(["general", "condition", "teen", "org_member"]);
 
@@ -9,7 +10,9 @@ const OnboardingInput = z.object({
   account_type: AccountType,
   privacy_consent: z.literal(true),
   ai_context_consent: z.boolean(),
-  age_confirmed_13_plus: z.literal(true),
+  // Real DOB (YYYY-MM-DD). The server computes age from this — it is the
+  // authority for age_confirmed_13_plus and the teen lock.
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
   intro_text: z.string().trim().max(2000).optional().default(""),
   goals: z.array(z.string().trim().max(80)).max(12).default([]),
   stressors: z.array(z.string().trim().max(80)).max(12).default([]),
@@ -52,17 +55,29 @@ export const completeOnboarding = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Age is computed here, server-side — not trusted from the client.
+    const age = ageFromDateOfBirth(data.date_of_birth);
+    if (age === null) throw new Error("Invalid date of birth");
+    if (age < MIN_AGE) {
+      throw new Error(`Kalm is for people aged ${MIN_AGE} and over.`);
+    }
+    // Under 18 is locked to teen mode regardless of what the client selected.
+    const resolvedAccountType = age < MINOR_AGE ? "teen" : data.account_type;
+
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
         preferred_name: data.preferred_name,
-        account_type: data.account_type,
+        account_type: resolvedAccountType,
         privacy_consent: data.privacy_consent,
         ai_context_consent: data.ai_context_consent,
-        age_confirmed_13_plus: data.age_confirmed_13_plus,
+        // date_of_birth is added by migration 20260902000200; not in the
+        // generated Database types until Lovable regenerates them.
+        date_of_birth: data.date_of_birth,
+        age_confirmed_13_plus: age >= MIN_AGE,
         consent_accepted_at: new Date().toISOString(),
         onboarding_completed: true,
-      })
+      } as never)
       .eq("id", userId);
     if (profileError) throw profileError;
 
@@ -112,7 +127,7 @@ export const completeOnboarding = createServerFn({ method: "POST" })
             .join(" "),
           {
             preferredName: data.preferred_name,
-            accountType: data.account_type,
+            accountType: resolvedAccountType,
             introText: data.intro_text || null,
             goals: data.goals,
             stressors: data.stressors,

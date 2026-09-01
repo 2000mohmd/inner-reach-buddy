@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { SafetyFooter } from "@/components/SafetyFooter";
+import { MINOR_AGE, MIN_AGE, ageFromDateOfBirth, maxAllowedDob } from "@/lib/age";
 import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -75,7 +76,7 @@ function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [aiContextConsent, setAiContextConsent] = useState(true);
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [dob, setDob] = useState("");
   const [accountType, setAccountType] = useState<(typeof MODES)[number]>("general");
   const [preferredName, setPreferredName] = useState("");
   const [introText, setIntroText] = useState("");
@@ -87,6 +88,10 @@ function OnboardingPage() {
   const [inCare, setInCare] = useState(false);
   const [mood, setMood] = useState<number | null>(null);
 
+  const age = dob ? ageFromDateOfBirth(dob) : null;
+  const ageOk = age !== null && age >= MIN_AGE;
+  const isMinor = age !== null && age < MINOR_AGE;
+
   useEffect(() => {
     if (data?.profile?.onboarding_completed) {
       navigate({ to: "/chat", replace: true });
@@ -97,6 +102,12 @@ function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
+  // Under-18 is locked to teen mode; the mode step reflects this but the server
+  // is the authority.
+  useEffect(() => {
+    if (isMinor && accountType !== "teen") setAccountType("teen");
+  }, [isMinor, accountType]);
+
   const mutation = useMutation({
     mutationFn: () =>
       saveOnboarding({
@@ -105,7 +116,7 @@ function OnboardingPage() {
           account_type: accountType,
           privacy_consent: true as const,
           ai_context_consent: aiContextConsent,
-          age_confirmed_13_plus: true as const,
+          date_of_birth: dob,
           intro_text: introText.trim(),
           goals,
           stressors,
@@ -126,7 +137,7 @@ function OnboardingPage() {
   });
 
   const canContinue = [
-    privacyConsent && ageConfirmed,
+    privacyConsent && ageOk,
     Boolean(accountType),
     preferredName.trim().length > 0,
     mood !== null,
@@ -161,14 +172,23 @@ function OnboardingPage() {
                 />
                 <span>{t("onboarding.consent.agreePrivacy")}</span>
               </label>
-              <label className="flex cursor-pointer items-start gap-3">
-                <Checkbox
-                  checked={ageConfirmed}
-                  onCheckedChange={(value) => setAgeConfirmed(value === true)}
-                  className="mt-1"
+              <div className="space-y-2">
+                <Label htmlFor="dob">{t("onboarding.consent.dobLabel")}</Label>
+                <Input
+                  id="dob"
+                  type="date"
+                  value={dob}
+                  max={maxAllowedDob()}
+                  onChange={(event) => setDob(event.target.value)}
+                  className="w-full sm:w-56"
                 />
-                <span>{t("onboarding.consent.age")}</span>
-              </label>
+                <p className="text-xs text-muted-foreground">{t("onboarding.consent.dobHint")}</p>
+                {dob && !ageOk && (
+                  <p className="text-xs font-medium text-destructive">
+                    {t("onboarding.consent.under13", { min: MIN_AGE })}
+                  </p>
+                )}
+              </div>
               <label className="flex cursor-pointer items-start gap-3">
                 <Checkbox
                   checked={aiContextConsent}
@@ -185,32 +205,43 @@ function OnboardingPage() {
               <div>
                 <h1 className="text-3xl">{t("onboarding.mode.title")}</h1>
                 <p className="mt-3 text-muted-foreground">{t("onboarding.mode.body")}</p>
+                {isMinor && (
+                  <p className="mt-3 rounded-xl bg-secondary/60 px-4 py-2 text-sm text-secondary-foreground">
+                    {t("onboarding.mode.teenLocked")}
+                  </p>
+                )}
               </div>
               <div className="space-y-3">
-                {MODES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setAccountType(value)}
-                    className={`flex w-full items-start gap-3 rounded-2xl border p-5 text-left ${
-                      accountType === value
-                        ? "border-primary bg-secondary"
-                        : "border-border bg-card hover:bg-muted"
-                    }`}
-                  >
-                    <span className="flex-1">
-                      <span className="block font-semibold">
-                        {t(`onboarding.modes.${value}.title`)}
+                {MODES.map((value) => {
+                  const locked = isMinor && value !== "teen";
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => setAccountType(value)}
+                      className={`flex w-full items-start gap-3 rounded-2xl border p-5 text-left ${
+                        locked
+                          ? "cursor-not-allowed border-border bg-card opacity-40"
+                          : accountType === value
+                            ? "border-primary bg-secondary"
+                            : "border-border bg-card hover:bg-muted"
+                      }`}
+                    >
+                      <span className="flex-1">
+                        <span className="block font-semibold">
+                          {t(`onboarding.modes.${value}.title`)}
+                        </span>
+                        <span className="mt-1 block text-sm text-muted-foreground">
+                          {t(`onboarding.modes.${value}.body`)}
+                        </span>
                       </span>
-                      <span className="mt-1 block text-sm text-muted-foreground">
-                        {t(`onboarding.modes.${value}.body`)}
-                      </span>
-                    </span>
-                    {accountType === value && (
-                      <Check className="mt-1 size-5 text-primary" aria-hidden />
-                    )}
-                  </button>
-                ))}
+                      {accountType === value && (
+                        <Check className="mt-1 size-5 text-primary" aria-hidden />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

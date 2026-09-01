@@ -20,6 +20,7 @@ import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { DailyPromptCard } from "@/components/DailyPromptCard";
 import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -294,13 +295,15 @@ function ChatPage() {
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary">
                   <Leaf className="size-6 text-primary" aria-hidden />
                 </span>
-                <h2 className="font-display text-3xl">
-                  {profileLoading
-                    ? " "
-                    : preferredName
+                {profileLoading ? (
+                  <Skeleton className="h-9 w-52 rounded-lg" />
+                ) : (
+                  <h2 className="font-display text-3xl">
+                    {preferredName
                       ? t("chat.greetingNamed", { name: preferredName })
                       : t("chat.greeting")}
-                </h2>
+                  </h2>
+                )}
                 <p className="max-w-sm text-sm text-muted-foreground">{t("chat.emptyPrompt")}</p>
                 <div className="w-full max-w-md pt-4 text-left">
                   <DailyPromptCard />
