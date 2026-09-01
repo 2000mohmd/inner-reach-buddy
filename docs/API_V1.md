@@ -24,7 +24,7 @@ implemented (billing), `500` otherwise (`{"error":"Internal error"}`, logged).
 
 | Method             | Path                              | Wraps                                     | Notes                                                                                          |
 | ------------------ | --------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| GET                | `/api/v1/entitlements`            | `getEntitlements`                         | tier, chat credits (free = 1/day), feature flags                                               |
+| GET                | `/api/v1/entitlements`            | `getEntitlements`                         | tier, enforced daily cap (`dailyLimit`; free = 8/day, env-tunable), usedToday, feature flags     |
 | GET                | `/api/v1/preferences`             | `getMyPreferences`                        | companion persona, theme, language                                                             |
 | PATCH              | `/api/v1/preferences`             | `setMyPreferences`                        | `{ companionPersona?, theme? }`                                                                |
 | GET                | `/api/v1/personas`                | `listCompanionPersonas`                   | **public** — persona catalogue                                                                 |

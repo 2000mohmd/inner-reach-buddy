@@ -125,10 +125,24 @@ When `reply.type === "crisis"` the client must show the crisis UI (message +
 `resources` + `disclaimer`) and must not send the text through any normal
 message-rendering path.
 
-Rate-limited (free tier, daily cap reached) is **not** an error: it returns a
-normal `200` with `reply.type === "message"` and a supportive system message as
-`content`. Read [`GET /api/v1/entitlements`](#get-apiv1entitlements) to show a
-counter before the user hits it.
+**Rate / daily-cap notice** is **not** an error: it returns a normal `200` with
+`reply.type === "message"`, a warm non-punitive message as `content`, and — when
+the daily cap is what tripped — a `reply.limit` object so the client can render
+an upgrade prompt without a second call:
+
+```json
+"reply": {
+  "type": "message", "id": "uuid", "content": "warm message to show",
+  "created_at": "ISO-8601", "actions": [],
+  "limit": { "reason": "daily", "tier": "free", "dailyLimit": 8,
+             "resetsAt": "ISO-8601 (next UTC midnight)" }
+}
+```
+
+`reply.limit` is absent on a normal reply and on a short-term sliding-window
+throttle (`reason` would be `"window"` there, with no upgrade framing). The
+`dailyLimit` here is the exact number `GET /api/v1/entitlements` reports — they
+come from one source (`dailyMessageCap(tier)` in `src/lib/chat-limits.ts`).
 
 ---
 
@@ -200,15 +214,24 @@ real "N messages left today" indicator instead of guessing.
 ```json
 {
   "tier": "free | premium | org",
-  "chat": { "unlimited": false, "dailyCredits": 1, "usedToday": 0,
-            "remainingToday": 1, "resetsAt": "ISO-8601 (next UTC midnight)" },
+  "chat": { "unlimited": false, "dailyLimit": 8, "dailyCredits": 8,
+            "usedToday": 0, "remainingToday": 8,
+            "resetsAt": "ISO-8601 (next UTC midnight)" },
   "features": { "unlimitedHistory": false, "liveSessions": false, "dataExport": false }
 }
 ```
 
-For premium/org, `unlimited` is `true` and `dailyCredits` / `remainingToday` are
-`null`. `liveSessions` is always `false` (not built — see
-[Out of scope](#out-of-scope)).
+- `dailyLimit` — the **enforced** daily message cap for this tier. Same number
+  the chat endpoint blocks on (`reply.limit.dailyLimit`); one source of truth
+  (`src/lib/chat-limits.ts`). Free = 8 (env `FREE_DAILY_MESSAGE_CAP`); premium /
+  org = the high cap (env `CHAT_DAILY_MESSAGE_CAP`, default 200).
+- `usedToday` — messages consumed today, from the counter the limiter enforces
+  on (`chat_rate_limits.day_count`), so `remainingToday === dailyLimit -
+  usedToday` exactly matches when the block will trigger.
+- For premium/org, `unlimited` is `true` and `dailyCredits` / `remainingToday`
+  are `null` (but `dailyLimit` still carries the real number).
+- `liveSessions` is always `false` (not built — see
+  [Out of scope](#out-of-scope)).
 
 ### `GET /api/v1/chat/threads`
 

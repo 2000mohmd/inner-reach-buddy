@@ -4,6 +4,7 @@ import { z } from "zod";
 import { triageCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
 import { getRateLimiter, RATE_LIMIT_MESSAGE } from "./rate-limit";
+import { dailyMessageCap } from "./chat-limits";
 import type { CompanionAction } from "./companion-tools.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -165,6 +166,13 @@ export type SendMessageResult = {
         content: string;
         created_at: string;
         actions: CompanionAction[];
+        /**
+         * Present only when this reply is a rate/daily-cap notice. `content` is
+         * the warm, non-punitive message to show; `limit` carries the tier, the
+         * enforced daily cap and the reset time so a mobile client can render an
+         * upgrade prompt without a second call to /api/v1/entitlements.
+         */
+        limit?: { reason: "daily" | "window"; tier: string; dailyLimit: number; resetsAt: string };
       }
     | (CrisisResponse & { id: string; created_at: string });
 };
@@ -239,7 +247,7 @@ export async function sendMessageCore(
       .neq("id", savedUser.data.id)
       .order("created_at", { ascending: false })
       .limit(2),
-    supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("language, subscription_tier").eq("id", userId).maybeSingle(),
   ]);
 
   const { runCrisisGate } = await import("./crisis-gate.server");
@@ -272,17 +280,23 @@ export async function sendMessageCore(
 
   // --- Per-user rate limit (normal chat path only; never gates crisis).
   // Both crisis checks above have already run and come up clear. Enforces a
-  // short sliding window AND a daily message cap; fails open. ---
+  // short sliding window AND a tier-aware daily message cap; fails open. The
+  // daily cap comes from chat-limits.ts — the same source GET /api/v1/entitlements
+  // reports from, so the advertised limit and the enforced limit cannot drift. ---
+  const tier = profileLang.data?.subscription_tier ?? "free";
   const rateLimiter = getRateLimiter(supabase);
-  const limit = await rateLimiter.checkAndConsume(userId);
-  if (!limit.allowed) {
+  const decision = await rateLimiter.checkAndConsume(userId, {
+    tier,
+    dailyCap: dailyMessageCap(tier),
+  });
+  if (!decision.allowed) {
     const savedLimit = await supabase
       .from("chat_messages")
       .insert({
         thread_id: threadId,
         user_id: userId,
         sender: "system",
-        content: limit.message ?? RATE_LIMIT_MESSAGE,
+        content: decision.message ?? RATE_LIMIT_MESSAGE,
       })
       .select("id, content, created_at")
       .single();
@@ -297,6 +311,9 @@ export async function sendMessageCore(
         content: savedLimit.data.content,
         created_at: savedLimit.data.created_at,
         actions: [],
+        ...(decision.reason === "daily" && decision.limit
+          ? { limit: { reason: "daily" as const, ...decision.limit } }
+          : {}),
       },
     };
   }

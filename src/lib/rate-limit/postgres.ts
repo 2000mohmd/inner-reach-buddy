@@ -7,6 +7,7 @@
 // durable token/cost counter stays in Postgres.
 import type { RateLimiter, RateLimitDecision, UsageRecord, UsageSummary } from "./types";
 import { estimateCostUsd } from "./pricing";
+import { HIGH_DAILY_MESSAGE_CAP, dailyCapResetsAt } from "../chat-limits";
 
 const WINDOW_MS = 10 * 60 * 1000;
 
@@ -17,8 +18,8 @@ function envInt(key: string, fallback: number): number {
 
 /** Sliding-window cap (messages per WINDOW_MS). */
 const WINDOW_MAX = envInt("CHAT_WINDOW_MESSAGE_CAP", 20);
-/** Hard daily cap (messages per UTC day). */
-const DAILY_MAX = envInt("CHAT_DAILY_MESSAGE_CAP", 200);
+// The daily cap is per-tier and resolved by the caller (chat-limits.ts) — it is
+// no longer a flat module constant here.
 
 export const RATE_LIMIT_MESSAGE =
   "Let's take a short breather — we've covered a lot quickly. Try again in a few minutes and I'll be right here.";
@@ -36,9 +37,15 @@ type MinimalClient = { from: (table: string) => any };
 export class PostgresRateLimiter implements RateLimiter {
   constructor(private readonly supabase: MinimalClient) {}
 
-  async checkAndConsume(userId: string): Promise<RateLimitDecision> {
+  async checkAndConsume(
+    userId: string,
+    plan?: { tier: string; dailyCap: number },
+  ): Promise<RateLimitDecision> {
     const now = Date.now();
     const day = today();
+    // Fail open on the paywall if the caller didn't resolve a tier.
+    const dailyCap = plan?.dailyCap ?? HIGH_DAILY_MESSAGE_CAP;
+    const tier = plan?.tier ?? "free";
 
     // Try to read the daily-cap columns; if the migration that adds them has not
     // been applied yet, fall back to the legacy window-only columns so the
@@ -80,12 +87,13 @@ export class PostgresRateLimiter implements RateLimiter {
     const sameDay = hasDailyCols && data?.day_start === day;
     const dayCount = sameDay ? (data?.day_count ?? 0) : 0;
 
-    if (dayCount >= DAILY_MAX) {
+    if (dayCount >= dailyCap) {
       return {
         allowed: false,
         reason: "daily",
         message: DAILY_LIMIT_MESSAGE,
         remaining: { window: Math.max(0, WINDOW_MAX - windowCount), day: 0 },
+        limit: { tier, dailyLimit: dailyCap, resetsAt: dailyCapResetsAt() },
       };
     }
     if (windowCount >= WINDOW_MAX) {
@@ -93,7 +101,7 @@ export class PostgresRateLimiter implements RateLimiter {
         allowed: false,
         reason: "window",
         message: RATE_LIMIT_MESSAGE,
-        remaining: { window: 0, day: Math.max(0, DAILY_MAX - dayCount) },
+        remaining: { window: 0, day: Math.max(0, dailyCap - dayCount) },
       };
     }
 
@@ -117,7 +125,7 @@ export class PostgresRateLimiter implements RateLimiter {
       allowed: true,
       remaining: {
         window: Math.max(0, WINDOW_MAX - nextWindowCount),
-        day: hasDailyCols ? Math.max(0, DAILY_MAX - nextDayCount) : DAILY_MAX,
+        day: hasDailyCols ? Math.max(0, dailyCap - nextDayCount) : dailyCap,
       },
     };
   }

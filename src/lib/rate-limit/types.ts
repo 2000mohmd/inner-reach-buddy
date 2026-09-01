@@ -15,6 +15,11 @@ export type RateLimitDecision = {
   message?: string;
   /** Best-effort remaining allowance, for UI / response headers. */
   remaining?: { window: number; day: number };
+  /**
+   * Set when reason === "daily": everything the client needs to render an
+   * upgrade prompt without a second call to /api/v1/entitlements.
+   */
+  limit?: { tier: string; dailyLimit: number; resetsAt: string };
 };
 
 export type UsageRecord = {
@@ -44,8 +49,15 @@ export interface RateLimiter {
    * Call once per inbound chat message on the normal path. Records the attempt
    * when it is allowed. Must never throw and must fail OPEN (allow) if its own
    * storage is unavailable — a broken limiter must not break chat.
+   *
+   * `plan` carries the caller-resolved tier + the daily cap for that tier (from
+   * chat-limits.ts). Omitting it falls back to the high cap, so a path that
+   * forgets to pass it fails open on the paywall rather than wrongly throttling.
    */
-  checkAndConsume(userId: string): Promise<RateLimitDecision>;
+  checkAndConsume(
+    userId: string,
+    plan?: { tier: string; dailyCap: number },
+  ): Promise<RateLimitDecision>;
 
   /**
    * Record token usage for a completed model exchange (which may span several

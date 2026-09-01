@@ -147,21 +147,41 @@ describe("handleScreenerResponses", () => {
 // --- GET /api/v1/entitlements ---------------------------------------------------
 
 describe("handleEntitlements", () => {
-  it("returns free-tier credit state for a user with no usage row", async () => {
+  it("reports the free daily cap (8) as the single source of truth, no usage yet", async () => {
     const body = await (await handleEntitlements(req("/api/v1/entitlements"))).json();
     expect(body.tier).toBe("free");
     expect(body.chat.unlimited).toBe(false);
-    expect(body.chat.dailyCredits).toBe(1);
-    expect(body.chat.remainingToday).toBe(1);
+    expect(body.chat.dailyLimit).toBe(8);
+    expect(body.chat.dailyCredits).toBe(8);
+    expect(body.chat.usedToday).toBe(0);
+    expect(body.chat.remainingToday).toBe(8);
     expect(typeof body.chat.resetsAt).toBe("string");
   });
 
-  it("reflects usage already spent today", async () => {
+  it("derives usedToday / remainingToday from chat_rate_limits.day_count (the enforced counter)", async () => {
     const today = new Date().toISOString().slice(0, 10);
-    h.state.tables["chat_usage"] = { maybeSingle: { day: today, day_messages: 1 } };
+    h.state.tables["chat_rate_limits"] = { maybeSingle: { day_start: today, day_count: 3 } };
     const body = await (await handleEntitlements(req("/api/v1/entitlements"))).json();
-    expect(body.chat.usedToday).toBe(1);
-    expect(body.chat.remainingToday).toBe(0);
+    expect(body.chat.usedToday).toBe(3);
+    expect(body.chat.remainingToday).toBe(5);
+  });
+
+  it("ignores a stale day_count from a previous UTC day", async () => {
+    h.state.tables["chat_rate_limits"] = {
+      maybeSingle: { day_start: "2000-01-01", day_count: 99 },
+    };
+    const body = await (await handleEntitlements(req("/api/v1/entitlements"))).json();
+    expect(body.chat.usedToday).toBe(0);
+    expect(body.chat.remainingToday).toBe(8);
+  });
+
+  it("reports premium as unlimited-ish with the high cap", async () => {
+    h.state.tables["profiles"] = { maybeSingle: { subscription_tier: "premium" } };
+    const body = await (await handleEntitlements(req("/api/v1/entitlements"))).json();
+    expect(body.tier).toBe("premium");
+    expect(body.chat.unlimited).toBe(true);
+    expect(body.chat.dailyLimit).toBe(200);
+    expect(body.chat.remainingToday).toBeNull();
   });
 
   it("401s without a valid token", async () => {
