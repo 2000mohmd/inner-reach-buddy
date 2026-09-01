@@ -24,7 +24,9 @@
     "signOut": "Se déconnecter",
     "collapseSidebar": "Réduire le menu",
     "expandSidebar": "Ouvrir le menu",
-    "newConversation": "Nouvelle conversation"
+    "newConversation": "Nouvelle conversation",
+    "recents": "Récents",
+    "yourAccount": "Votre compte"
   },
   "language": {
     "sectionTitle": "Langue",
@@ -34,5 +36,376 @@
     "saveFailed": "Impossible d'enregistrer votre langue. Veuillez réessayer.",
     "reviewNotice": "Les traductions arabes et françaises sont des brouillons en attente de relecture clinique.",
     "companionNote": "Votre compagnon répondra dans cette langue."
+  },
+  "safety": {
+    "disclaimer": "Kalm ne fournit ni avis médical ni services d'urgence.",
+    "getCrisisSupport": "Obtenir de l'aide en cas de crise"
+  },
+  "auth": {
+    "checkDetails": "Vérifiez vos informations",
+    "genericError": "Une erreur est survenue",
+    "googleFailed": "La connexion avec Google n'a pas abouti. Veuillez réessayer.",
+    "checkEmail": "Vérifiez votre e-mail",
+    "confirmationSent": "Nous avons envoyé un lien de confirmation à {{email}}. Ouvrez-le pour terminer la création de votre compte.",
+    "createAccount": "Créer un compte",
+    "signIn": "Se connecter",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Au moins 8 caractères",
+    "or": "ou",
+    "continueWithGoogle": "Continuer avec Google",
+    "termsPrefix": "En continuant, vous acceptez nos",
+    "termsLink": "conditions et notre avis de confidentialité",
+    "termsSuffix": ". Kalm est un soutien au bien-être, pas une thérapie ni des soins d'urgence."
+  },
+  "landing": {
+    "headline": "Un espace plus calme pour faire le point avec vous-même.",
+    "subhead": "Kalm est un compagnon de soutien au bien-être — conversation avec une IA, suivi de l'humeur et exercices guidés, construits autour de ce que vous lui confiez de votre vie.",
+    "createAccount": "Créer votre compte",
+    "alreadyHere": "Déjà inscrit ?",
+    "pillars": {
+      "companion": {
+        "title": "Un compagnon qui se souvient",
+        "body": "Votre présentation, vos objectifs et vos dernières check-ins façonnent chaque conversation dès le premier message."
+      },
+      "tracking": {
+        "title": "Un suivi tout en douceur",
+        "body": "Des check-ins d'humeur et d'habitudes qui révèlent des tendances — jamais de culpabilité liée aux séries ni de rappels moralisateurs."
+      },
+      "practice": {
+        "title": "Une pratique guidée",
+        "body": "De courtes reformulations TCC, des exercices d'ancrage et de journal que vous terminez en quelques minutes tranquilles."
+      }
+    },
+    "supportTitle": "Un soutien, pas un traitement",
+    "supportBody": "Kalm est un outil de soutien au bien-être. Ce n'est ni une thérapie, ni un diagnostic, ni un service d'urgence. Chaque conversation est analysée pour détecter un langage de crise, et les ressources de crise sont toujours accessibles en un geste, jamais derrière un paiement.",
+    "crisisResources": "Ressources de crise",
+    "privacyDisclaimers": "Confidentialité et mentions"
+  },
+  "chat": {
+    "immediateSupport": "Aide immédiate",
+    "micBlocked": "L'accès au microphone est bloqué. Autorisez-le dans les paramètres de votre navigateur.",
+    "replyFailed": "Le compagnon n'a pas pu répondre. Veuillez réessayer.",
+    "transcribeFailed": "Impossible de transcrire cet enregistrement.",
+    "conversationDeleted": "Conversation supprimée.",
+    "deleteConversation": "Supprimer la conversation",
+    "hideConversations": "Masquer les conversations",
+    "showConversations": "Afficher les conversations",
+    "supportNotTherapy": "Un soutien, pas une thérapie",
+    "greetingNamed": "Bonjour {{name}}.",
+    "greeting": "Bonjour.",
+    "emptyPrompt": "Qu'avez-vous en tête en ce moment ? Écrivez-le, ou maintenez le micro et parlez simplement.",
+    "listening": "J'écoute votre note vocale…",
+    "thinking": "Kalm réfléchit…",
+    "inputPlaceholder": "Écrivez un message…",
+    "recordingHint": "Enregistrement… appuyez sur stop quand vous avez terminé",
+    "enterToSend": "Entrée pour envoyer",
+    "stopRecording": "Arrêter l'enregistrement",
+    "recordVoice": "Enregistrer un message vocal",
+    "sendMessage": "Envoyer le message",
+    "disclaimer": "Kalm est un compagnon IA, pas un thérapeute. En cas de crise, utilisez l'aide immédiate."
+  },
+  "quickActions": {
+    "anxious": "Je me sens anxieux",
+    "reframe": "Aidez-moi à reformuler une pensée",
+    "grounding": "J'ai besoin d'un exercice d'ancrage",
+    "sleep": "Je n'arrive pas à dormir",
+    "vent": "J'ai juste besoin de vider mon sac"
+  },
+  "onboarding": {
+    "stepLabel": "Étape {{current}} sur {{total}}",
+    "saved": "Tout est prêt. Bienvenue sur Kalm.",
+    "saveFailed": "Nous n'avons pas pu enregistrer votre profil. Veuillez réessayer.",
+    "finishSetup": "Terminer la configuration",
+    "steps": {
+      "consent": "Consentement",
+      "mode": "Mode",
+      "about": "À propos de vous",
+      "checkin": "Premier point"
+    },
+    "consent": {
+      "title": "Avant de commencer",
+      "body": "Kalm est un outil de soutien au bien-être — ni thérapie, ni diagnostic, ni service d'urgence. Tout ce que vous écrivez vous appartient : vous pouvez l'exporter ou le supprimer quand vous voulez.",
+      "agreePrivacy": "Je comprends que Kalm est un soutien au bien-être, pas des soins médicaux, et j'accepte l'avis de confidentialité et les conditions.",
+      "age": "J'ai 13 ans ou plus.",
+      "aiOptIn": "Facultatif : autoriser Kalm à utiliser mes check-ins et ma présentation pour personnaliser les conversations. Vous pouvez le désactiver à tout moment."
+    },
+    "mode": {
+      "title": "Qu'est-ce qui vous amène ?",
+      "body": "Cela définit le ton, le contenu et les garde-fous de sécurité que Kalm utilise avec vous."
+    },
+    "modes": {
+      "general": {
+        "title": "Stress du quotidien et humeur basse",
+        "body": "Un soutien général pour l'anxiété, le stress et les journées difficiles."
+      },
+      "condition": {
+        "title": "Gérer une affection diagnostiquée",
+        "body": "Pour les personnes suivies ou en recherche de soins professionnels en parallèle de Kalm."
+      },
+      "teen": {
+        "title": "Mode ado / étudiant",
+        "body": "Langage plus simple, situations scolaires et sociales, garde-fous de sécurité plus stricts. Dès 13 ans."
+      },
+      "org_member": {
+        "title": "Via mon employeur",
+        "body": "Programme de bien-être de l'employeur. Votre employeur ne voit que des totaux anonymisés."
+      }
+    },
+    "about": {
+      "title": "Présentez-vous",
+      "body": "Kalm garde cela pour chaque conversation, pour ne jamais repartir de zéro. Partagez autant ou aussi peu que vous le souhaitez.",
+      "nameLabel": "Comment Kalm doit-il vous appeler ?",
+      "namePlaceholder": "Nom d'usage",
+      "introLabel": "Avec vos mots, qu'est-ce qui se passe en ce moment ?",
+      "introPlaceholder": "Je me sens débordé au travail et mon sommeil s'est dégradé…",
+      "goalsLabel": "Sur quoi aimeriez-vous travailler ?",
+      "stressorsLabel": "Qu'est-ce qui vous pèse ?",
+      "commLabel": "Comment aimez-vous qu'on vous parle ? (facultatif)",
+      "commPlaceholder": "Doux et direct, sans positivité toxique",
+      "avoidLabel": "Y a-t-il un sujet que Kalm devrait éviter ? (facultatif)",
+      "avoidPlaceholder": "Merci de ne pas parler de mon père",
+      "diagnosisLabel": "Diagnostic existant, si vous souhaitez le partager (facultatif)",
+      "diagnosisPlaceholder": "ex. anxiété généralisée",
+      "inCare": "Je suis actuellement suivi par un thérapeute, un conseiller ou un médecin."
+    },
+    "goals": {
+      "lessAnxious": "Me sentir moins anxieux",
+      "sleepBetter": "Mieux dormir",
+      "dailyHabit": "Installer une habitude quotidienne",
+      "patterns": "Comprendre mes schémas",
+      "workStress": "Gérer le stress au travail",
+      "kinder": "Être plus bienveillant envers moi"
+    },
+    "stressors": {
+      "work": "Travail",
+      "school": "Études",
+      "family": "Famille",
+      "money": "Argent",
+      "health": "Santé",
+      "relationships": "Relations",
+      "loneliness": "Solitude"
+    },
+    "checkin": {
+      "title": "Comment allez-vous, là, maintenant ?",
+      "body": "C'est votre point de départ. Pas de mauvaise réponse, et rien ici n'est un test."
+    },
+    "moods": {
+      "1": "Vraiment bas",
+      "2": "Bas",
+      "3": "Correct",
+      "4": "Bien",
+      "5": "Très bien"
+    }
+  },
+  "insights": {
+    "title": "Progrès",
+    "subtitle": "Un bref récapitulatif de la façon dont vos semaines se sont réellement passées.",
+    "weekOf": "Semaine du {{range}}",
+    "oneThing": "Une chose pour cette semaine",
+    "firstRecapTitle": "Votre premier récapitulatif arrive",
+    "firstRecapBody": "Après une semaine de check-ins, d'habitudes cochées ou d'exercices essayés, Kalm vous écrira un bref récapitulatif de son déroulement — en langage clair, avec un petit point d'attention pour la semaine à venir. Rien à configurer ; il sera simplement là.",
+    "earlierWeeks": "Semaines précédentes",
+    "focusSet": "Point défini",
+    "focusThatWeek": "Point de cette semaine : {{focus}}",
+    "seeNumbers": "Voir les chiffres",
+    "seeNumbersBody": "Tendances d'humeur, grille d'habitudes et scores des check-ins, si vous voulez le détail.",
+    "hide": "Masquer",
+    "show": "Afficher",
+    "dataSections": "Sections de données",
+    "tabs": {
+      "mood": "Humeur et tendances",
+      "habits": "Habitudes",
+      "checkIns": "Check-ins"
+    }
+  },
+  "mood": {
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "greetingNamed": "{{greeting}}, {{name}}",
+    "subtitle": "Respirez. Cet espace avance à votre rythme.",
+    "howFeeling": "Comment vous sentez-vous en ce moment ?",
+    "notePlaceholder": "Quelque chose à ajouter ? (facultatif)",
+    "saveCheckIn": "Enregistrer le point",
+    "saved": "Point enregistré. Merci d'être venu aujourd'hui.",
+    "saveFailed": "Nous n'avons pas pu enregistrer ce point. Veuillez réessayer.",
+    "lastN": "Vos {{count}} derniers points",
+    "nothingLogged": "Rien d'enregistré pour l'instant. Votre premier point apparaîtra ici.",
+    "averageLine": "Humeur moyenne {{avg}} sur 5. Les tendances comptent plus qu'une journée isolée.",
+    "whereNext": "Et ensuite",
+    "guidedExercises": "Exercices guidés",
+    "guidedExercisesDesc": "— relevés de pensées, activation comportementale, ancrage, respiration",
+    "periodicCheckIns": "Bilans périodiques",
+    "periodicCheckInsDesc": "— PHQ-9 et GAD-7 toutes les deux semaines, pour voir les tendances",
+    "talkToPerson": "Parler à une personne",
+    "talkToPersonDesc": "— annuaires de thérapeutes et options à moindre coût",
+    "reviewProfile": "Consulter votre profil et vos données"
+  },
+  "nudge": {
+    "aNoteFromKalm": "Un mot de Kalm",
+    "dismiss": "Ignorer",
+    "tryExercise": "Essayer l'exercice",
+    "moreSupport": "Voir plus d'options de soutien"
+  },
+  "dailyPrompt": {
+    "typeReflection": "Réflexion du jour",
+    "typeIntention": "Intention du jour",
+    "typeToday": "Aujourd'hui",
+    "placeholder": "Une phrase suffit — ou passez.",
+    "saved": "Gardé, rien que pour vous.",
+    "saveFailed": "Nous n'avons pas pu enregistrer. Veuillez réessayer."
+  },
+  "habits": {
+    "title": "Habitudes",
+    "subtitle": "De petites choses répétables. Manquer un jour, c'est une donnée, pas un échec.",
+    "addPlaceholder": "Ajouter une habitude, ex. marche de 10 minutes",
+    "add": "Ajouter",
+    "suggested": "Suggérées",
+    "empty": "Aucune habitude pour l'instant. Ajoutez les vôtres, ou commencez avec l'ensemble suggéré (sommeil, mouvement, eau, médicaments).",
+    "habitColumn": "Habitude",
+    "perWeek": "{{count}}×/semaine",
+    "deleteHabit": "Supprimer {{name}}",
+    "habitsAndMood": "Habitudes et humeur",
+    "daysLine": "{{withCount}} jours enregistrés · {{withoutCount}} jours sans",
+    "insightsEmpty": "Enregistrez quelques habitudes et points d'humeur et des tendances apparaîtront ici.",
+    "added": "Habitude ajoutée.",
+    "addFailed": "Nous n'avons pas pu ajouter cette habitude.",
+    "suggestedAdded": "{{count}} habitudes suggérées ajoutées.",
+    "suggestedAllPresent": "Vous les avez déjà.",
+    "saveFailed": "Nous n'avons pas pu enregistrer.",
+    "removed": "Habitude supprimée."
+  },
+  "checkIns": {
+    "title": "Bilans périodiques",
+    "subtitle": "Deux courts questionnaires bien établis, suggérés toutes les deux semaines.",
+    "savedScore": "Enregistré — {{score}} (plage {{severity}}).",
+    "saveFailed": "Nous n'avons pas pu enregistrer. Veuillez réessayer.",
+    "crisisHeading": "Vous n'avez pas à traverser cela seul",
+    "seeAllCrisis": "Voir toutes les ressources de crise",
+    "backToCheckIns": "Retour aux bilans",
+    "saveCheckIn": "Enregistrer le bilan",
+    "lastTaken": "Dernier passage le {{date}} — {{score}} sur {{max}} (plage {{severity}}).",
+    "notTakenYet": "Pas encore fait.",
+    "nextSuggested": "Prochain suggéré le {{date}}.",
+    "takeNow": "Le faire maintenant",
+    "takeAgain": "Le refaire"
+  },
+  "crisisPage": {
+    "title": "Vous n'avez pas à gérer cela seul",
+    "intro": "Si vous pensez à vous faire du mal ou à faire du mal à quelqu'un, ou si vous êtes en danger immédiat, contactez une personne réelle maintenant. Ces services sont gratuits, confidentiels et assurés par des personnes formées.",
+    "immediateDangerTitle": "En cas de danger immédiat pour la vie",
+    "immediateDangerBody": "Appelez votre numéro d'urgence local (911 aux États-Unis, 999 au Royaume-Uni, 112 dans l'UE) ou rendez-vous aux urgences les plus proches."
+  },
+  "legal": {
+    "title": "À propos, mentions et confidentialité",
+    "questionsData": "Des questions sur vos données ? Contactez-nous depuis les paramètres du profil.",
+    "sections": {
+      "notMedical": {
+        "heading": "Kalm n'est pas un soin médical",
+        "body": "Kalm est un outil de soutien au bien-être. Il ne diagnostique pas, ne traite pas et ne donne pas d'avis médical, et il ne remplace ni une thérapie, ni des soins psychiatriques, ni des services d'urgence. En cas de crise, utilisez la page des ressources de crise ou votre numéro d'urgence local."
+      },
+      "howAiWorks": {
+        "heading": "Comment fonctionne l'IA",
+        "body": "Les conversations sont générées par un grand modèle de langage à partir de votre présentation et des données de check-in que vous choisissez de partager. Chaque message est analysé pour détecter un langage de crise avant qu'une réponse normale ne soit générée ; en cas de détection, Kalm interrompt la conversation et affiche des ressources de soutien à la place."
+      },
+      "yourData": {
+        "heading": "Vos données",
+        "body": "Les informations de santé mentale sont des données personnelles sensibles. Kalm conserve votre profil, vos check-ins, vos conversations et les transcriptions de sessions pour que votre expérience reste continue. Vous pouvez exporter ou supprimer vos données à tout moment depuis les paramètres du profil, sans procédé trompeur de rétention."
+      },
+      "ageRequirement": {
+        "heading": "Condition d'âge",
+        "body": "Kalm est destiné aux personnes de 13 ans et plus. Le mode ado applique des garde-fous de sécurité plus stricts et un contenu adapté à l'âge. Kalm n'est pas destiné aux enfants de moins de 13 ans."
+      },
+      "workplace": {
+        "heading": "Comptes employeur",
+        "body": "Si vous accédez à Kalm via un programme employeur, votre employeur ne voit que des statistiques d'usage agrégées et anonymisées. Vos conversations, check-ins et contenus de session ne leur sont jamais communiqués."
+      }
+    }
+  },
+  "care": {
+    "title": "Parler à une personne",
+    "subtitle": "Kalm est là pour le quotidien, mais certaines choses sont mieux faites par une personne formée. Voici des points de départ — sans pression, et jamais au mauvais moment.",
+    "groups": {
+      "directory": "Trouver un thérapeute",
+      "low_cost": "Options moins coûteuses",
+      "employer_eap": "Via votre employeur",
+      "crisis": "Si vous ne vous sentez pas en sécurité maintenant"
+    }
+  },
+  "support": {
+    "help": "Aide",
+    "title": "Contacter le support",
+    "intro": "Pour les questions de compte, la facturation, les bugs ou les retours. Si vous avez besoin d'aide urgente sur votre état,",
+    "openResources": "ouvrez les ressources de soutien",
+    "instead": "à la place.",
+    "allMessages": "Tous les messages",
+    "kalmTeam": "Équipe Kalm",
+    "you": "Vous",
+    "kalmTeamPrefix": "Équipe Kalm : ",
+    "youPrefix": "Vous : ",
+    "replyPlaceholder": "Ajoutez à cette conversation…",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "notAvailable": "Cette conversation n'est pas disponible.",
+    "startNew": "Démarrer un nouveau message",
+    "subjectPlaceholder": "De quoi s'agit-il ?",
+    "messagePlaceholder": "Dites-nous ce qui se passe avec votre compte ou l'application…",
+    "sendMessage": "Envoyer le message",
+    "yourMessages": "Vos messages",
+    "empty": "Rien pour l'instant. Ce que vous envoyez apparaît ici avec nos réponses.",
+    "messageSent": "Message envoyé — nous répondrons ici.",
+    "sendFailed": "Impossible d'envoyer pour le moment.",
+    "sendMsgFailed": "Impossible d'envoyer ce message.",
+    "status": {
+      "open": "Ouvert",
+      "in_progress": "En cours",
+      "resolved": "Résolu"
+    }
+  },
+  "exercisesPage": {
+    "saved": "Enregistré. Votre compagnon l'a aussi.",
+    "saveFailed": "Nous n'avons pas pu enregistrer. Veuillez réessayer.",
+    "backToExercises": "Retour aux exercices",
+    "title": "Exercices guidés",
+    "subtitle": "Ils suivent des protocoles établis — relevés de pensées, activation comportementale, ancrage, respiration et temps d'inquiétude délimité. Rien ici n'est un plan de traitement ; utilisez ce qui aide.",
+    "aboutMin": "environ {{min}} min",
+    "recentlyCompleted": "Terminés récemment",
+    "exerciseFallback": "Exercice",
+    "moodUp": "humeur +{{n}}",
+    "moodDown": "humeur -{{n}}",
+    "moodSteady": "humeur stable"
+  },
+  "exerciseCategory": {
+    "thought_record": "Travail sur les pensées",
+    "behavioral_activation": "Se remettre en mouvement",
+    "grounding": "Ancrage",
+    "breathing": "Respiration",
+    "journaling": "Journal"
+  },
+  "exercisePlayer": {
+    "saveFailed": "Nous n'avons pas pu enregistrer. Veuillez réessayer.",
+    "done": "{{title}} — terminé. Bien géré.",
+    "beforeStart": "Avant de commencer — comment vous sentez-vous ?",
+    "skipThis": "Passer",
+    "afterStart": "Et maintenant, comment vous sentez-vous ?",
+    "afterOptional": "Facultatif — cela alimente votre tendance d'humeur pour que les schémas apparaissent avec le temps.",
+    "finish": "Terminer",
+    "finishNoMood": "Terminer sans bilan d'humeur",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "takeSeconds": "Prenez environ {{seconds}} secondes ici.",
+    "doneBtn": "Terminé"
+  },
+  "yourData": {
+    "downloaded": "Rapport téléchargé.",
+    "reportFailed": "Nous n'avons pas pu générer ce rapport. Veuillez réessayer.",
+    "title": "Vos données",
+    "subtitle": "Tout ce que Kalm conserve sur vous, en langage clair. Rien ici n'est partagé avec qui que ce soit, sauf si vous le choisissez.",
+    "nothingStored": "Rien d'enregistré pour l'instant.",
+    "onDate": "Le {{date}}.",
+    "dateRange": "Du {{from}} au {{to}}.",
+    "preparing": "Préparation…",
+    "downloadReport": "Télécharger un rapport à partager",
+    "reportDescription": "Un résumé lisible de votre tendance d'humeur, de l'historique des bilans avec les plages de sévérité, et des exercices réalisés — adapté au partage avec un thérapeute. C'est un résumé d'auto-suivi, pas une évaluation clinique."
   }
 }

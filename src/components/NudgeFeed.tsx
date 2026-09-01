@@ -4,9 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { HeartHandshake, X } from "lucide-react";
 import { getNudges, updateNudge } from "@/lib/nudges.functions";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 /** Proactive coaching surface: trend-based nudges and the step-up pathway. */
 export function NudgeFeed() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchNudges = useServerFn(getNudges);
   const patch = useServerFn(updateNudge);
@@ -19,7 +21,13 @@ export function NudgeFeed() {
 
   const mutate = useMutation({
     mutationFn: (input: { id: string; dismiss?: boolean; acted_on?: boolean }) =>
-      patch({ data: { id: input.id, dismiss: input.dismiss ?? false, ...(input.acted_on === undefined ? {} : { acted_on: input.acted_on }) } }),
+      patch({
+        data: {
+          id: input.id,
+          dismiss: input.dismiss ?? false,
+          ...(input.acted_on === undefined ? {} : { acted_on: input.acted_on }),
+        },
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nudges"] }),
   });
 
@@ -32,16 +40,17 @@ export function NudgeFeed() {
         <section
           key={nudge.id}
           className="rounded-3xl border border-primary/30 bg-secondary/40 p-6"
-          aria-label="A note from Kalm"
+          aria-label={t("nudge.aNoteFromKalm")}
         >
           <div className="flex items-start justify-between gap-4">
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <HeartHandshake className="size-4 text-primary" aria-hidden /> A note from Kalm
+              <HeartHandshake className="size-4 text-primary" aria-hidden />{" "}
+              {t("nudge.aNoteFromKalm")}
             </p>
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Dismiss"
+              aria-label={t("nudge.dismiss")}
               onClick={() => mutate.mutate({ id: nudge.id, dismiss: true })}
             >
               <X className="size-4" aria-hidden />
@@ -86,12 +95,12 @@ export function NudgeFeed() {
                 className="rounded-full"
                 onClick={() => mutate.mutate({ id: nudge.id, acted_on: true })}
               >
-                <Link to="/exercises">Try the exercise</Link>
+                <Link to="/exercises">{t("nudge.tryExercise")}</Link>
               </Button>
             )}
             {nudge.trigger_type === "screener_step_up" && (
               <Button asChild variant="outline" className="rounded-full">
-                <Link to="/care">See more support options</Link>
+                <Link to="/care">{t("nudge.moreSupport")}</Link>
               </Button>
             )}
           </div>

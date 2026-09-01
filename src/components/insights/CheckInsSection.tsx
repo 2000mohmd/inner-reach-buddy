@@ -14,12 +14,18 @@ import {
 import type { CrisisResponse } from "@/lib/crisis";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * PHQ-9 / GAD-7 check-ins, history and the item-9 crisis view.
  * Shared by /check-ins and the "Check-ins" tab of /insights.
  */
 export function CheckInsSection({ showHeader = true }: { showHeader?: boolean }) {
+  // NOTE: PHQ-9 / GAD-7 item text, choice labels and clinical framing come from
+  // @/lib/screeners and are intentionally NOT machine-translated — a diagnostic
+  // instrument must use its officially validated translation. Only the UI chrome
+  // around them is localized here.
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchState = useServerFn(getScreenerState);
   const submit = useServerFn(submitScreener);
@@ -50,16 +56,18 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
         setCrisis(result.crisis);
         return;
       }
-      toast.success(`Saved — ${result.total_score} (${result.severity} range).`);
+      toast.success(
+        t("checkIns.savedScore", { score: result.total_score, severity: result.severity }),
+      );
     },
-    onError: () => toast.error("We couldn't save that. Please try again."),
+    onError: () => toast.error(t("checkIns.saveFailed")),
   });
 
   if (crisis) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="rounded-3xl border border-crisis/40 bg-crisis-surface p-6 text-crisis">
-          <h2 className="text-2xl">You don't have to sit with this alone</h2>
+          <h2 className="text-2xl">{t("checkIns.crisisHeading")}</h2>
           <p className="mt-3">{crisis.message}</p>
         </div>
         <ul className="space-y-3">
@@ -74,10 +82,10 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
         <p className="text-sm text-muted-foreground">{crisis.disclaimer}</p>
         <div className="flex flex-wrap gap-3">
           <Button asChild className="rounded-full px-6">
-            <Link to="/crisis">See all crisis resources</Link>
+            <Link to="/crisis">{t("checkIns.seeAllCrisis")}</Link>
           </Button>
           <Button variant="ghost" className="rounded-full" onClick={() => setCrisis(null)}>
-            Back to check-ins
+            {t("checkIns.backToCheckIns")}
           </Button>
         </div>
       </div>
@@ -143,7 +151,7 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
             disabled={!complete || save.isPending}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? "Saving…" : "Save check-in"}
+            {save.isPending ? t("common.saving") : t("checkIns.saveCheckIn")}
           </Button>
           <Button
             variant="ghost"
@@ -153,7 +161,7 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
               setAnswers([]);
             }}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </div>
@@ -164,9 +172,9 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
     <div className="space-y-8">
       {showHeader && (
         <header>
-          <h1 className="text-3xl sm:text-4xl">Periodic check-ins</h1>
+          <h1 className="text-3xl sm:text-4xl">{t("checkIns.title")}</h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Two short, well-established questionnaires, suggested every two weeks. {SCREENER_FRAMING}
+            {t("checkIns.subtitle")} {SCREENER_FRAMING}
           </p>
         </header>
       )}
@@ -178,12 +186,19 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
               <h2 className="text-lg">{entry.label}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {entry.latest
-                  ? `Last taken ${new Date(entry.latest.taken_at).toLocaleDateString()} — ${entry.latest.total_score} of ${maxScore(entry.type)} (${entry.latest.severity} range).`
-                  : "Not taken yet."}
+                  ? t("checkIns.lastTaken", {
+                      date: new Date(entry.latest.taken_at).toLocaleDateString(),
+                      score: entry.latest.total_score,
+                      max: maxScore(entry.type),
+                      severity: entry.latest.severity,
+                    })
+                  : t("checkIns.notTakenYet")}
               </p>
               {entry.dueAt && !entry.due && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Next suggested {new Date(entry.dueAt).toLocaleDateString()}.
+                  {t("checkIns.nextSuggested", {
+                    date: new Date(entry.dueAt).toLocaleDateString(),
+                  })}
                 </p>
               )}
             </div>
@@ -213,7 +228,7 @@ export function CheckInsSection({ showHeader = true }: { showHeader?: boolean })
                 setAnswers(new Array(SCREENERS[entry.type].items.length).fill(null));
               }}
             >
-              {entry.due ? "Take it now" : "Take it again"}
+              {entry.due ? t("checkIns.takeNow") : t("checkIns.takeAgain")}
             </Button>
           </div>
         ))}

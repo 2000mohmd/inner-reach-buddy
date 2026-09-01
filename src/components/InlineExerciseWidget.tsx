@@ -6,6 +6,7 @@ import { completeExercise, getExerciseBySlug } from "@/lib/exercises.functions";
 import { parseSteps } from "@/lib/exercise-types";
 import { ExerciseStepPlayer } from "@/components/ExerciseStepPlayer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Self-contained guided player rendered inline in the chat feed for timed or
@@ -19,6 +20,7 @@ export function InlineExerciseWidget({
   slug: string;
   threadId: string | null;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const lookup = useServerFn(getExerciseBySlug);
   const finish = useServerFn(completeExercise);
@@ -50,7 +52,7 @@ export function InlineExerciseWidget({
         queryClient.invalidateQueries({ queryKey: ["exercises"] }),
       ]);
     },
-    onError: () => toast.error("We couldn't save that. Please try again."),
+    onError: () => toast.error(t("exercisePlayer.saveFailed")),
   });
 
   if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
@@ -59,7 +61,7 @@ export function InlineExerciseWidget({
   if (save.isSuccess) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        {exercise.title} — done. Nicely held.
+        {t("exercisePlayer.done", { title: exercise.title })}
       </div>
     );
   }

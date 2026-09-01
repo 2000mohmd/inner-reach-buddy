@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  SUPPORT_STATUS_LABELS,
   createSupportThread,
   getMySupportThread,
   listMySupportThreads,
   replyToMySupportThread,
 } from "@/lib/support.functions";
+import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/support")({
   validateSearch: z.object({ thread: z.string().uuid().optional() }),
@@ -47,6 +47,7 @@ function statusTone(status: string) {
 }
 
 function SupportPage() {
+  const { t } = useTranslation();
   const { thread: activeThread } = Route.useSearch();
   const navigate = Route.useNavigate();
   const queryClient = useQueryClient();
@@ -77,11 +78,11 @@ function SupportPage() {
     onSuccess: async (result) => {
       setSubject("");
       setMessage("");
-      toast.success("Message sent — we'll reply here.");
+      toast.success(t("support.messageSent"));
       await queryClient.invalidateQueries({ queryKey: ["my-support"] });
       navigate({ search: { thread: result.thread_id } });
     },
-    onError: () => toast.error("Couldn't send that just now."),
+    onError: () => toast.error(t("support.sendFailed")),
   });
 
   const addReply = useMutation({
@@ -93,7 +94,7 @@ function SupportPage() {
         queryClient.invalidateQueries({ queryKey: ["my-support-thread", activeThread] }),
       ]);
     },
-    onError: () => toast.error("Couldn't send that message."),
+    onError: () => toast.error(t("support.sendMsgFailed")),
   });
 
   return (
@@ -101,16 +102,15 @@ function SupportPage() {
       <div className="mx-auto w-full max-w-2xl space-y-6 px-1">
         <header className="space-y-1">
           <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            <LifeBuoy className="h-3.5 w-3.5" /> Help
+            <LifeBuoy className="h-3.5 w-3.5" /> {t("support.help")}
           </p>
-          <h1 className="font-display text-3xl">Contact support</h1>
+          <h1 className="font-display text-3xl">{t("support.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            For account questions, billing, bugs or feedback. If you need urgent help with how you're
-            feeling,{" "}
+            {t("support.intro")}{" "}
             <Link to="/care" className="underline">
-              open support resources
+              {t("support.openResources")}
             </Link>{" "}
-            instead.
+            {t("support.instead")}
           </p>
         </header>
 
@@ -122,7 +122,7 @@ function SupportPage() {
               className="-ml-2 mb-3"
               onClick={() => navigate({ search: {} })}
             >
-              <ArrowLeft className="mr-1 h-4 w-4" /> All messages
+              <ArrowLeft className="mr-1 h-4 w-4" /> {t("support.allMessages")}
             </Button>
 
             {detail.isLoading ? (
@@ -134,7 +134,7 @@ function SupportPage() {
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] ${statusTone(detail.data.thread.status)}`}
                   >
-                    {SUPPORT_STATUS_LABELS[detail.data.thread.status]}
+                    {t(`support.status.${detail.data.thread.status}`)}
                   </span>
                 </div>
 
@@ -149,7 +149,7 @@ function SupportPage() {
                       }`}
                     >
                       <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                        {item.sender === "admin" ? "Kalm team" : "You"} ·{" "}
+                        {item.sender === "admin" ? t("support.kalmTeam") : t("support.you")} ·{" "}
                         {new Date(item.created_at).toLocaleString()}
                       </p>
                       <p className="whitespace-pre-wrap">{item.content}</p>
@@ -162,53 +162,55 @@ function SupportPage() {
                     value={reply}
                     onChange={(event) => setReply(event.target.value)}
                     rows={3}
-                    placeholder="Add to this conversation…"
+                    placeholder={t("support.replyPlaceholder")}
                   />
                   <Button
                     onClick={() => addReply.mutate()}
                     disabled={reply.trim().length < 2 || addReply.isPending}
                   >
-                    {addReply.isPending ? "Sending…" : "Send"}
+                    {addReply.isPending ? t("support.sending") : t("support.send")}
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">That conversation isn't available.</p>
+              <p className="text-sm text-muted-foreground">{t("support.notAvailable")}</p>
             )}
           </section>
         ) : (
           <>
             <section className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="font-display text-lg">Start a new message</h2>
+              <h2 className="font-display text-lg">{t("support.startNew")}</h2>
               <div className="mt-3 space-y-3">
                 <Input
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
-                  placeholder="What's this about?"
+                  placeholder={t("support.subjectPlaceholder")}
                   maxLength={120}
                 />
                 <Textarea
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   rows={5}
-                  placeholder="Tell us what's going on with your account or the app…"
+                  placeholder={t("support.messagePlaceholder")}
                 />
                 <Button
                   onClick={() => create.mutate()}
-                  disabled={subject.trim().length < 3 || message.trim().length < 5 || create.isPending}
+                  disabled={
+                    subject.trim().length < 3 || message.trim().length < 5 || create.isPending
+                  }
                 >
-                  {create.isPending ? "Sending…" : "Send message"}
+                  {create.isPending ? t("support.sending") : t("support.sendMessage")}
                 </Button>
               </div>
             </section>
 
             <section className="space-y-2">
-              <h2 className="px-1 font-display text-lg">Your messages</h2>
+              <h2 className="px-1 font-display text-lg">{t("support.yourMessages")}</h2>
               {list.isLoading ? (
                 <Skeleton className="h-24 w-full rounded-2xl" />
               ) : !list.data?.threads.length ? (
                 <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                  Nothing yet. Anything you send shows up here with our replies.
+                  {t("support.empty")}
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -224,11 +226,13 @@ function SupportPage() {
                           <span
                             className={`rounded-full px-2 py-0.5 text-[11px] ${statusTone(thread.status)}`}
                           >
-                            {SUPPORT_STATUS_LABELS[thread.status]}
+                            {t(`support.status.${thread.status}`)}
                           </span>
                         </div>
                         <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {thread.last_sender === "admin" ? "Kalm team: " : "You: "}
+                          {thread.last_sender === "admin"
+                            ? t("support.kalmTeamPrefix")
+                            : t("support.youPrefix")}
                           {thread.last_message ?? "—"}
                         </p>
                       </button>

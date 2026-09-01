@@ -10,6 +10,7 @@ import { CheckInsSection } from "@/components/insights/CheckInsSection";
 import { listWeeklyDigests } from "@/lib/digests.functions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/insights")({
   head: () => ({
@@ -33,9 +34,9 @@ export const Route = createFileRoute("/_authenticated/insights")({
 });
 
 const NUMBER_TABS = [
-  { id: "mood", label: "Mood & Trends" },
-  { id: "habits", label: "Habits" },
-  { id: "check-ins", label: "Check-ins" },
+  { id: "mood", labelKey: "insights.tabs.mood" },
+  { id: "habits", labelKey: "insights.tabs.habits" },
+  { id: "check-ins", labelKey: "insights.tabs.checkIns" },
 ] as const;
 
 type TabId = (typeof NUMBER_TABS)[number]["id"];
@@ -43,11 +44,13 @@ type TabId = (typeof NUMBER_TABS)[number]["id"];
 function weekLabel(weekStart: string) {
   const start = new Date(`${weekStart}T00:00:00`);
   const end = new Date(start.getTime() + 6 * 86400000);
-  const fmt = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const fmt = (date: Date) =>
+    date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
 function ProgressPage() {
+  const { t } = useTranslation();
   const fetchDigests = useServerFn(listWeeklyDigests);
   const { data, isPending } = useQuery({
     queryKey: ["weekly-digests"],
@@ -66,10 +69,8 @@ function ProgressPage() {
     <AppShell>
       <div className="space-y-10">
         <header>
-          <h1 className="text-3xl sm:text-4xl">Progress</h1>
-          <p className="mt-2 text-muted-foreground">
-            A short recap of how your weeks have actually been going.
-          </p>
+          <h1 className="text-3xl sm:text-4xl">{t("insights.title")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("insights.subtitle")}</p>
         </header>
 
         {isPending ? (
@@ -77,7 +78,7 @@ function ProgressPage() {
         ) : latest ? (
           <section className="surface-soft p-6 sm:p-8">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Week of {weekLabel(latest.week_start)}
+              {t("insights.weekOf", { range: weekLabel(latest.week_start) })}
             </p>
             <p className="mt-4 whitespace-pre-line text-lg leading-relaxed sm:text-xl">
               {latest.narrative_text}
@@ -86,10 +87,8 @@ function ProgressPage() {
               <div className="mt-6 flex gap-3 rounded-2xl bg-secondary/60 p-5">
                 <Compass className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
                 <div>
-                  <p className="text-sm font-semibold">One thing for this week</p>
-                  <p className="mt-1 text-sm text-secondary-foreground">
-                    {latest.suggested_focus}
-                  </p>
+                  <p className="text-sm font-semibold">{t("insights.oneThing")}</p>
+                  <p className="mt-1 text-sm text-secondary-foreground">{latest.suggested_focus}</p>
                 </div>
               </div>
             )}
@@ -97,18 +96,14 @@ function ProgressPage() {
         ) : (
           <section className="surface-soft p-6 sm:p-8">
             <Sparkles className="size-6 text-primary" aria-hidden />
-            <h2 className="mt-3 text-xl">Your first recap is on its way</h2>
-            <p className="mt-2 max-w-prose text-muted-foreground">
-              Once you've had a week of checking in, ticking off habits or trying an exercise, Kalm
-              will write you a short recap of how it went — in plain language, with one small focus
-              for the week ahead. Nothing to set up; it'll simply be here.
-            </p>
+            <h2 className="mt-3 text-xl">{t("insights.firstRecapTitle")}</h2>
+            <p className="mt-2 max-w-prose text-muted-foreground">{t("insights.firstRecapBody")}</p>
           </section>
         )}
 
         {past.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-xl">Earlier weeks</h2>
+            <h2 className="text-xl">{t("insights.earlierWeeks")}</h2>
             <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
               {past.map((digest) => {
                 const open = openId === digest.id;
@@ -121,10 +116,10 @@ function ProgressPage() {
                       className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-muted/40"
                     >
                       <span className="text-sm font-medium">
-                        Week of {weekLabel(digest.week_start)}
+                        {t("insights.weekOf", { range: weekLabel(digest.week_start) })}
                       </span>
                       <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-                        {digest.suggested_focus ? "Focus set" : ""}
+                        {digest.suggested_focus ? t("insights.focusSet") : ""}
                         <ChevronDown
                           className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
                           aria-hidden
@@ -136,7 +131,7 @@ function ProgressPage() {
                         <p className="whitespace-pre-line">{digest.narrative_text}</p>
                         {digest.suggested_focus && (
                           <p className="mt-3 text-muted-foreground">
-                            Focus that week: {digest.suggested_focus}
+                            {t("insights.focusThatWeek", { focus: digest.suggested_focus })}
                           </p>
                         )}
                       </div>
@@ -151,10 +146,8 @@ function ProgressPage() {
         <section className="space-y-6 border-t border-border/60 pt-8">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl">See the numbers</h2>
-              <p className="text-sm text-muted-foreground">
-                Mood trends, habit grid and check-in scores, if you'd like the detail.
-              </p>
+              <h2 className="text-xl">{t("insights.seeNumbers")}</h2>
+              <p className="text-sm text-muted-foreground">{t("insights.seeNumbersBody")}</p>
             </div>
             <Button
               variant="outline"
@@ -162,13 +155,17 @@ function ProgressPage() {
               onClick={() => setShowNumbers((value) => !value)}
               aria-expanded={showNumbers}
             >
-              {showNumbers ? "Hide" : "Show"}
+              {showNumbers ? t("insights.hide") : t("insights.show")}
             </Button>
           </div>
 
           {showNumbers && (
             <div className="space-y-6">
-              <div className="flex flex-wrap gap-2" role="tablist" aria-label="Data sections">
+              <div
+                className="flex flex-wrap gap-2"
+                role="tablist"
+                aria-label={t("insights.dataSections")}
+              >
                 {NUMBER_TABS.map((entry) => (
                   <button
                     key={entry.id}
@@ -182,7 +179,7 @@ function ProgressPage() {
                         : "border border-border bg-card text-muted-foreground hover:bg-muted"
                     }`}
                   >
-                    {entry.label}
+                    {t(entry.labelKey)}
                   </button>
                 ))}
               </div>

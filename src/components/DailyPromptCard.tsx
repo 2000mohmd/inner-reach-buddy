@@ -6,11 +6,12 @@ import { Sun } from "lucide-react";
 import { answerDailyPrompt, getTodayPrompt } from "@/lib/daily-prompts.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "@/lib/i18n";
 
-const TYPE_LABELS: Record<string, string> = {
-  gratitude: "Today's reflection",
-  intention: "Today's intention",
-  reflection: "Today's reflection",
+const TYPE_KEYS: Record<string, string> = {
+  gratitude: "dailyPrompt.typeReflection",
+  intention: "dailyPrompt.typeIntention",
+  reflection: "dailyPrompt.typeReflection",
 };
 
 /**
@@ -18,6 +19,7 @@ const TYPE_LABELS: Record<string, string> = {
  * from mood check-ins and screeners.
  */
 export function DailyPromptCard() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchPrompt = useServerFn(getTodayPrompt);
   const answer = useServerFn(answerDailyPrompt);
@@ -31,9 +33,9 @@ export function DailyPromptCard() {
     onSuccess: async () => {
       setText("");
       await queryClient.invalidateQueries({ queryKey: ["daily-prompt"] });
-      toast.success("Kept, just for you.");
+      toast.success(t("dailyPrompt.saved"));
     },
-    onError: () => toast.error("We couldn't save that. Please try again."),
+    onError: () => toast.error(t("dailyPrompt.saveFailed")),
   });
 
   const prompt = data?.prompt;
@@ -42,7 +44,8 @@ export function DailyPromptCard() {
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <p className="flex items-center gap-2 text-xs uppercase tracking-wide text-primary">
-        <Sun className="size-3.5" aria-hidden /> {TYPE_LABELS[prompt.prompt_type] ?? "Today"}
+        <Sun className="size-3.5" aria-hidden />{" "}
+        {t(TYPE_KEYS[prompt.prompt_type] ?? "dailyPrompt.typeToday")}
       </p>
       <p className="mt-2 text-sm leading-relaxed">{prompt.prompt_text}</p>
 
@@ -56,7 +59,7 @@ export function DailyPromptCard() {
             rows={2}
             maxLength={2000}
             value={text}
-            placeholder="A sentence is plenty — or skip it."
+            placeholder={t("dailyPrompt.placeholder")}
             onChange={(event) => setText(event.target.value)}
           />
           <Button
@@ -65,7 +68,7 @@ export function DailyPromptCard() {
             disabled={!text.trim() || save.isPending}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? "Saving…" : "Save"}
+            {save.isPending ? t("common.saving") : t("common.save")}
           </Button>
         </div>
       )}

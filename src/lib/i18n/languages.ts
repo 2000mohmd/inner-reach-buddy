@@ -13,6 +13,10 @@ export const DEFAULT_LANGUAGE: Language = "en";
 
 export const LANGUAGE_CODES = LANGUAGES.map((entry) => entry.code) as Language[];
 
+/** Where the UI-language preference is stored (client) and read (SSR). */
+export const LANGUAGE_STORAGE_KEY = "kalm.language";
+export const LANGUAGE_COOKIE = "kalm_lang";
+
 export function isLanguage(value: unknown): value is Language {
   return typeof value === "string" && (LANGUAGE_CODES as string[]).includes(value);
 }

@@ -5,16 +5,7 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowUp,
-  Leaf,
-  LifeBuoy,
-  Loader2,
-  Mic,
-  PanelLeft,
-  Square,
-  Trash2,
-} from "lucide-react";
+import { ArrowUp, Leaf, LifeBuoy, Loader2, Mic, PanelLeft, Square, Trash2 } from "lucide-react";
 import {
   createThread,
   deleteThread,
@@ -24,11 +15,12 @@ import {
 } from "@/lib/chat.functions";
 import { transcribeVoiceNote } from "@/lib/voice.functions";
 import type { CompanionAction } from "@/lib/companion-tools.server";
-import { CRISIS_RESOURCES, CRISIS_DISCLAIMER } from "@/lib/crisis";
+import { crisisCopy } from "@/lib/crisis";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { DailyPromptCard } from "@/components/DailyPromptCard";
 import { InlineExerciseWidget } from "@/components/InlineExerciseWidget";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -50,28 +42,30 @@ export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
 });
 
-
 function CrisisCard() {
+  const { t, language } = useTranslation();
+  const copy = crisisCopy(language);
   return (
     <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
       <p className="flex items-center gap-2 font-semibold">
-        <LifeBuoy className="size-4" aria-hidden /> Immediate support
+        <LifeBuoy className="size-4" aria-hidden /> {t("chat.immediateSupport")}
       </p>
       <ul className="mt-3 space-y-2 text-sm">
-        {CRISIS_RESOURCES.map((resource) => (
+        {copy.resources.map((resource) => (
           <li key={resource.name}>
             <span className="font-medium">{resource.name}</span> — {resource.contact}
             <span className="block text-xs text-muted-foreground">{resource.detail}</span>
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-muted-foreground">{CRISIS_DISCLAIMER}</p>
+      <p className="mt-3 text-xs text-muted-foreground">{copy.disclaimer}</p>
     </div>
   );
 }
 
 /** Microphone capture → base64, so the server can transcribe the note. */
 function useVoiceRecorder(onReady: (audio: string, mime: string) => void) {
+  const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -103,14 +97,15 @@ function useVoiceRecorder(onReady: (audio: string, mime: string) => void) {
       recorder.start();
       setRecording(true);
     } catch {
-      toast.error("Microphone access is blocked. Allow it in your browser settings.");
+      toast.error(t("chat.micBlocked"));
     }
-  }, [onReady]);
+  }, [onReady, t]);
 
   return { recording, start, stop };
 }
 
 function ChatPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchProfile = useServerFn(getMyProfile);
@@ -190,7 +185,7 @@ function ChatPage() {
     onError: (error: Error, text) => {
       setPending(null);
       setInput((current) => current || text);
-      toast.error(error.message || "The companion couldn't reply. Please try again.");
+      toast.error(error.message || t("chat.replyFailed"));
     },
   });
 
@@ -200,7 +195,7 @@ function ChatPage() {
     onSuccess: (result) => {
       mutation.mutate(result.text);
     },
-    onError: (error: Error) => toast.error(error.message || "Couldn't transcribe that recording."),
+    onError: (error: Error) => toast.error(error.message || t("chat.transcribeFailed")),
   });
 
   const recorder = useVoiceRecorder((audio, mime) => voice.mutate({ audio, mime }));
@@ -219,7 +214,7 @@ function ChatPage() {
     onSuccess: async () => {
       setThreadId(null);
       await queryClient.invalidateQueries({ queryKey: ["chat-threads"] });
-      toast.success("Conversation deleted.");
+      toast.success(t("chat.conversationDeleted"));
     },
   });
 
@@ -229,7 +224,6 @@ function ChatPage() {
     setQuickAction(null);
     mutation.mutate(value);
   }
-
 
   const busy = mutation.isPending || voice.isPending;
   const empty = messages.length === 0;
@@ -259,7 +253,7 @@ function ChatPage() {
                 </button>
                 <button
                   type="button"
-                  aria-label="Delete conversation"
+                  aria-label={t("chat.deleteConversation")}
                   onClick={() => drop.mutate(thread.id)}
                   className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                 >
@@ -271,14 +265,13 @@ function ChatPage() {
         }
       />
 
-
       <section className="flex min-w-0 flex-1 flex-col">
         {/* Thread header, mirroring Claude's title bar. */}
         <header className="flex items-center gap-3 border-b border-border/70 px-4 py-3">
           <button
             type="button"
             onClick={() => setSidebarOpen((open) => !open)}
-            aria-label={sidebarOpen ? "Hide conversations" : "Show conversations"}
+            aria-label={sidebarOpen ? t("chat.hideConversations") : t("chat.showConversations")}
             className={`rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground ${
               sidebarOpen ? "md:hidden" : ""
             }`}
@@ -286,10 +279,10 @@ function ChatPage() {
             <PanelLeft className="size-4" aria-hidden />
           </button>
           <h1 className="min-w-0 flex-1 truncate font-display text-base">
-            {activeThread?.title ?? "New conversation"}
+            {activeThread?.title ?? t("nav.newConversation")}
           </h1>
           <span className="hidden text-xs text-muted-foreground sm:inline">
-            Support, not therapy
+            {t("chat.supportNotTherapy")}
           </span>
         </header>
 
@@ -302,11 +295,11 @@ function ChatPage() {
                   <Leaf className="size-6 text-primary" aria-hidden />
                 </span>
                 <h2 className="font-display text-3xl">
-                  {preferredName ? `Hi ${preferredName}.` : "Hi there."}
+                  {preferredName
+                    ? t("chat.greetingNamed", { name: preferredName })
+                    : t("chat.greeting")}
                 </h2>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  What's on your mind right now? Type it, or hold the mic and just talk.
-                </p>
+                <p className="max-w-sm text-sm text-muted-foreground">{t("chat.emptyPrompt")}</p>
                 <div className="w-full max-w-md pt-4 text-left">
                   <DailyPromptCard />
                 </div>
@@ -400,7 +393,7 @@ function ChatPage() {
             {busy && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                {voice.isPending ? "Listening to your note…" : "Kalm is thinking…"}
+                {voice.isPending ? t("chat.listening") : t("chat.thinking")}
               </p>
             )}
 
@@ -417,7 +410,7 @@ function ChatPage() {
                 rows={2}
                 maxLength={4000}
                 value={input}
-                placeholder="Write a message…"
+                placeholder={t("chat.inputPlaceholder")}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
@@ -429,12 +422,14 @@ function ChatPage() {
               />
               <div className="flex items-center justify-between gap-2 px-1 pb-0.5">
                 <span className="pl-2 text-[0.7rem] text-muted-foreground">
-                  {recorder.recording ? "Recording… tap stop when you're done" : "Enter to send"}
+                  {recorder.recording ? t("chat.recordingHint") : t("chat.enterToSend")}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    aria-label={recorder.recording ? "Stop recording" : "Record a voice message"}
+                    aria-label={
+                      recorder.recording ? t("chat.stopRecording") : t("chat.recordVoice")
+                    }
                     onClick={() => (recorder.recording ? recorder.stop() : recorder.start())}
                     disabled={busy}
                     className={`flex size-9 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
@@ -451,7 +446,7 @@ function ChatPage() {
                   </button>
                   <button
                     type="button"
-                    aria-label="Send message"
+                    aria-label={t("chat.sendMessage")}
                     disabled={!input.trim() || busy}
                     onClick={() => submit(input)}
                     className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
@@ -475,14 +470,14 @@ function ChatPage() {
                     }}
                     className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
                   >
-                    {action.label}
+                    {t(`quickActions.${action.id}`)}
                   </button>
                 ))}
               </div>
             )}
 
             <p className="pt-2 text-center text-[0.7rem] text-muted-foreground">
-              Kalm is an AI companion, not a therapist. In a crisis, use immediate support.
+              {t("chat.disclaimer")}
             </p>
           </div>
         </div>

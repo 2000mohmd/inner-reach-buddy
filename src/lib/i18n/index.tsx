@@ -18,6 +18,8 @@ import ar from "./locales/ar.json";
 import fr from "./locales/fr.json";
 import {
   DEFAULT_LANGUAGE,
+  LANGUAGE_COOKIE,
+  LANGUAGE_STORAGE_KEY,
   languageDir,
   normalizeLanguage,
   type Language,
@@ -29,8 +31,9 @@ type Messages = Record<string, unknown>;
 
 const BUNDLES: Record<Language, Messages> = { en, ar, fr };
 
-export const LANGUAGE_STORAGE_KEY = "kalm.language";
-export const LANGUAGE_COOKIE = "kalm_lang";
+// LANGUAGE_STORAGE_KEY / LANGUAGE_COOKIE now live in ./languages (re-exported
+// via `export * from "./languages"` above) so dependency-free server modules
+// can import them.
 
 function lookup(bundle: Messages, key: string): string | null {
   let node: unknown = bundle;

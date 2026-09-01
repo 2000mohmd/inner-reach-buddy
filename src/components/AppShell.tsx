@@ -1,12 +1,28 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Leaf } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { getMyLanguage } from "@/lib/language.functions";
+import { useTranslation } from "@/lib/i18n";
 import { SafetyFooter } from "./SafetyFooter";
 import { AppSidebar, SIDEBAR_NAV } from "./AppSidebar";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // For signed-in users the profile is the source of truth for language.
+  const { t, language, setLanguage } = useTranslation();
+  const fetchLanguage = useServerFn(getMyLanguage);
+  const { data: storedLanguage } = useQuery({
+    queryKey: ["my-language"],
+    queryFn: () => fetchLanguage(),
+    staleTime: 5 * 60 * 1000,
+  });
+  useEffect(() => {
+    if (storedLanguage && storedLanguage !== language) setLanguage(storedLanguage);
+  }, [storedLanguage, language, setLanguage]);
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -19,11 +35,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Leaf className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
-          {SIDEBAR_NAV.map(({ to, label, icon: Icon }) => (
+          {SIDEBAR_NAV.map(({ to, labelKey, icon: Icon }) => (
             <Link
               key={to}
               to={to}
-              aria-label={label}
+              aria-label={t(labelKey)}
               className={`rounded-full p-2 ${
                 pathname === to
                   ? "bg-secondary text-secondary-foreground"

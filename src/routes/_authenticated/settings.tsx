@@ -4,7 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { deleteMyData, getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/AppShell";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { YourDataSection } from "@/components/YourDataSection";
+import { useTranslation } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +28,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
       { title: "Your profile & data — Kalm" },
       {
         name: "description",
-        content: "Review what Kalm knows about you, your account mode, and delete your data anytime.",
+        content:
+          "Review what Kalm knows about you, your account mode, and delete your data anytime.",
       },
       { property: "og:title", content: "Your profile & data — Kalm" },
       {
@@ -46,6 +49,7 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 function SettingsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchProfile = useServerFn(getMyProfile);
   const wipeData = useServerFn(deleteMyData);
@@ -91,10 +95,7 @@ function SettingsPage() {
                 label="Mode"
                 value={MODE_LABELS[profile?.account_type ?? ""] ?? profile?.account_type ?? "—"}
               />
-              <Row
-                label="AI personalization"
-                value={profile?.ai_context_consent ? "On" : "Off"}
-              />
+              <Row label="AI personalization" value={profile?.ai_context_consent ? "On" : "Off"} />
               <Row
                 label="Consent accepted"
                 value={
@@ -104,6 +105,14 @@ function SettingsPage() {
                 }
               />
             </dl>
+          </section>
+
+          <section className="surface-soft p-6">
+            <h2 className="text-lg">{t("language.sectionTitle")}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t("language.sectionDescription")}</p>
+            <div className="mt-4">
+              <LanguageSwitcher />
+            </div>
           </section>
 
           <section className="surface-soft p-6">
@@ -147,7 +156,6 @@ function SettingsPage() {
           <YourDataSection />
 
           <section className="surface-soft p-6">
-
             <h2 className="text-lg">Delete your data</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               This removes every check-in and clears your self-introduction. Your account stays, so

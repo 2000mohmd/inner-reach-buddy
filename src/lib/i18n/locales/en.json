@@ -24,7 +24,9 @@
     "signOut": "Sign out",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
-    "newConversation": "New conversation"
+    "newConversation": "New conversation",
+    "recents": "Recents",
+    "yourAccount": "Your account"
   },
   "language": {
     "sectionTitle": "Language",
@@ -34,5 +36,376 @@
     "saveFailed": "Couldn't save your language. Please try again.",
     "reviewNotice": "Arabic and French translations are drafts pending clinician review.",
     "companionNote": "Your companion will reply in this language."
+  },
+  "safety": {
+    "disclaimer": "Kalm does not provide medical advice or emergency services.",
+    "getCrisisSupport": "Get crisis support"
+  },
+  "auth": {
+    "checkDetails": "Check your details",
+    "genericError": "Something went wrong",
+    "googleFailed": "Google sign-in didn't complete. Please try again.",
+    "checkEmail": "Check your email",
+    "confirmationSent": "We sent a confirmation link to {{email}}. Open it to finish creating your account.",
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google",
+    "termsPrefix": "By continuing you agree to our",
+    "termsLink": "terms and privacy notice",
+    "termsSuffix": ". Kalm is wellness support, not therapy or emergency care."
+  },
+  "landing": {
+    "headline": "A quieter place to check in with yourself.",
+    "subhead": "Kalm is a wellness support companion — AI conversation, mood tracking and guided exercises, built around what you tell it about your life.",
+    "createAccount": "Create your account",
+    "alreadyHere": "Already here?",
+    "pillars": {
+      "companion": {
+        "title": "A companion that remembers",
+        "body": "Your self-introduction, goals and recent check-ins shape every conversation from the first message."
+      },
+      "tracking": {
+        "title": "Gentle tracking",
+        "body": "Mood and habit check-ins that surface patterns — never streak guilt or shame nudges."
+      },
+      "practice": {
+        "title": "Guided practice",
+        "body": "Short CBT reframes, grounding and journaling flows you can finish in a few quiet minutes."
+      }
+    },
+    "supportTitle": "Support, not treatment",
+    "supportBody": "Kalm is a wellness support tool. It is not therapy, not a diagnosis, and not an emergency service. Every conversation is screened for crisis language, and crisis resources are always one tap away and never behind a paywall.",
+    "crisisResources": "Crisis resources",
+    "privacyDisclaimers": "Privacy & disclaimers"
+  },
+  "chat": {
+    "immediateSupport": "Immediate support",
+    "micBlocked": "Microphone access is blocked. Allow it in your browser settings.",
+    "replyFailed": "The companion couldn't reply. Please try again.",
+    "transcribeFailed": "Couldn't transcribe that recording.",
+    "conversationDeleted": "Conversation deleted.",
+    "deleteConversation": "Delete conversation",
+    "hideConversations": "Hide conversations",
+    "showConversations": "Show conversations",
+    "supportNotTherapy": "Support, not therapy",
+    "greetingNamed": "Hi {{name}}.",
+    "greeting": "Hi there.",
+    "emptyPrompt": "What's on your mind right now? Type it, or hold the mic and just talk.",
+    "listening": "Listening to your note…",
+    "thinking": "Kalm is thinking…",
+    "inputPlaceholder": "Write a message…",
+    "recordingHint": "Recording… tap stop when you're done",
+    "enterToSend": "Enter to send",
+    "stopRecording": "Stop recording",
+    "recordVoice": "Record a voice message",
+    "sendMessage": "Send message",
+    "disclaimer": "Kalm is an AI companion, not a therapist. In a crisis, use immediate support."
+  },
+  "quickActions": {
+    "anxious": "I'm feeling anxious",
+    "reframe": "Help me reframe a thought",
+    "grounding": "I need a grounding exercise",
+    "sleep": "I can't sleep",
+    "vent": "I just want to vent"
+  },
+  "onboarding": {
+    "stepLabel": "Step {{current}} of {{total}}",
+    "saved": "You're all set. Welcome to Kalm.",
+    "saveFailed": "We couldn't save your profile. Please try again.",
+    "finishSetup": "Finish setup",
+    "steps": {
+      "consent": "Consent",
+      "mode": "Mode",
+      "about": "About you",
+      "checkin": "First check-in"
+    },
+    "consent": {
+      "title": "Before we start",
+      "body": "Kalm is a wellness support tool — not therapy, not a diagnosis, and not an emergency service. Everything you write stays yours: you can export or delete it whenever you like.",
+      "agreePrivacy": "I understand Kalm is wellness support, not medical care, and I agree to the privacy notice and terms.",
+      "age": "I am 13 years old or older.",
+      "aiOptIn": "Optional: let Kalm use my check-ins and self-introduction to personalize conversations. You can turn this off at any time."
+    },
+    "mode": {
+      "title": "What brings you here?",
+      "body": "This sets the tone, content and safety guardrails Kalm uses with you."
+    },
+    "modes": {
+      "general": {
+        "title": "Everyday stress & low mood",
+        "body": "General support for anxiety, stress and difficult days."
+      },
+      "condition": {
+        "title": "Managing a diagnosed condition",
+        "body": "For people in or seeking professional care alongside Kalm."
+      },
+      "teen": {
+        "title": "Teen / student mode",
+        "body": "Simpler language, school and social scenarios, stricter safety guardrails. Ages 13+."
+      },
+      "org_member": {
+        "title": "Through my workplace",
+        "body": "Employer wellness plan. Your employer only ever sees anonymized totals."
+      }
+    },
+    "about": {
+      "title": "Introduce yourself",
+      "body": "Kalm carries this into every conversation, so it never starts from zero. Share as much or as little as you want.",
+      "nameLabel": "What should Kalm call you?",
+      "namePlaceholder": "Preferred name",
+      "introLabel": "In your own words, what's going on right now?",
+      "introPlaceholder": "I've been feeling stretched thin at work and my sleep has slipped…",
+      "goalsLabel": "What would you like to work on?",
+      "stressorsLabel": "What's weighing on you?",
+      "commLabel": "How do you like to be spoken to? (optional)",
+      "commPlaceholder": "Gentle and direct, no toxic positivity",
+      "avoidLabel": "Anything Kalm should avoid bringing up? (optional)",
+      "avoidPlaceholder": "Please don't ask about my father",
+      "diagnosisLabel": "Existing diagnosis, if you'd like to share (optional)",
+      "diagnosisPlaceholder": "e.g. generalized anxiety",
+      "inCare": "I'm currently working with a therapist, counselor or doctor."
+    },
+    "goals": {
+      "lessAnxious": "Feel less anxious",
+      "sleepBetter": "Sleep better",
+      "dailyHabit": "Build a daily habit",
+      "patterns": "Understand my patterns",
+      "workStress": "Handle work stress",
+      "kinder": "Be kinder to myself"
+    },
+    "stressors": {
+      "work": "Work",
+      "school": "School",
+      "family": "Family",
+      "money": "Money",
+      "health": "Health",
+      "relationships": "Relationships",
+      "loneliness": "Loneliness"
+    },
+    "checkin": {
+      "title": "How are you right now?",
+      "body": "This is your baseline. No wrong answer, and nothing here is a test."
+    },
+    "moods": {
+      "1": "Really low",
+      "2": "Low",
+      "3": "Okay",
+      "4": "Good",
+      "5": "Great"
+    }
+  },
+  "insights": {
+    "title": "Progress",
+    "subtitle": "A short recap of how your weeks have actually been going.",
+    "weekOf": "Week of {{range}}",
+    "oneThing": "One thing for this week",
+    "firstRecapTitle": "Your first recap is on its way",
+    "firstRecapBody": "Once you've had a week of checking in, ticking off habits or trying an exercise, Kalm will write you a short recap of how it went — in plain language, with one small focus for the week ahead. Nothing to set up; it'll simply be here.",
+    "earlierWeeks": "Earlier weeks",
+    "focusSet": "Focus set",
+    "focusThatWeek": "Focus that week: {{focus}}",
+    "seeNumbers": "See the numbers",
+    "seeNumbersBody": "Mood trends, habit grid and check-in scores, if you'd like the detail.",
+    "hide": "Hide",
+    "show": "Show",
+    "dataSections": "Data sections",
+    "tabs": {
+      "mood": "Mood & Trends",
+      "habits": "Habits",
+      "checkIns": "Check-ins"
+    }
+  },
+  "mood": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "greetingNamed": "{{greeting}}, {{name}}",
+    "subtitle": "Take a breath. This space moves at your pace.",
+    "howFeeling": "How are you feeling right now?",
+    "notePlaceholder": "Anything you want to add? (optional)",
+    "saveCheckIn": "Save check-in",
+    "saved": "Check-in saved. Thanks for showing up today.",
+    "saveFailed": "We couldn't save that check-in. Please try again.",
+    "lastN": "Your last {{count}} check-ins",
+    "nothingLogged": "Nothing logged yet. Your first check-in shows up here.",
+    "averageLine": "Average mood {{avg}} of 5. Patterns matter more than any single day.",
+    "whereNext": "Where to next",
+    "guidedExercises": "Guided exercises",
+    "guidedExercisesDesc": "— thought records, behavioral activation, grounding, breathing",
+    "periodicCheckIns": "Periodic check-ins",
+    "periodicCheckInsDesc": "— PHQ-9 and GAD-7 every couple of weeks, to see patterns",
+    "talkToPerson": "Talking to a person",
+    "talkToPersonDesc": "— therapist directories and lower-cost options",
+    "reviewProfile": "Review your profile and data"
+  },
+  "nudge": {
+    "aNoteFromKalm": "A note from Kalm",
+    "dismiss": "Dismiss",
+    "tryExercise": "Try the exercise",
+    "moreSupport": "See more support options"
+  },
+  "dailyPrompt": {
+    "typeReflection": "Today's reflection",
+    "typeIntention": "Today's intention",
+    "typeToday": "Today",
+    "placeholder": "A sentence is plenty — or skip it.",
+    "saved": "Kept, just for you.",
+    "saveFailed": "We couldn't save that. Please try again."
+  },
+  "habits": {
+    "title": "Habits",
+    "subtitle": "Small, repeatable things. Missing a day is data, not failure.",
+    "addPlaceholder": "Add a habit, e.g. 10 minute walk",
+    "add": "Add",
+    "suggested": "Suggested",
+    "empty": "No habits yet. Add your own, or start with the suggested set (sleep, movement, water, medication).",
+    "habitColumn": "Habit",
+    "perWeek": "{{count}}×/week",
+    "deleteHabit": "Delete {{name}}",
+    "habitsAndMood": "Habits and mood",
+    "daysLine": "{{withCount}} days logged · {{withoutCount}} days not",
+    "insightsEmpty": "Log a few habits and mood check-ins and patterns will show up here.",
+    "added": "Habit added.",
+    "addFailed": "We couldn't add that habit.",
+    "suggestedAdded": "Added {{count}} suggested habits.",
+    "suggestedAllPresent": "You already have those.",
+    "saveFailed": "We couldn't save that.",
+    "removed": "Habit removed."
+  },
+  "checkIns": {
+    "title": "Periodic check-ins",
+    "subtitle": "Two short, well-established questionnaires, suggested every two weeks.",
+    "savedScore": "Saved — {{score}} ({{severity}} range).",
+    "saveFailed": "We couldn't save that. Please try again.",
+    "crisisHeading": "You don't have to sit with this alone",
+    "seeAllCrisis": "See all crisis resources",
+    "backToCheckIns": "Back to check-ins",
+    "saveCheckIn": "Save check-in",
+    "lastTaken": "Last taken {{date}} — {{score}} of {{max}} ({{severity}} range).",
+    "notTakenYet": "Not taken yet.",
+    "nextSuggested": "Next suggested {{date}}.",
+    "takeNow": "Take it now",
+    "takeAgain": "Take it again"
+  },
+  "crisisPage": {
+    "title": "You don't have to handle this alone",
+    "intro": "If you're thinking about harming yourself or someone else, or you're in immediate danger, please reach a real person now. These services are free, confidential, and staffed by trained humans.",
+    "immediateDangerTitle": "If there is immediate danger to life",
+    "immediateDangerBody": "Call your local emergency number (911 in the US, 999 in the UK, 112 in the EU) or go to the nearest emergency department."
+  },
+  "legal": {
+    "title": "About, disclaimers & privacy",
+    "questionsData": "Questions about your data? Reach out from Profile settings.",
+    "sections": {
+      "notMedical": {
+        "heading": "Kalm is not medical care",
+        "body": "Kalm is a wellness support tool. It does not diagnose, treat, or provide medical advice, and it is not a replacement for therapy, psychiatric care, or emergency services. If you are in crisis, use the crisis resources page or your local emergency number."
+      },
+      "howAiWorks": {
+        "heading": "How the AI works",
+        "body": "Conversations are generated by a large language model using the self-introduction and check-in data you choose to share. Every input is screened for crisis language before a normal reply is generated; when crisis language is detected, Kalm interrupts the conversation and shows support resources instead."
+      },
+      "yourData": {
+        "heading": "Your data",
+        "body": "Mental health information is sensitive personal data. Kalm stores your profile, check-ins, conversations and session transcripts so your experience stays continuous. You can export or delete your data at any time from Profile settings, with no retention dark patterns."
+      },
+      "ageRequirement": {
+        "heading": "Age requirement",
+        "body": "Kalm is for people aged 13 and over. Teen mode applies stricter safety guardrails and age-appropriate content. Kalm is not intended for children under 13."
+      },
+      "workplace": {
+        "heading": "Workplace accounts",
+        "body": "If you access Kalm through an employer plan, your employer can only ever see aggregate, anonymized usage statistics. Your conversations, check-ins and session content are never shared with them."
+      }
+    }
+  },
+  "care": {
+    "title": "Talking to a person",
+    "subtitle": "Kalm is here for the day-to-day, but there are things a trained human does better. These are places to start — no pressure, and no wrong time to use them.",
+    "groups": {
+      "directory": "Find a therapist",
+      "low_cost": "Lower-cost options",
+      "employer_eap": "Through your workplace",
+      "crisis": "If things feel unsafe right now"
+    }
+  },
+  "support": {
+    "help": "Help",
+    "title": "Contact support",
+    "intro": "For account questions, billing, bugs or feedback. If you need urgent help with how you're feeling,",
+    "openResources": "open support resources",
+    "instead": "instead.",
+    "allMessages": "All messages",
+    "kalmTeam": "Kalm team",
+    "you": "You",
+    "kalmTeamPrefix": "Kalm team: ",
+    "youPrefix": "You: ",
+    "replyPlaceholder": "Add to this conversation…",
+    "send": "Send",
+    "sending": "Sending…",
+    "notAvailable": "That conversation isn't available.",
+    "startNew": "Start a new message",
+    "subjectPlaceholder": "What's this about?",
+    "messagePlaceholder": "Tell us what's going on with your account or the app…",
+    "sendMessage": "Send message",
+    "yourMessages": "Your messages",
+    "empty": "Nothing yet. Anything you send shows up here with our replies.",
+    "messageSent": "Message sent — we'll reply here.",
+    "sendFailed": "Couldn't send that just now.",
+    "sendMsgFailed": "Couldn't send that message.",
+    "status": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved"
+    }
+  },
+  "exercisesPage": {
+    "saved": "Saved. Your companion has it too.",
+    "saveFailed": "We couldn't save that. Please try again.",
+    "backToExercises": "Back to exercises",
+    "title": "Guided exercises",
+    "subtitle": "These follow established protocols — thought records, behavioral activation, grounding, breathing and contained worry time. Nothing here is a treatment plan; use what helps.",
+    "aboutMin": "about {{min}} min",
+    "recentlyCompleted": "Recently completed",
+    "exerciseFallback": "Exercise",
+    "moodUp": "mood up {{n}}",
+    "moodDown": "mood down {{n}}",
+    "moodSteady": "mood steady"
+  },
+  "exerciseCategory": {
+    "thought_record": "Thought work",
+    "behavioral_activation": "Getting moving again",
+    "grounding": "Grounding",
+    "breathing": "Breathing",
+    "journaling": "Journaling"
+  },
+  "exercisePlayer": {
+    "saveFailed": "We couldn't save that. Please try again.",
+    "done": "{{title}} — done. Nicely held.",
+    "beforeStart": "Before we start — how are you feeling?",
+    "skipThis": "Skip this",
+    "afterStart": "And how are you feeling now?",
+    "afterOptional": "Optional — this feeds into your mood trend so patterns show up over time.",
+    "finish": "Finish",
+    "finishNoMood": "Finish without mood check",
+    "stepOf": "Step {{current}} of {{total}}",
+    "takeSeconds": "Take about {{seconds}} seconds here.",
+    "doneBtn": "Done"
+  },
+  "yourData": {
+    "downloaded": "Report downloaded.",
+    "reportFailed": "We couldn't build that report. Please try again.",
+    "title": "Your data",
+    "subtitle": "Everything Kalm keeps about you, in plain language. Nothing here is shared with anyone unless you choose to share it.",
+    "nothingStored": "Nothing stored yet.",
+    "onDate": "On {{date}}.",
+    "dateRange": "From {{from}} to {{to}}.",
+    "preparing": "Preparing…",
+    "downloadReport": "Download a report to share",
+    "reportDescription": "A readable summary of your mood trend, check-in history with severity bands, and exercises completed — suitable for sharing with a therapist. It's a self-tracking summary, not a clinical assessment."
   }
 }

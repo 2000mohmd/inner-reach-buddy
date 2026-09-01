@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 function lastDays(count: number) {
   const days: string[] = [];
@@ -27,6 +28,7 @@ function lastDays(count: number) {
 
 /** Habit grid and habit/mood insights. Shared by /habits and /insights. */
 export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchHabits = useServerFn(listHabits);
   const fetchInsights = useServerFn(getHabitMoodInsights);
@@ -56,9 +58,9 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
     onSuccess: async () => {
       setName("");
       await refresh();
-      toast.success("Habit added.");
+      toast.success(t("habits.added"));
     },
-    onError: () => toast.error("We couldn't add that habit."),
+    onError: () => toast.error(t("habits.addFailed")),
   });
 
   const seed = useMutation({
@@ -66,7 +68,9 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
     onSuccess: async (result) => {
       await refresh();
       toast.success(
-        result.added > 0 ? `Added ${result.added} suggested habits.` : "You already have those.",
+        result.added > 0
+          ? t("habits.suggestedAdded", { count: result.added })
+          : t("habits.suggestedAllPresent"),
       );
     },
   });
@@ -75,14 +79,14 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
     mutationFn: (input: { habit_id: string; log_date: string; completed: boolean }) =>
       toggleLog({ data: input }),
     onSuccess: refresh,
-    onError: () => toast.error("We couldn't save that."),
+    onError: () => toast.error(t("habits.saveFailed")),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => removeHabit({ data: { id } }),
     onSuccess: async () => {
       await refresh();
-      toast.success("Habit removed.");
+      toast.success(t("habits.removed"));
     },
   });
 
@@ -95,10 +99,8 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
     <div className="space-y-8">
       {showHeader && (
         <header>
-          <h1 className="text-3xl sm:text-4xl">Habits</h1>
-          <p className="mt-2 text-muted-foreground">
-            Small, repeatable things. Missing a day is data, not failure.
-          </p>
+          <h1 className="text-3xl sm:text-4xl">{t("habits.title")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("habits.subtitle")}</p>
         </header>
       )}
 
@@ -107,7 +109,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
           <Input
             value={name}
             maxLength={80}
-            placeholder="Add a habit, e.g. 10 minute walk"
+            placeholder={t("habits.addPlaceholder")}
             onChange={(event) => setName(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && name.trim()) create.mutate();
@@ -118,7 +120,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
             disabled={!name.trim() || create.isPending}
             onClick={() => create.mutate()}
           >
-            <Plus className="size-4" aria-hidden /> Add
+            <Plus className="size-4" aria-hidden /> {t("habits.add")}
           </Button>
           <Button
             variant="outline"
@@ -126,7 +128,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
             disabled={seed.isPending}
             onClick={() => seed.mutate()}
           >
-            <Sparkles className="size-4" aria-hidden /> Suggested
+            <Sparkles className="size-4" aria-hidden /> {t("habits.suggested")}
           </Button>
         </div>
       </section>
@@ -134,16 +136,13 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
       {isPending ? (
         <Skeleton className="h-56 w-full rounded-3xl" />
       ) : habits.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No habits yet. Add your own, or start with the suggested set (sleep, movement, water,
-          medication).
-        </p>
+        <p className="text-sm text-muted-foreground">{t("habits.empty")}</p>
       ) : (
         <section className="surface-soft overflow-x-auto p-6">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="text-muted-foreground">
-                <th className="pb-3 text-left font-normal">Habit</th>
+                <th className="pb-3 text-left font-normal">{t("habits.habitColumn")}</th>
                 {days.map((day) => (
                   <th key={day} className="pb-3 text-center text-xs font-normal">
                     {new Date(`${day}T00:00:00`).toLocaleDateString(undefined, {
@@ -160,7 +159,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
                   <td className="py-3 pr-4">
                     <span className="font-medium">{habit.name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">
-                      {habit.frequency_target}×/week
+                      {t("habits.perWeek", { count: habit.frequency_target })}
                     </span>
                   </td>
                   {days.map((day) => {
@@ -169,7 +168,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
                       <td key={day} className="py-2 text-center">
                         <button
                           type="button"
-                          aria-label={`${habit.name} on ${day}`}
+                          aria-label={`${habit.name} — ${day}`}
                           aria-pressed={done}
                           onClick={() =>
                             toggle.mutate({
@@ -193,7 +192,7 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label={`Delete ${habit.name}`}
+                      aria-label={t("habits.deleteHabit", { name: habit.name })}
                       onClick={() => remove.mutate(habit.id)}
                     >
                       <Trash2 className="size-4" aria-hidden />
@@ -207,21 +206,22 @@ export function HabitsSection({ showHeader = true }: { showHeader?: boolean }) {
       )}
 
       <section className="surface-soft p-6">
-        <h2 className="text-xl">Habits and mood</h2>
+        <h2 className="text-xl">{t("habits.habitsAndMood")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{insightData?.note}</p>
         <ul className="mt-4 space-y-3 text-sm">
           {(insightData?.insights ?? []).map((insight) => (
             <li key={insight.habit_id} className="rounded-2xl bg-card p-4">
               {insight.headline}
               <span className="mt-1 block text-xs text-muted-foreground">
-                {insight.daysWithHabit} days logged · {insight.daysWithoutHabit} days not
+                {t("habits.daysLine", {
+                  withCount: insight.daysWithHabit,
+                  withoutCount: insight.daysWithoutHabit,
+                })}
               </span>
             </li>
           ))}
           {(insightData?.insights ?? []).length === 0 && (
-            <li className="text-muted-foreground">
-              Log a few habits and mood check-ins and patterns will show up here.
-            </li>
+            <li className="text-muted-foreground">{t("habits.insightsEmpty")}</li>
           )}
         </ul>
       </section>

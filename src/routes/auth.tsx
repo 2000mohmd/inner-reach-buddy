@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SafetyFooter } from "@/components/SafetyFooter";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -36,6 +38,7 @@ const credentials = z.object({
 });
 
 function AuthPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +54,7 @@ function AuthPage() {
   async function handlePassword(mode: "signin" | "signup") {
     const parsed = credentials.safeParse({ email, password });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Check your details");
+      toast.error(parsed.error.issues[0]?.message ?? t("auth.checkDetails"));
       return;
     }
     setBusy(true);
@@ -73,7 +76,7 @@ function AuthPage() {
       }
       navigate({ to: "/chat", replace: true });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      toast.error(error instanceof Error ? error.message : t("auth.genericError"));
     } finally {
       setBusy(false);
     }
@@ -86,7 +89,7 @@ function AuthPage() {
     });
     if (result.error) {
       setBusy(false);
-      toast.error("Google sign-in didn't complete. Please try again.");
+      toast.error(t("auth.googleFailed"));
       return;
     }
     if (result.redirected) return;
@@ -95,9 +98,15 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col breathe-gradient">
-      <main className="flex flex-1 items-center justify-center px-4 py-16">
+      <div className="flex justify-end px-4 pt-4">
+        <LanguageSwitcher className="w-auto" />
+      </div>
+      <main className="flex flex-1 items-center justify-center px-4 pb-16 pt-4">
         <div className="w-full max-w-md">
-          <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-display text-2xl">
+          <Link
+            to="/"
+            className="mb-8 flex items-center justify-center gap-2 font-display text-2xl"
+          >
             <Leaf className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
@@ -105,26 +114,24 @@ function AuthPage() {
           <div className="surface-soft p-7">
             {emailSent ? (
               <div className="space-y-3 text-center">
-                <h1 className="text-2xl">Check your email</h1>
-                <p className="text-muted-foreground">
-                  We sent a confirmation link to {email}. Open it to finish creating your account.
-                </p>
+                <h1 className="text-2xl">{t("auth.checkEmail")}</h1>
+                <p className="text-muted-foreground">{t("auth.confirmationSent", { email })}</p>
               </div>
             ) : (
               <Tabs defaultValue="signup">
                 <TabsList className="w-full rounded-full">
                   <TabsTrigger value="signup" className="flex-1 rounded-full">
-                    Create account
+                    {t("auth.createAccount")}
                   </TabsTrigger>
                   <TabsTrigger value="signin" className="flex-1 rounded-full">
-                    Sign in
+                    {t("auth.signIn")}
                   </TabsTrigger>
                 </TabsList>
 
                 {(["signup", "signin"] as const).map((mode) => (
                   <TabsContent key={mode} value={mode} className="mt-6 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`${mode}-email`}>Email</Label>
+                      <Label htmlFor={`${mode}-email`}>{t("auth.emailLabel")}</Label>
                       <Input
                         id={`${mode}-email`}
                         type="email"
@@ -135,14 +142,14 @@ function AuthPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor={`${mode}-password`}>Password</Label>
+                      <Label htmlFor={`${mode}-password`}>{t("auth.passwordLabel")}</Label>
                       <Input
                         id={`${mode}-password`}
                         type="password"
                         autoComplete={mode === "signup" ? "new-password" : "current-password"}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        placeholder="At least 8 characters"
+                        placeholder={t("auth.passwordPlaceholder")}
                       />
                     </div>
                     <Button
@@ -150,7 +157,7 @@ function AuthPage() {
                       disabled={busy}
                       onClick={() => void handlePassword(mode)}
                     >
-                      {mode === "signup" ? "Create account" : "Sign in"}
+                      {mode === "signup" ? t("auth.createAccount") : t("auth.signIn")}
                     </Button>
                   </TabsContent>
                 ))}
@@ -161,7 +168,7 @@ function AuthPage() {
               <>
                 <div className="my-6 flex items-center gap-3 text-sm text-muted-foreground">
                   <span className="h-px flex-1 bg-border" />
-                  or
+                  {t("auth.or")}
                   <span className="h-px flex-1 bg-border" />
                 </div>
                 <Button
@@ -170,18 +177,18 @@ function AuthPage() {
                   disabled={busy}
                   onClick={() => void handleGoogle()}
                 >
-                  Continue with Google
+                  {t("auth.continueWithGoogle")}
                 </Button>
               </>
             )}
           </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            By continuing you agree to our{" "}
+            {t("auth.termsPrefix")}{" "}
             <Link to="/legal" className="text-primary underline underline-offset-4">
-              terms and privacy notice
+              {t("auth.termsLink")}
             </Link>
-            . Kalm is wellness support, not therapy or emergency care.
+            {t("auth.termsSuffix")}
           </p>
         </div>
       </main>

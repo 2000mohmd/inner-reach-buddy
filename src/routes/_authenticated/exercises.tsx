@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Clock } from "lucide-react";
 import { completeExercise, listExercises } from "@/lib/exercises.functions";
-import { CATEGORY_LABELS, parseSteps, type ExerciseCategory } from "@/lib/exercise-types";
+import { parseSteps } from "@/lib/exercise-types";
 import { ExerciseStepPlayer } from "@/components/ExerciseStepPlayer";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/exercises")({
   head: () => ({
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/exercises")({
 });
 
 function ExercisesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchExercises = useServerFn(listExercises);
   const finish = useServerFn(completeExercise);
@@ -73,10 +75,10 @@ function ExercisesPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["exercises"] });
       await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      toast.success("Saved. Your companion has it too.");
+      toast.success(t("exercisesPage.saved"));
       reset();
     },
-    onError: () => toast.error("We couldn't save that. Please try again."),
+    onError: () => toast.error(t("exercisesPage.saveFailed")),
   });
   if (isPending) {
     return (
@@ -94,7 +96,7 @@ function ExercisesPage() {
       <AppShell>
         <div className="mx-auto max-w-2xl space-y-6">
           <Button variant="ghost" className="rounded-full" onClick={reset}>
-            <ArrowLeft className="size-4" aria-hidden /> Back to exercises
+            <ArrowLeft className="size-4" aria-hidden /> {t("exercisesPage.backToExercises")}
           </Button>
 
           <header>
@@ -121,11 +123,8 @@ function ExercisesPage() {
     <AppShell>
       <div className="space-y-8">
         <header>
-          <h1 className="text-3xl sm:text-4xl">Guided exercises</h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            These follow established protocols — thought records, behavioral activation, grounding,
-            breathing and contained worry time. Nothing here is a treatment plan; use what helps.
-          </p>
+          <h1 className="text-3xl sm:text-4xl">{t("exercisesPage.title")}</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">{t("exercisesPage.subtitle")}</p>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2">
@@ -140,14 +139,15 @@ function ExercisesPage() {
               className="surface-soft p-6 text-left transition hover:bg-muted/40"
             >
               <p className="text-xs uppercase tracking-wide text-primary">
-                {CATEGORY_LABELS[exercise.category as ExerciseCategory] ?? exercise.category}
+                {t(`exerciseCategory.${exercise.category}`)}
               </p>
               <h2 className="mt-2 text-lg">{exercise.title}</h2>
               <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
                 {exercise.intro_text}
               </p>
               <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="size-3.5" aria-hidden /> about {exercise.estimated_minutes} min
+                <Clock className="size-3.5" aria-hidden />{" "}
+                {t("exercisesPage.aboutMin", { min: exercise.estimated_minutes })}
               </p>
             </button>
           ))}
@@ -155,7 +155,7 @@ function ExercisesPage() {
 
         {completions.length > 0 && (
           <section className="surface-soft p-6">
-            <h2 className="text-lg">Recently completed</h2>
+            <h2 className="text-lg">{t("exercisesPage.recentlyCompleted")}</h2>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               {completions.slice(0, 6).map((completion) => {
                 const exercise = data?.exercises.find((row) => row.id === completion.exercise_id);
@@ -165,12 +165,17 @@ function ExercisesPage() {
                     : null;
                 return (
                   <li key={completion.id}>
-                    {exercise?.title ?? "Exercise"} —{" "}
+                    {exercise?.title ?? t("exercisesPage.exerciseFallback")} —{" "}
                     {new Date(completion.completed_at).toLocaleDateString()}
                     {shift !== null && (
                       <span>
                         {" "}
-                        · mood {shift > 0 ? `up ${shift}` : shift < 0 ? `down ${-shift}` : "steady"}
+                        ·{" "}
+                        {shift > 0
+                          ? t("exercisesPage.moodUp", { n: shift })
+                          : shift < 0
+                            ? t("exercisesPage.moodDown", { n: -shift })
+                            : t("exercisesPage.moodSteady")}
                       </span>
                     )}
                   </li>
