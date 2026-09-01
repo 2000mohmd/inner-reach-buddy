@@ -32,10 +32,7 @@ type JobRow = { id: string; kind: string; payload: Job; attempts: number };
 export async function enqueueJob(fallbackClient: ServiceClient, job: Job): Promise<void> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // `job_queue` is not in the generated Database types until `supabase gen
-    // types` is re-run after the migration.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await supabaseAdmin
       .from("job_queue")
       .insert({ kind: job.kind, payload: job });
     if (error) throw error;
