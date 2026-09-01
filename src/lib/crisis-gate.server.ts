@@ -12,6 +12,9 @@ import type { CrisisResponse } from "./crisis";
 import { buildCrisisResponse, triageCrisis } from "./crisis";
 import { detectMessageScript, normalizeLanguage, type Language } from "./i18n/languages";
 
+// Deliberate loose adapter over the Supabase query builder (generic-heavy to
+// type fully); this file only chains .from(...).insert/.update/.select.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = { from: (table: string) => any };
 
 export type CrisisGateResult = {
@@ -113,10 +116,7 @@ export async function runCrisisGate(
     const nonEnglish = language !== "en" || script === "arabic" || script === "other";
     if (!nonEnglish) return null;
 
-    await supabase
-      .from("chat_messages")
-      .update({ flagged_crisis: true })
-      .eq("id", input.messageId);
+    await supabase.from("chat_messages").update({ flagged_crisis: true }).eq("id", input.messageId);
 
     const systemMessage = await recordCrisis(supabase, {
       ...input,
@@ -137,10 +137,7 @@ export async function runCrisisGate(
   if (!semantic.flagged) return null;
 
   const severity = semantic.severity ?? "high";
-  await supabase
-    .from("chat_messages")
-    .update({ flagged_crisis: true })
-    .eq("id", input.messageId);
+  await supabase.from("chat_messages").update({ flagged_crisis: true }).eq("id", input.messageId);
 
   const systemMessage = await recordCrisis(supabase, {
     ...input,

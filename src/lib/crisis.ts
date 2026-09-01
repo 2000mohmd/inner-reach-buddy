@@ -159,8 +159,6 @@ const TIERS: { severity: CrisisSeverity; patterns: RegExp[] }[] = [
   },
 ];
 
-
-
 export const CRISIS_RESOURCES: CrisisResource[] = [
   {
     name: "988 Suicide & Crisis Lifeline (US)",
@@ -190,20 +188,28 @@ export const CRISIS_DISCLAIMER =
 const CRISIS_MESSAGE_EN =
   "Thank you for telling me. What you just shared sounds really heavy, and I'm glad you said it out loud rather than carrying it alone. I'm not able to keep this part of the conversation going on my own, because you deserve support from someone trained for moments like this — right now. You are not in trouble, and you have not done anything wrong.";
 
+type CrisisCopy = { message: string; disclaimer: string; resources: CrisisResource[] };
+
+// English copy as a concrete value so `crisisCopy()` always has a non-undefined
+// fallback even under `noUncheckedIndexedAccess`.
+const EN_COPY: CrisisCopy = {
+  message: CRISIS_MESSAGE_EN,
+  disclaimer: CRISIS_DISCLAIMER,
+  resources: CRISIS_RESOURCES,
+};
+
 /**
  * Localized crisis copy. DRAFT — pending clinician review for ar/fr.
- * Phone numbers are intentionally left as-is: 988 / 741741 are US lines and
- * findahelpline.com is the international router for every other locale.
+ *
+ * Only `en` lists the US lines (988 / Crisis Text Line 741741) — they do not
+ * work from outside the US and must not be shown as the primary option to a
+ * non-US user. For `ar` and `fr` the list leads with findahelpline.com (which
+ * routes by country) and the local emergency number; `fr` also carries 3114,
+ * France's national suicide-prevention line. Adding more country-specific lines
+ * here is welcome — but only real, verified numbers.
  */
-const CRISIS_COPY: Record<
-  string,
-  { message: string; disclaimer: string; resources: CrisisResource[] }
-> = {
-  en: {
-    message: CRISIS_MESSAGE_EN,
-    disclaimer: CRISIS_DISCLAIMER,
-    resources: CRISIS_RESOURCES,
-  },
+const CRISIS_COPY: Record<string, CrisisCopy> = {
+  en: EN_COPY,
   ar: {
     message:
       "شكراً لأنك أخبرتني. ما شاركته الآن يبدو ثقيلاً جداً، وأنا ممتن أنك قلته بصوت عالٍ بدلاً من أن تحمله وحدك. لا أستطيع متابعة هذا الجزء من الحديث بمفردي، لأنك تستحق دعماً من شخص مدرّب لمثل هذه اللحظات — الآن. أنت لست في مشكلة، ولم تفعل أي شيء خطأ.",
@@ -211,24 +217,14 @@ const CRISIS_COPY: Record<
       "كالم رفيق للعافية النفسية، وليس معالجاً أو خدمة طوارئ. تواصل من فضلك مع شخص حقيقي أو مع أحد الخطوط أعلاه.",
     resources: [
       {
-        name: "خط 988 للأزمات ومنع الانتحار (الولايات المتحدة)",
-        contact: "اتصل أو أرسل رسالة إلى 988",
-        detail: "دعم مجاني وسري على مدار الساعة.",
-      },
-      {
-        name: "خط الرسائل للأزمات",
-        contact: "أرسل HOME إلى 741741",
-        detail: "تحدّث بالرسائل مع مستشار أزمات مدرّب، 24/7.",
+        name: "دليل خطوط المساعدة الدولية",
+        contact: "findahelpline.com",
+        detail: "يوجّهك إلى خط دعم مجاني وسري في بلدك.",
       },
       {
         name: "خدمات الطوارئ",
-        contact: "اتصل بـ 911 (أو رقم الطوارئ في بلدك)",
+        contact: "اتصل برقم الطوارئ في بلدك",
         detail: "إذا كنت في خطر مباشر، اطلب المساعدة الآن.",
-      },
-      {
-        name: "خطوط دعم دولية",
-        contact: "findahelpline.com",
-        detail: "ابحث عن خط دعم مجاني في أي مكان في العالم.",
       },
     ],
   },
@@ -239,31 +235,26 @@ const CRISIS_COPY: Record<
       "Kalm est un compagnon de bien-être, pas un thérapeute ni un service d'urgence. Contactez une personne réelle ou l'une des lignes ci-dessus.",
     resources: [
       {
-        name: "Ligne 988 (États-Unis)",
-        contact: "Appelez ou envoyez un SMS au 988",
-        detail: "Soutien gratuit et confidentiel, 24h/24.",
-      },
-      {
-        name: "Crisis Text Line",
-        contact: "Envoyez HOME au 741741",
-        detail: "Échangez par SMS avec un intervenant de crise formé, 24h/24.",
+        name: "3114 — Numéro national de prévention du suicide (France)",
+        contact: "Appelez le 3114",
+        detail: "Gratuit, confidentiel, 24h/24 et 7j/7.",
       },
       {
         name: "Services d'urgence",
-        contact: "Appelez le 112 / 911 (ou votre numéro d'urgence local)",
+        contact: "Appelez le 112 (Europe) ou le 15 (SAMU, France)",
         detail: "Si vous êtes en danger immédiat, demandez de l'aide maintenant.",
       },
       {
-        name: "International",
+        name: "Annuaire international",
         contact: "findahelpline.com",
-        detail: "Trouvez une ligne d'écoute gratuite partout dans le monde.",
+        detail: "Trouvez une ligne d'écoute gratuite dans votre pays.",
       },
     ],
   },
 };
 
-export function crisisCopy(language: string | null | undefined) {
-  return CRISIS_COPY[language ?? "en"] ?? CRISIS_COPY.en;
+export function crisisCopy(language: string | null | undefined): CrisisCopy {
+  return CRISIS_COPY[language ?? "en"] ?? EN_COPY;
 }
 
 /**
@@ -310,5 +301,3 @@ export function buildCrisisResponse(
     disclaimer: copy.disclaimer,
   };
 }
-
-
