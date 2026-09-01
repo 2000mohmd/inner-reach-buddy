@@ -16,16 +16,16 @@ a separate mobile app is intended to consume the same backend later.
 
 ## 2. Tech stack
 
-| Layer | Choice |
-| --- | --- |
-| Framework | TanStack Start v1 (React 19, Vite), file-based routing in `src/routes` |
-| Server logic | `createServerFn` RPC in `src/lib/*.functions.ts`; server-only helpers in `*.server.ts` |
-| Backend | Lovable Cloud (Supabase): Postgres + RLS, Auth (email/password + Google) |
-| Data fetching | TanStack Query |
-| Styling | Tailwind v4 tokens in `src/styles.css` (sage/teal oklch palette, Fraunces + Nunito Sans) |
-| UI kit | shadcn/ui + Radix, lucide icons, recharts, sonner |
-| LLM | Anthropic Messages API direct, `claude-sonnet-4-5`, native tool use (`ANTHROPIC_API_KEY` secret) |
-| Runtime | Cloudflare Worker (edge); no Node-only packages |
+| Layer         | Choice                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework     | TanStack Start v1 (React 19, Vite), file-based routing in `src/routes`                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Server logic  | `createServerFn` RPC in `src/lib/*.functions.ts`; server-only helpers in `*.server.ts`                                                                                                                                                                                                                                                                                                                                                                                     |
+| Backend       | Lovable Cloud (Supabase): Postgres + RLS, Auth (email/password + Google)                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Data fetching | TanStack Query                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Styling       | Tailwind v4 tokens in `src/styles.css` (sage/teal oklch palette, Fraunces + Nunito Sans)                                                                                                                                                                                                                                                                                                                                                                                   |
+| UI kit        | shadcn/ui + Radix, lucide icons, recharts, sonner                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| LLM           | Provider layer in `src/lib/llm-provider.server.ts`: **primary** OpenRouter (`OPENROUTER_API_KEY`, OpenAI-compatible) serving `anthropic/claude-sonnet-4.5` (companion, summaries, digests) and `anthropic/claude-haiku-4.5` (crisis classifier); **automatic fallback** to the Lovable AI Gateway (`LOVABLE_API_KEY`, `google/gemini-3.6-flash`) whenever the OpenRouter key is missing or the request fails. Native tool use on both paths. No direct Anthropic API call. |
+| Runtime       | Cloudflare Worker (edge); no Node-only packages                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## 3. Routes
 
@@ -33,16 +33,16 @@ Public: `/` (landing), `/auth`, `/crisis` (never gated), `/legal`.
 
 Authenticated (`src/routes/_authenticated/`, guarded by `route.tsx`):
 
-| Route | Purpose |
-| --- | --- |
+| Route        | Purpose                                                    |
+| ------------ | ---------------------------------------------------------- |
 | `onboarding` | Consent → account mode → self-introduction → baseline mood |
-| `dashboard` | Today's check-in, mood trend, nudge feed, "where to next" |
-| `chat` | AI companion; threads, quick actions, inline tool actions |
-| `habits` | Habit CRUD, 7-day grid, habit↔mood insights |
-| `exercises` | Library + interactive step player with mood before/after |
-| `check-ins` | PHQ-9 / GAD-7 with severity bands and score history |
-| `care` | Step-up-to-professional-care resources |
-| `settings` | Profile review, data deletion |
+| `dashboard`  | Today's check-in, mood trend, nudge feed, "where to next"  |
+| `chat`       | AI companion; threads, quick actions, inline tool actions  |
+| `habits`     | Habit CRUD, 7-day grid, habit↔mood insights                |
+| `exercises`  | Library + interactive step player with mood before/after   |
+| `check-ins`  | PHQ-9 / GAD-7 with severity bands and score history        |
+| `care`       | Step-up-to-professional-care resources                     |
+| `settings`   | Profile review, data deletion                              |
 
 API: `src/routes/api/public/hooks/evaluate-nudges.ts` — cron/webhook nudge sweep.
 
@@ -92,6 +92,7 @@ transcript as visible actions (e.g. "logged your mood as 4/5"). Nudges use a
 read-only subset (`NUDGE_TOOLS`).
 
 Proactive coaching (`src/lib/nudges.server.ts`), one nudge per trigger with a 7-day cooldown:
+
 - `low_mood_streak` — 5+ consecutive days averaging < 3/5 → behavioral activation.
 - `inactivity` — 4+ days silent after regular use → low-pressure care message.
 - `screener_step_up` — moderate+ severity or 2+ band worsening → step-up copy + 2-3 care resources.
@@ -103,6 +104,7 @@ exercises + screeners + nudges + care pathway) and Phase 4.2/4.3 (Claude tool-ca
 session-like chat behavior, in-chat guided exercises, commitments, effectiveness insights).
 
 Not built yet:
+
 - **Subscriptions / gating** — `subscription_tier` exists but nothing enforces free vs.
   premium limits; no Stripe, no message caps, no minute allowances.
 - **Workplace/org tier** — `org_id` and `employer_eap` placeholders exist; no
@@ -120,8 +122,19 @@ Not built yet:
 
 ## 7. Known risks / review areas for an outside reviewer
 
-1. Crisis detection is regex-only — high recall on explicit phrasing, weak on implicit
-   or coded language, non-English, and sarcasm. No second-pass classifier.
+1. Crisis detection is **two-tier** (`src/lib/crisis-gate.server.ts` → `runCrisisGate`):
+   a deterministic regex gate (`triageCrisis`, tiered critical/high/moderate severity,
+   EN + AR + FR patterns) that always runs first, then a semantic LLM backstop
+   (`classifyCrisisRisk`, Claude Haiku) that runs only when the regex gate is clear and
+   catches implicit or coded phrasing. The backstop fails **open** on error, except it
+   fails **safe** — surfacing crisis support — when it is unavailable on a non-English
+   message, where the regex net is weaker. A session-level drift sweep
+   (`classifySessionDrift`) re-reads the whole transcript when a thread is summarized,
+   for risk that builds gradually across turns.
+   Real remaining gap (item 6): the `ar` / `fr` crisis copy localizes the message and
+   disclaimer, but the resource lines (988, Crisis Text Line 741741) are still
+   US-specific — only `findahelpline.com` is region-agnostic. Regex recall on heavy
+   sarcasm and untested locales is still the weak spot.
 2. Crisis review workflow: `crisis_events.reviewed` exists, but there is no admin UI
    or alerting, so nothing operationally reviews flags.
 3. Teen mode: `account_type = 'teen'` sets tone and `age_confirmed_13_plus`, but there
