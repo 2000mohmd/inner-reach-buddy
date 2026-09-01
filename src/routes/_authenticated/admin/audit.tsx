@@ -101,7 +101,10 @@ function AdminAuditPage() {
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {data.entries.map((entry) => (
-            <li key={entry.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm">
+            <li
+              key={entry.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm"
+            >
               <span className="font-medium">
                 {entry.admin_name ?? `${entry.admin_user_id.slice(0, 8)}…`}
               </span>

@@ -59,8 +59,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-soft: 0 1px 2px oklch(0.35 0.03 175 / 0.04), 0 12px 32px -12px oklch(0.35 0.03 175 / 0.14);
-  --shadow-lift: 0 2px 6px oklch(0.35 0.03 175 / 0.06), 0 24px 60px -20px oklch(0.35 0.03 175 / 0.2);
+  --shadow-soft:
+    0 1px 2px oklch(0.35 0.03 175 / 0.04), 0 12px 32px -12px oklch(0.35 0.03 175 / 0.14);
+  --shadow-lift:
+    0 2px 6px oklch(0.35 0.03 175 / 0.06), 0 24px 60px -20px oklch(0.35 0.03 175 / 0.2);
 
   --ease-calm: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
@@ -201,7 +203,8 @@
 }
 
 @utility breathe-gradient {
-  background-image: radial-gradient(
+  background-image:
+    radial-gradient(
       120% 90% at 12% 0%,
       color-mix(in oklch, var(--color-accent) 65%, transparent) 0%,
       transparent 55%

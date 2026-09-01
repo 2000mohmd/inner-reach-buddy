@@ -112,7 +112,10 @@ export async function searchUsersForRoles(query: string): Promise<RoleSearchResu
     user_id: id,
     email: emails.get(id) ?? null,
     preferred_name: nameMap.get(id) ?? null,
-    roles: (roles.data ?? []).filter((r) => r.user_id === id).map((r) => r.role).sort(),
+    roles: (roles.data ?? [])
+      .filter((r) => r.user_id === id)
+      .map((r) => r.role)
+      .sort(),
   }));
 }
 

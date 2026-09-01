@@ -17,10 +17,7 @@ export type CrisisReviewRow = {
   preferred_name: string | null;
 };
 
-async function assertAdmin(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-): Promise<void> {
+async function assertAdmin(supabase: SupabaseClient<Database>, userId: string): Promise<void> {
   const [{ data, error }, superAdmin] = await Promise.all([
     supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
     supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" }),
@@ -44,7 +41,10 @@ export const amIAdmin = createServerFn({ method: "GET" })
       _role: "super_admin",
     });
     if (superAdmin.error) throw superAdmin.error;
-    return { isAdmin: Boolean(data) || Boolean(superAdmin.data), isSuperAdmin: Boolean(superAdmin.data) };
+    return {
+      isAdmin: Boolean(data) || Boolean(superAdmin.data),
+      isSuperAdmin: Boolean(superAdmin.data),
+    };
   });
 
 export const listCrisisEvents = createServerFn({ method: "GET" })
@@ -55,11 +55,12 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
 
     const { data, error } = await supabase
       .from("crisis_events")
-      .select("id, user_id, created_at, source, severity, matched_terms, notes, reviewed, reviewed_at")
+      .select(
+        "id, user_id, created_at, source, severity, matched_terms, notes, reviewed, reviewed_at",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
-
 
     const rows = data ?? [];
     const userIds = [...new Set(rows.map((row) => row.user_id))];
@@ -98,7 +99,6 @@ export const listCrisisEvents = createServerFn({ method: "GET" })
       events,
       unreviewed: rows.filter((row) => !row.reviewed).length,
     };
-
   });
 
 export const countUnreviewedCrisisEvents = createServerFn({ method: "GET" })

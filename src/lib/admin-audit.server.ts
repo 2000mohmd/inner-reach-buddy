@@ -50,7 +50,11 @@ export async function fetchAuditLog(filters: {
   adminUserId?: string | null;
   action?: string | null;
   limit?: number;
-}): Promise<{ entries: AuditLogRow[]; admins: { id: string; name: string | null }[]; actions: string[] }> {
+}): Promise<{
+  entries: AuditLogRow[];
+  admins: { id: string; name: string | null }[];
+  actions: string[];
+}> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   let query = supabaseAdmin

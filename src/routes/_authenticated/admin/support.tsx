@@ -136,7 +136,9 @@ function AdminSupportPage() {
                     <span className="truncate text-sm font-medium">
                       {thread.preferred_name ?? "Member"}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${statusTone(thread.status)}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] ${statusTone(thread.status)}`}
+                    >
                       {SUPPORT_STATUS_LABELS[thread.status]}
                     </span>
                   </div>
@@ -201,7 +203,9 @@ function AdminSupportPage() {
                   }`}
                 >
                   <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {message.sender === "admin" ? "Kalm support" : detail.data.thread.preferred_name ?? "Member"}{" "}
+                    {message.sender === "admin"
+                      ? "Kalm support"
+                      : (detail.data.thread.preferred_name ?? "Member")}{" "}
                     · {new Date(message.created_at).toLocaleString()}
                   </p>
                   <p className="whitespace-pre-wrap">{message.content}</p>

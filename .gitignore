@@ -20,6 +20,12 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Lock files — bun.lock is the single source of truth (Lovable's platform
+# package manager). Do not commit npm/pnpm/yarn lockfiles alongside it.
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

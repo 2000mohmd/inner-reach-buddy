@@ -57,7 +57,9 @@ function RoleChips({ roles }: { roles: string[] }) {
           <span
             key={role}
             className={`rounded-full px-2 py-0.5 text-[11px] ${
-              role === "super_admin" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+              role === "super_admin"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-primary/10 text-primary"
             }`}
           >
             {role === "super_admin" ? "Super admin" : "Admin"}
@@ -134,12 +136,17 @@ function AdminTeamPage() {
         </header>
         <ul className="mt-3 divide-y divide-border">
           {team.data?.members.map((member) => (
-            <li key={member.user_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <li
+              key={member.user_id}
+              className="flex flex-wrap items-center justify-between gap-3 py-3"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">
                   {member.preferred_name ?? member.email ?? "Unnamed"}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">{member.email ?? member.user_id}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {member.email ?? member.user_id}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <RoleChips roles={member.roles} />
@@ -214,7 +221,10 @@ function AdminTeamPage() {
           results.data.results.length ? (
             <ul className="mt-4 divide-y divide-border">
               {results.data.results.map((user) => (
-                <li key={user.user_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <li
+                  key={user.user_id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
                       {user.preferred_name ?? user.email ?? "Unnamed"}
@@ -268,14 +278,18 @@ function AdminTeamPage() {
         ) : null}
       </section>
 
-      <AlertDialog open={Boolean(pending)} onOpenChange={(open) => (open ? null : setPending(null))}>
+      <AlertDialog
+        open={Boolean(pending)}
+        onOpenChange={(open) => (open ? null : setPending(null))}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               {pending?.role === "super_admin" ? (
                 <ShieldAlert className="h-4 w-4 text-destructive" />
               ) : null}
-              {pending?.grant ? "Grant" : "Revoke"} {pending?.role === "super_admin" ? "super admin" : "admin"}?
+              {pending?.grant ? "Grant" : "Revoke"}{" "}
+              {pending?.role === "super_admin" ? "super admin" : "admin"}?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pending?.role === "super_admin"

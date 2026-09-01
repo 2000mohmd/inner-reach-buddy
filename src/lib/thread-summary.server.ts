@@ -91,7 +91,6 @@ export async function ensureThreadSummary(
     console.error("session drift sweep failed", error);
   }
 
-
   const openCommitments = (commitments.data ?? []).filter((row) => row.status === "pending");
   const commitmentLine = openCommitments.length
     ? `\n\nThings they committed to: ${openCommitments.map((row) => row.description).join("; ")}.`

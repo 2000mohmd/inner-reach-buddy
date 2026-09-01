@@ -44,15 +44,7 @@ function shortDay(day: string) {
   });
 }
 
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
+function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -132,7 +124,11 @@ function AdminOverviewPage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Total users" value={data.users.total} sub={`${data.users.new30} joined in 30d`} />
+        <Stat
+          label="Total users"
+          value={data.users.total}
+          sub={`${data.users.new30} joined in 30d`}
+        />
         <Stat label="New (7 days)" value={data.users.new7} />
         <Stat label="Active (7 days)" value={data.users.active7} sub="any logged activity" />
         <Stat

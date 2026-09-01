@@ -36,10 +36,7 @@ export const GAD7_ITEMS = [
   "Feeling afraid, as if something awful might happen",
 ];
 
-export const SCREENERS: Record<
-  ScreenerType,
-  { label: string; prompt: string; items: string[] }
-> = {
+export const SCREENERS: Record<ScreenerType, { label: string; prompt: string; items: string[] }> = {
   phq9: {
     label: "PHQ-9 (low mood)",
     prompt: "Over the last 2 weeks, how often have you been bothered by any of the following?",

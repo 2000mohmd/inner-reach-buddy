@@ -137,7 +137,12 @@ function AdminUserDetailPage() {
                     stroke="hsl(var(--border))"
                     vertical={false}
                   />
-                  <XAxis dataKey="label" fontSize={11} interval="preserveStartEnd" tickLine={false} />
+                  <XAxis
+                    dataKey="label"
+                    fontSize={11}
+                    interval="preserveStartEnd"
+                    tickLine={false}
+                  />
                   <YAxis domain={[1, 5]} fontSize={11} tickLine={false} width={24} />
                   <Tooltip />
                   <Line
@@ -173,7 +178,10 @@ function AdminUserDetailPage() {
               </h4>
               <ul className="mt-1 space-y-1 text-sm">
                 {data.screeners.slice(0, 5).map((row) => (
-                  <li key={`${row.screener_type}-${row.taken_at}`} className="text-muted-foreground">
+                  <li
+                    key={`${row.screener_type}-${row.taken_at}`}
+                    className="text-muted-foreground"
+                  >
                     {row.screener_type.toUpperCase()} · {row.total_score} ({row.severity}) ·{" "}
                     {formatWhen(row.taken_at)}
                   </li>

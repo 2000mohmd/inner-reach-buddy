@@ -66,85 +66,83 @@ function CrisisReviewPage() {
       </div>
 
       {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-20 w-full rounded-2xl" />
-            <Skeleton className="h-20 w-full rounded-2xl" />
-          </div>
-        ) : (
-          <>
-            <div
-              className={`flex items-center gap-3 rounded-2xl border p-4 ${
-                (data?.unreviewed ?? 0) > 0
-                  ? "border-crisis/40 bg-crisis-surface text-crisis"
-                  : "border-border bg-card"
-              }`}
-            >
-              {(data?.unreviewed ?? 0) > 0 ? (
-                <AlertTriangle className="size-5 shrink-0" aria-hidden />
-              ) : (
-                <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden />
-              )}
-              <div>
-                <p className="font-display text-2xl leading-none">{data?.unreviewed ?? 0}</p>
-                <p className="text-sm">
-                  {(data?.unreviewed ?? 0) === 1 ? "event awaiting review" : "events awaiting review"}
-                </p>
-              </div>
-            </div>
-
-            {!data?.events.length ? (
-              <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                No crisis events have been logged.
-              </p>
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </div>
+      ) : (
+        <>
+          <div
+            className={`flex items-center gap-3 rounded-2xl border p-4 ${
+              (data?.unreviewed ?? 0) > 0
+                ? "border-crisis/40 bg-crisis-surface text-crisis"
+                : "border-border bg-card"
+            }`}
+          >
+            {(data?.unreviewed ?? 0) > 0 ? (
+              <AlertTriangle className="size-5 shrink-0" aria-hidden />
             ) : (
-              <ul className="space-y-3">
-                {data.events.map((event) => (
-                  <li
-                    key={event.id}
-                    className={`rounded-2xl border p-4 ${
-                      event.reviewed ? "border-border bg-card/60" : "border-crisis/30 bg-card"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <p className="text-sm font-medium">
-                          {event.preferred_name ?? "Unnamed member"}
-                          <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            {formatWhen(event.created_at)}
-                          </span>
-                        </p>
-                        <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <CrisisSeverityBadge severity={event.severity} />
-                          <span>{CRISIS_SOURCE_LABELS[event.source] ?? event.source}</span>
-                        </p>
-                        {event.matched_terms.length > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Signals: {event.matched_terms.join(", ")}
-                          </p>
-                        )}
-                        {event.notes && (
-                          <p className="text-sm text-foreground/80">{event.notes}</p>
-                        )}
-                      </div>
-                      {event.reviewed ? (
-                        <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                          Reviewed
-                          {event.reviewed_at ? ` · ${formatWhen(event.reviewed_at)}` : ""}
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => mutation.mutate(event.id)}
-                          disabled={mutation.isPending}
-                        >
-                          Mark reviewed
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden />
             )}
+            <div>
+              <p className="font-display text-2xl leading-none">{data?.unreviewed ?? 0}</p>
+              <p className="text-sm">
+                {(data?.unreviewed ?? 0) === 1 ? "event awaiting review" : "events awaiting review"}
+              </p>
+            </div>
+          </div>
+
+          {!data?.events.length ? (
+            <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+              No crisis events have been logged.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {data.events.map((event) => (
+                <li
+                  key={event.id}
+                  className={`rounded-2xl border p-4 ${
+                    event.reviewed ? "border-border bg-card/60" : "border-crisis/30 bg-card"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-sm font-medium">
+                        {event.preferred_name ?? "Unnamed member"}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {formatWhen(event.created_at)}
+                        </span>
+                      </p>
+                      <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <CrisisSeverityBadge severity={event.severity} />
+                        <span>{CRISIS_SOURCE_LABELS[event.source] ?? event.source}</span>
+                      </p>
+                      {event.matched_terms.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Signals: {event.matched_terms.join(", ")}
+                        </p>
+                      )}
+                      {event.notes && <p className="text-sm text-foreground/80">{event.notes}</p>}
+                    </div>
+                    {event.reviewed ? (
+                      <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                        Reviewed
+                        {event.reviewed_at ? ` · ${formatWhen(event.reviewed_at)}` : ""}
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => mutation.mutate(event.id)}
+                        disabled={mutation.isPending}
+                      >
+                        Mark reviewed
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </div>

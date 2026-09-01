@@ -161,7 +161,8 @@ function AdminUsersPage() {
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground">
-                  joined {formatDate(user.created_at)} · last active {formatDate(user.last_active_at)}
+                  joined {formatDate(user.created_at)} · last active{" "}
+                  {formatDate(user.last_active_at)}
                 </span>
                 <span className="ml-auto text-xs text-muted-foreground">
                   {ENGAGEMENT_LABELS[user.engagement]}

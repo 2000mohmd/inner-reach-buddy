@@ -74,7 +74,8 @@ export const replyToSupportThread = createServerFn({ method: "POST" })
     });
     if (insert.error) throw new Error(insert.error.message);
 
-    const nextStatus = data.status ?? (thread.data.status === "open" ? "in_progress" : thread.data.status);
+    const nextStatus =
+      data.status ?? (thread.data.status === "open" ? "in_progress" : thread.data.status);
     const update = await supabase
       .from("support_threads")
       .update({ status: nextStatus, updated_at: new Date().toISOString() })

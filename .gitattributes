@@ -1,0 +1,24 @@
+# Normalize all text files to LF in the repository and on checkout, on every
+# platform. Without this, a Windows checkout (core.autocrlf=true) rewrites every
+# line ending to CRLF and prettier/eslint then flags every line. Keeping the
+# working tree LF everywhere means `npm run lint` behaves the same on Windows,
+# macOS (Flutter dev), and CI (Linux).
+* text=auto eol=lf
+
+# Generated files: keep LF, but hide from diffs and mark as generated.
+bun.lock            -diff linguist-generated
+src/routeTree.gen.ts -diff linguist-generated
+
+# Binary assets: never touch line endings, never diff.
+*.ico  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.avif binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.pdf   binary

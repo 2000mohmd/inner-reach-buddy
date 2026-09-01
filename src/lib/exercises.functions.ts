@@ -12,7 +12,6 @@ const CompleteInput = z.object({
   thread_id: z.string().uuid().nullish(),
 });
 
-
 export const listExercises = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -86,8 +85,7 @@ export const completeExercise = createServerFn({ method: "POST" })
       ]);
 
       const title = exercise.data?.title ?? "an exercise";
-      const hasMood =
-        typeof data.mood_before === "number" && typeof data.mood_after === "number";
+      const hasMood = typeof data.mood_before === "number" && typeof data.mood_after === "number";
       const label = hasMood
         ? `Completed ${title} · mood ${data.mood_before} → ${data.mood_after}`
         : `Completed ${title}`;
@@ -111,7 +109,6 @@ export const completeExercise = createServerFn({ method: "POST" })
     }
 
     return { ok: true, id: saved.data.id, thread_id: chatThreadId };
-
   });
 
 /** Used by the inline chat widget to render the shared step player. */

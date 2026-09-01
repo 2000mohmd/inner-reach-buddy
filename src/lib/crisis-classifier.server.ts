@@ -66,22 +66,17 @@ function parseVerdict(text: string): SemanticCrisisResult {
   if (!flagged) return NOT_FLAGGED;
 
   const tier = text.match(/\b(critical|high|moderate)\b/i)?.[1]?.toLowerCase() as
-    | CrisisSeverity
-    | undefined;
+    CrisisSeverity | undefined;
   const reason =
-    text
-      .replace(/^\s*yes\s*[|]?\s*(critical|high|moderate|none)?\s*[—\-:]*\s*/i, "")
-      .trim() || null;
+    text.replace(/^\s*yes\s*[|]?\s*(critical|high|moderate|none)?\s*[—\-:]*\s*/i, "").trim() ||
+    null;
 
   return { flagged: true, severity: tier ?? "high", reason };
 }
 
 const MULTILINGUAL_NOTE = `The person may write in English, Arabic (including Levantine or Gulf colloquial) or French, and may mix languages within one message. Judge the meaning in whatever language they used, applying exactly the same thresholds — never treat a non-English message as lower risk because it is harder to read. Always answer in the English format specified above.`;
 
-async function classify(
-  system: string,
-  userContent: string,
-): Promise<SemanticCrisisResult> {
+async function classify(system: string, userContent: string): Promise<SemanticCrisisResult> {
   try {
     const payload = await callCompanionModel({
       model: CLASSIFIER_MODEL,

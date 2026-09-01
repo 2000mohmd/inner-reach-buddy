@@ -44,7 +44,10 @@ export async function fetchOverviewMetrics(): Promise<OverviewMetrics> {
       .gte("completed_at", since30),
     supabaseAdmin.from("screener_responses").select("user_id, taken_at").gte("taken_at", since30),
     supabaseAdmin.from("mood_logs").select("user_id, score, logged_at").gte("logged_at", since30),
-    supabaseAdmin.from("crisis_events").select("severity, reviewed, created_at").gte("created_at", since30),
+    supabaseAdmin
+      .from("crisis_events")
+      .select("severity, reviewed, created_at")
+      .gte("created_at", since30),
     supabaseAdmin.from("habit_logs").select("user_id, logged_at").gte("logged_at", since30),
   ]);
 
@@ -91,7 +94,10 @@ export async function fetchOverviewMetrics(): Promise<OverviewMetrics> {
   for (const row of crisisRows) {
     bySeverity.set(row.severity, (bySeverity.get(row.severity) ?? 0) + 1);
     const bucket = crisisByDay.get(dayKey(row.created_at));
-    if (bucket && (row.severity === "critical" || row.severity === "high" || row.severity === "moderate")) {
+    if (
+      bucket &&
+      (row.severity === "critical" || row.severity === "high" || row.severity === "moderate")
+    ) {
       bucket[row.severity] += 1;
     }
   }
@@ -133,7 +139,10 @@ export async function fetchOverviewMetrics(): Promise<OverviewMetrics> {
     },
     crisis: {
       bySeverity: [...bySeverity.entries()].map(([severity, count]) => ({ severity, count })),
-      byDay: days.map((day) => ({ day, ...(crisisByDay.get(day) ?? { critical: 0, high: 0, moderate: 0 }) })),
+      byDay: days.map((day) => ({
+        day,
+        ...(crisisByDay.get(day) ?? { critical: 0, high: 0, moderate: 0 }),
+      })),
       unreviewed: unreviewed ?? 0,
       last7: crisisRows.filter((row) => row.created_at >= since7).length,
     },
@@ -270,12 +279,15 @@ export async function fetchAdminUserDetail(userId: string): Promise<AdminUserDet
         .eq("user_id", userId)
         .gte("logged_at", daysAgo(60))
         .order("logged_at", { ascending: true }),
-      supabaseAdmin.from("chat_messages").select("id", { count: "exact", head: true }).eq("user_id", userId),
       supabaseAdmin
-        .from("exercise_completions")
-        .select("completed_at")
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
-      supabaseAdmin.from("habits").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      supabaseAdmin.from("exercise_completions").select("completed_at").eq("user_id", userId),
+      supabaseAdmin
+        .from("habits")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId),
       supabaseAdmin.from("habit_logs").select("logged_at").eq("user_id", userId),
       supabaseAdmin
         .from("screener_responses")

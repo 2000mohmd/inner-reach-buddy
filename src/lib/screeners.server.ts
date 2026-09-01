@@ -64,7 +64,6 @@ export async function submitScreenerCore(
     });
   }
 
-
   // Ordinary submissions should still land somewhere human: close the loop in
   // chat with a plain-language activity card and a short reaction referencing
   // the trend. Elevated/worsening scores are still handled separately by the

@@ -1,0 +1,56 @@
+name: CI
+
+# Safety-critical app: every push and every PR must pass typecheck, lint, tests
+# and a production build before it can be merged or deployed. Any failing step
+# fails the job.
+on:
+  push:
+  pull_request:
+
+# A newer push to the same ref supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # bun.lock is the single source of truth (Lovable's platform package
+      # manager). Keep this in sync with the version Lovable builds with.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # vite 8 / nitro expect a modern Node runtime to be available too.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+        env:
+          # Build-time placeholders only. The real values are injected by the
+          # deploy platform; these just let the client bundle compile in CI.
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+          VITE_SUPABASE_PROJECT_ID: ci-placeholder

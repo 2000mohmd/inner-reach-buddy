@@ -30,7 +30,13 @@ export function weekStartOf(date: Date) {
   return isoDay(copy);
 }
 
-type MoodSummary = { count: number; average: number | null; low: number | null; high: number | null; tags: string[] };
+type MoodSummary = {
+  count: number;
+  average: number | null;
+  low: number | null;
+  high: number | null;
+  tags: string[];
+};
 type HabitsSummary = { habit: string; completed: number; target: number }[];
 type ExercisesTried = { name: string; count: number; moodDelta: number | null }[];
 type ScreenerSummary = { type: string; score: number; severity: string; takenAt: string }[];

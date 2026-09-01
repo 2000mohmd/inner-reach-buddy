@@ -1,12 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import {
-  SCREENERS,
-  SCREENER_INTERVAL_DAYS,
-  type ScreenerType,
-} from "./screeners";
-
+import { SCREENERS, SCREENER_INTERVAL_DAYS, type ScreenerType } from "./screeners";
 
 const SubmitInput = z.object({
   screener_type: z.enum(["phq9", "gad7"]),
@@ -53,5 +48,3 @@ export const submitScreener = createServerFn({ method: "POST" })
     const { submitScreenerCore } = await import("./screeners.server");
     return submitScreenerCore(context.supabase, context.userId, data);
   });
-
-

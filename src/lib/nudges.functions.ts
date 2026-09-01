@@ -23,7 +23,9 @@ export const getNudges = createServerFn({ method: "POST" })
     const [nudges, resources] = await Promise.all([
       supabase
         .from("nudges")
-        .select("id, trigger_type, message, suggested_exercise_slug, resource_ids, acted_on, created_at")
+        .select(
+          "id, trigger_type, message, suggested_exercise_slug, resource_ids, acted_on, created_at",
+        )
         .eq("user_id", userId)
         .is("dismissed_at", null)
         .order("created_at", { ascending: false })

@@ -6,11 +6,7 @@ export type ExerciseStep = {
 };
 
 export type ExerciseCategory =
-  | "thought_record"
-  | "behavioral_activation"
-  | "grounding"
-  | "breathing"
-  | "journaling";
+  "thought_record" | "behavioral_activation" | "grounding" | "breathing" | "journaling";
 
 export const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
   thought_record: "Thought work",
@@ -34,4 +30,3 @@ export function parseSteps(value: unknown): ExerciseStep[] {
   if (!Array.isArray(value)) return [];
   return value as ExerciseStep[];
 }
-

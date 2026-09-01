@@ -9,7 +9,7 @@ export function CrisisSeverityBadge({ severity }: { severity: string }) {
   return (
     <span
       className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
-        SEVERITY_STYLES[severity] ?? SEVERITY_STYLES['moderate']
+        SEVERITY_STYLES[severity] ?? SEVERITY_STYLES["moderate"]
       }`}
     >
       {severity}

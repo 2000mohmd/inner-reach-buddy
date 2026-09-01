@@ -3,14 +3,8 @@
 // detectCrisis() gate in crisis.ts runs before this file is ever reached.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  SCREENERS,
-  SCREENER_CHOICES,
-  SCREENER_FRAMING,
-  type ScreenerType,
-} from "./screeners";
+import { SCREENERS, SCREENER_CHOICES, SCREENER_FRAMING, type ScreenerType } from "./screeners";
 import { isGuidedWidgetCategory } from "./exercise-types";
-
 
 type Client = SupabaseClient<Database>;
 
@@ -30,7 +24,6 @@ export type CompanionAction =
       summary: string;
     }
   | { type: "stepup_suggested"; summary: string };
-
 
 export type ToolContext = {
   supabase: Client;
@@ -184,7 +177,6 @@ export const CHAT_TOOLS: AnthropicTool[] = [
   SUGGEST_STEPUP,
 ];
 
-
 /** Nudges are one-shot generations: read-only tools only. */
 export const NUDGE_TOOLS: AnthropicTool[] = [GET_EFFECTIVENESS_INSIGHTS];
 
@@ -278,7 +270,9 @@ export async function runCompanionTool(
   }
 
   if (name === "create_commitment") {
-    const description = String(input["description"] ?? "").trim().slice(0, 300);
+    const description = String(input["description"] ?? "")
+      .trim()
+      .slice(0, 300);
     if (!description) return { result: "No commitment description was provided." };
 
     const { data, error } = await supabase
@@ -376,7 +370,10 @@ export async function runCompanionTool(
       };
     }
     if (!ctx.threadId) {
-      return { result: "There is no active conversation to show the widget in. Use get_exercise_steps instead." };
+      return {
+        result:
+          "There is no active conversation to show the widget in. Use get_exercise_steps instead.",
+      };
     }
 
     const inserted = await supabase.from("chat_messages").insert({
@@ -507,8 +504,6 @@ export async function runCompanionTool(
       },
     };
   }
-
-
 
   if (name === "launch_exercise") {
     const slug = String(input["exercise_slug"] ?? "").trim();

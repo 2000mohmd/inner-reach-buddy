@@ -32,7 +32,8 @@ export async function transcribeAudioCore(input: { audio_base64: string; mime_ty
   if (!response.ok) {
     const body = await response.text();
     console.error("transcription failed", response.status, body);
-    if (response.status === 429) throw new Error("Too many voice notes right now — try again soon.");
+    if (response.status === 429)
+      throw new Error("Too many voice notes right now — try again soon.");
     if (response.status === 402)
       throw new Error("Voice transcription is out of credits. Please top up.");
     throw new Error("Couldn't understand that recording. Try again or type instead.");

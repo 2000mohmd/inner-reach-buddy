@@ -10,10 +10,7 @@ function dayKey(iso: string) {
 }
 
 /** Counts consecutive days (ending today or yesterday) with any engagement. */
-export async function computeEngagementStreak(
-  supabase: Client,
-  userId: string,
-): Promise<number> {
+export async function computeEngagementStreak(supabase: Client, userId: string): Promise<number> {
   const since = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
   const [moods, prompts, completions] = await Promise.all([

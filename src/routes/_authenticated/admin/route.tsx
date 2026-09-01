@@ -49,7 +49,6 @@ function AdminLayout() {
       </div>
 
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
-
         {isLoading ? (
           <Skeleton className="h-24 w-full rounded-2xl" />
         ) : data?.isAdmin === false ? (
