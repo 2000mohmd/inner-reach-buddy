@@ -31,9 +31,24 @@ import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminCrisisRouteImport } from './routes/_authenticated/admin/crisis'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
+import { Route as ApiV1CrisisResourcesRouteImport } from './routes/api/v1/crisis-resources'
+import { Route as ApiV1EntitlementsRouteImport } from './routes/api/v1/entitlements'
+import { Route as ApiV1ExercisesRouteImport } from './routes/api/v1/exercises'
+import { Route as ApiV1ExportRouteImport } from './routes/api/v1/export'
+import { Route as ApiV1HabitsRouteImport } from './routes/api/v1/habits'
+import { Route as ApiV1MoodRouteImport } from './routes/api/v1/mood'
+import { Route as ApiV1OnboardingRouteImport } from './routes/api/v1/onboarding'
+import { Route as ApiV1PersonasRouteImport } from './routes/api/v1/personas'
+import { Route as ApiV1PreferencesRouteImport } from './routes/api/v1/preferences'
+import { Route as ApiV1ProfileRouteImport } from './routes/api/v1/profile'
+import { Route as ApiV1ScreenersRouteImport } from './routes/api/v1/screeners'
 import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin/users/index'
 import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_authenticated/admin/users/$userId'
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
+import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/billing/verify-receipt'
+import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
+import { Route as ApiV1ChatSendRouteImport } from './routes/api/v1/chat/send'
+import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -146,6 +161,61 @@ const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiV1CrisisResourcesRoute = ApiV1CrisisResourcesRouteImport.update({
+  id: '/api/v1/crisis-resources',
+  path: '/api/v1/crisis-resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1EntitlementsRoute = ApiV1EntitlementsRouteImport.update({
+  id: '/api/v1/entitlements',
+  path: '/api/v1/entitlements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ExercisesRoute = ApiV1ExercisesRouteImport.update({
+  id: '/api/v1/exercises',
+  path: '/api/v1/exercises',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ExportRoute = ApiV1ExportRouteImport.update({
+  id: '/api/v1/export',
+  path: '/api/v1/export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1HabitsRoute = ApiV1HabitsRouteImport.update({
+  id: '/api/v1/habits',
+  path: '/api/v1/habits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1MoodRoute = ApiV1MoodRouteImport.update({
+  id: '/api/v1/mood',
+  path: '/api/v1/mood',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1OnboardingRoute = ApiV1OnboardingRouteImport.update({
+  id: '/api/v1/onboarding',
+  path: '/api/v1/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PersonasRoute = ApiV1PersonasRouteImport.update({
+  id: '/api/v1/personas',
+  path: '/api/v1/personas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PreferencesRoute = ApiV1PreferencesRouteImport.update({
+  id: '/api/v1/preferences',
+  path: '/api/v1/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ProfileRoute = ApiV1ProfileRouteImport.update({
+  id: '/api/v1/profile',
+  path: '/api/v1/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ScreenersRoute = ApiV1ScreenersRouteImport.update({
+  id: '/api/v1/screeners',
+  path: '/api/v1/screeners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminUsersIndexRoute =
   AuthenticatedAdminUsersIndexRouteImport.update({
     id: '/users/',
@@ -164,6 +234,27 @@ const ApiPublicHooksEvaluateNudgesRoute =
     path: '/api/public/hooks/evaluate-nudges',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1BillingVerifyReceiptRoute =
+  ApiV1BillingVerifyReceiptRouteImport.update({
+    id: '/api/v1/billing/verify-receipt',
+    path: '/api/v1/billing/verify-receipt',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1ChatHistoryRoute = ApiV1ChatHistoryRouteImport.update({
+  id: '/api/v1/chat/history',
+  path: '/api/v1/chat/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ChatSendRoute = ApiV1ChatSendRouteImport.update({
+  id: '/api/v1/chat/send',
+  path: '/api/v1/chat/send',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ChatThreadsRoute = ApiV1ChatThreadsRouteImport.update({
+  id: '/api/v1/chat/threads',
+  path: '/api/v1/chat/threads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -186,9 +277,24 @@ export interface FileRoutesByFullPath {
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
+  '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
+  '/api/v1/exercises': typeof ApiV1ExercisesRoute
+  '/api/v1/export': typeof ApiV1ExportRoute
+  '/api/v1/habits': typeof ApiV1HabitsRoute
+  '/api/v1/mood': typeof ApiV1MoodRoute
+  '/api/v1/onboarding': typeof ApiV1OnboardingRoute
+  '/api/v1/personas': typeof ApiV1PersonasRoute
+  '/api/v1/preferences': typeof ApiV1PreferencesRoute
+  '/api/v1/profile': typeof ApiV1ProfileRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
+  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -211,9 +317,24 @@ export interface FileRoutesByTo {
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
+  '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
+  '/api/v1/exercises': typeof ApiV1ExercisesRoute
+  '/api/v1/export': typeof ApiV1ExportRoute
+  '/api/v1/habits': typeof ApiV1HabitsRoute
+  '/api/v1/mood': typeof ApiV1MoodRoute
+  '/api/v1/onboarding': typeof ApiV1OnboardingRoute
+  '/api/v1/personas': typeof ApiV1PersonasRoute
+  '/api/v1/preferences': typeof ApiV1PreferencesRoute
+  '/api/v1/profile': typeof ApiV1ProfileRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
+  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -239,9 +360,24 @@ export interface FileRoutesById {
   '/_authenticated/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
+  '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
+  '/api/v1/exercises': typeof ApiV1ExercisesRoute
+  '/api/v1/export': typeof ApiV1ExportRoute
+  '/api/v1/habits': typeof ApiV1HabitsRoute
+  '/api/v1/mood': typeof ApiV1MoodRoute
+  '/api/v1/onboarding': typeof ApiV1OnboardingRoute
+  '/api/v1/personas': typeof ApiV1PersonasRoute
+  '/api/v1/preferences': typeof ApiV1PreferencesRoute
+  '/api/v1/profile': typeof ApiV1ProfileRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
+  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -267,9 +403,24 @@ export interface FileRouteTypes {
     | '/admin/crisis'
     | '/admin/support'
     | '/admin/team'
+    | '/api/v1/crisis-resources'
+    | '/api/v1/entitlements'
+    | '/api/v1/exercises'
+    | '/api/v1/export'
+    | '/api/v1/habits'
+    | '/api/v1/mood'
+    | '/api/v1/onboarding'
+    | '/api/v1/personas'
+    | '/api/v1/preferences'
+    | '/api/v1/profile'
+    | '/api/v1/screeners'
     | '/admin/'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/v1/billing/verify-receipt'
+    | '/api/v1/chat/history'
+    | '/api/v1/chat/send'
+    | '/api/v1/chat/threads'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -292,9 +443,24 @@ export interface FileRouteTypes {
     | '/admin/crisis'
     | '/admin/support'
     | '/admin/team'
+    | '/api/v1/crisis-resources'
+    | '/api/v1/entitlements'
+    | '/api/v1/exercises'
+    | '/api/v1/export'
+    | '/api/v1/habits'
+    | '/api/v1/mood'
+    | '/api/v1/onboarding'
+    | '/api/v1/personas'
+    | '/api/v1/preferences'
+    | '/api/v1/profile'
+    | '/api/v1/screeners'
     | '/admin'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/v1/billing/verify-receipt'
+    | '/api/v1/chat/history'
+    | '/api/v1/chat/send'
+    | '/api/v1/chat/threads'
     | '/admin/users'
   id:
     | '__root__'
@@ -319,9 +485,24 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/crisis'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/team'
+    | '/api/v1/crisis-resources'
+    | '/api/v1/entitlements'
+    | '/api/v1/exercises'
+    | '/api/v1/export'
+    | '/api/v1/habits'
+    | '/api/v1/mood'
+    | '/api/v1/onboarding'
+    | '/api/v1/personas'
+    | '/api/v1/preferences'
+    | '/api/v1/profile'
+    | '/api/v1/screeners'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/v1/billing/verify-receipt'
+    | '/api/v1/chat/history'
+    | '/api/v1/chat/send'
+    | '/api/v1/chat/threads'
     | '/_authenticated/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -332,7 +513,22 @@ export interface RootRouteChildren {
   CrisisRoute: typeof CrisisRoute
   LegalRoute: typeof LegalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiV1CrisisResourcesRoute: typeof ApiV1CrisisResourcesRoute
+  ApiV1EntitlementsRoute: typeof ApiV1EntitlementsRoute
+  ApiV1ExercisesRoute: typeof ApiV1ExercisesRoute
+  ApiV1ExportRoute: typeof ApiV1ExportRoute
+  ApiV1HabitsRoute: typeof ApiV1HabitsRoute
+  ApiV1MoodRoute: typeof ApiV1MoodRoute
+  ApiV1OnboardingRoute: typeof ApiV1OnboardingRoute
+  ApiV1PersonasRoute: typeof ApiV1PersonasRoute
+  ApiV1PreferencesRoute: typeof ApiV1PreferencesRoute
+  ApiV1ProfileRoute: typeof ApiV1ProfileRoute
+  ApiV1ScreenersRoute: typeof ApiV1ScreenersRoute
   ApiPublicHooksEvaluateNudgesRoute: typeof ApiPublicHooksEvaluateNudgesRoute
+  ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
+  ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
+  ApiV1ChatSendRoute: typeof ApiV1ChatSendRoute
+  ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -491,6 +687,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/v1/crisis-resources': {
+      id: '/api/v1/crisis-resources'
+      path: '/api/v1/crisis-resources'
+      fullPath: '/api/v1/crisis-resources'
+      preLoaderRoute: typeof ApiV1CrisisResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/entitlements': {
+      id: '/api/v1/entitlements'
+      path: '/api/v1/entitlements'
+      fullPath: '/api/v1/entitlements'
+      preLoaderRoute: typeof ApiV1EntitlementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/exercises': {
+      id: '/api/v1/exercises'
+      path: '/api/v1/exercises'
+      fullPath: '/api/v1/exercises'
+      preLoaderRoute: typeof ApiV1ExercisesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/export': {
+      id: '/api/v1/export'
+      path: '/api/v1/export'
+      fullPath: '/api/v1/export'
+      preLoaderRoute: typeof ApiV1ExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/habits': {
+      id: '/api/v1/habits'
+      path: '/api/v1/habits'
+      fullPath: '/api/v1/habits'
+      preLoaderRoute: typeof ApiV1HabitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/mood': {
+      id: '/api/v1/mood'
+      path: '/api/v1/mood'
+      fullPath: '/api/v1/mood'
+      preLoaderRoute: typeof ApiV1MoodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/onboarding': {
+      id: '/api/v1/onboarding'
+      path: '/api/v1/onboarding'
+      fullPath: '/api/v1/onboarding'
+      preLoaderRoute: typeof ApiV1OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/personas': {
+      id: '/api/v1/personas'
+      path: '/api/v1/personas'
+      fullPath: '/api/v1/personas'
+      preLoaderRoute: typeof ApiV1PersonasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/preferences': {
+      id: '/api/v1/preferences'
+      path: '/api/v1/preferences'
+      fullPath: '/api/v1/preferences'
+      preLoaderRoute: typeof ApiV1PreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/profile': {
+      id: '/api/v1/profile'
+      path: '/api/v1/profile'
+      fullPath: '/api/v1/profile'
+      preLoaderRoute: typeof ApiV1ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/screeners': {
+      id: '/api/v1/screeners'
+      path: '/api/v1/screeners'
+      fullPath: '/api/v1/screeners'
+      preLoaderRoute: typeof ApiV1ScreenersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/users/': {
       id: '/_authenticated/admin/users/'
       path: '/users'
@@ -510,6 +783,34 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/evaluate-nudges'
       fullPath: '/api/public/hooks/evaluate-nudges'
       preLoaderRoute: typeof ApiPublicHooksEvaluateNudgesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/verify-receipt': {
+      id: '/api/v1/billing/verify-receipt'
+      path: '/api/v1/billing/verify-receipt'
+      fullPath: '/api/v1/billing/verify-receipt'
+      preLoaderRoute: typeof ApiV1BillingVerifyReceiptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/chat/history': {
+      id: '/api/v1/chat/history'
+      path: '/api/v1/chat/history'
+      fullPath: '/api/v1/chat/history'
+      preLoaderRoute: typeof ApiV1ChatHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/chat/send': {
+      id: '/api/v1/chat/send'
+      path: '/api/v1/chat/send'
+      fullPath: '/api/v1/chat/send'
+      preLoaderRoute: typeof ApiV1ChatSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/chat/threads': {
+      id: '/api/v1/chat/threads'
+      path: '/api/v1/chat/threads'
+      fullPath: '/api/v1/chat/threads'
+      preLoaderRoute: typeof ApiV1ChatThreadsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -579,7 +880,22 @@ const rootRouteChildren: RootRouteChildren = {
   CrisisRoute: CrisisRoute,
   LegalRoute: LegalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiV1CrisisResourcesRoute: ApiV1CrisisResourcesRoute,
+  ApiV1EntitlementsRoute: ApiV1EntitlementsRoute,
+  ApiV1ExercisesRoute: ApiV1ExercisesRoute,
+  ApiV1ExportRoute: ApiV1ExportRoute,
+  ApiV1HabitsRoute: ApiV1HabitsRoute,
+  ApiV1MoodRoute: ApiV1MoodRoute,
+  ApiV1OnboardingRoute: ApiV1OnboardingRoute,
+  ApiV1PersonasRoute: ApiV1PersonasRoute,
+  ApiV1PreferencesRoute: ApiV1PreferencesRoute,
+  ApiV1ProfileRoute: ApiV1ProfileRoute,
+  ApiV1ScreenersRoute: ApiV1ScreenersRoute,
   ApiPublicHooksEvaluateNudgesRoute: ApiPublicHooksEvaluateNudgesRoute,
+  ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
+  ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
+  ApiV1ChatSendRoute: ApiV1ChatSendRoute,
+  ApiV1ChatThreadsRoute: ApiV1ChatThreadsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,0 +1,44 @@
+# Mobile API — `/api/v1` (item 7)
+
+A thin JSON surface for the separate mobile app. Every handler forwards to the
+same `createServerFn` the web app uses — no business logic is duplicated.
+
+## Auth
+
+Send the Supabase session access token as `Authorization: Bearer <jwt>` on every
+request except the two public endpoints below. The token is verified by the
+`requireSupabaseAuth` middleware; a missing/invalid token returns
+`401 {"error":"Unauthorized"}`. All queries run under RLS scoped to that user.
+
+Errors: `400` validation (`{"error","details"}`), `401` auth, `501` not
+implemented (billing), `500` otherwise (`{"error":"Internal error"}`, logged).
+
+## Endpoints
+
+| Method             | Path                              | Wraps                                     | Notes                                                                                          |
+| ------------------ | --------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| GET                | `/api/v1/entitlements`            | `getEntitlements`                         | tier, chat credits (free = 1/day), feature flags                                               |
+| GET                | `/api/v1/preferences`             | `getMyPreferences`                        | companion persona, theme, language                                                             |
+| PATCH              | `/api/v1/preferences`             | `setMyPreferences`                        | `{ companionPersona?, theme? }`                                                                |
+| GET                | `/api/v1/personas`                | `listCompanionPersonas`                   | **public** — persona catalogue                                                                 |
+| GET                | `/api/v1/profile`                 | `getMyProfile`                            | profile + intro + recent moods                                                                 |
+| GET · POST         | `/api/v1/onboarding`              | `getMyProfile` · `completeOnboarding`     |                                                                                                |
+| POST               | `/api/v1/mood`                    | `logMood`                                 |                                                                                                |
+| GET · POST · PATCH | `/api/v1/habits`                  | `listHabits` · `createHabit` · `logHabit` |                                                                                                |
+| GET · POST         | `/api/v1/exercises`               | `listExercises` · `completeExercise`      |                                                                                                |
+| GET · POST         | `/api/v1/screeners`               | `getScreenerState` · `submitScreener`     | PHQ-9 / GAD-7                                                                                  |
+| GET · DELETE       | `/api/v1/export`                  | `buildMyReport` · `deleteMyData`          | therapist-shareable text report / wipe                                                         |
+| GET                | `/api/v1/crisis-resources?lang=`  | `crisisCopy`                              | **public, never gated**                                                                        |
+| GET · POST         | `/api/v1/chat/threads`            | `listThreads` · `createThread`            |                                                                                                |
+| GET                | `/api/v1/chat/history?thread_id=` | `getThreadHistory`                        |                                                                                                |
+| POST               | `/api/v1/chat/send`               | `sendMessage`                             | body `{ thread_id?, content, quick_action? }`; runs the full crisis gate + rate limiter        |
+| POST               | `/api/v1/billing/verify-receipt`  | `getReceiptValidator().validate`          | **stub — returns 501** until store integration lands (`src/lib/billing/receipt-validation.ts`) |
+
+## Not done in this pass
+
+- Billing/receipt validation is interface-only (item 8 wires enforcement into
+  `sendMessage` once the numbers are set).
+- `companion_persona` / `theme_preference` need migration
+  `20260902000100_profile_preferences.sql` applied (Lovable picks it up).
+- No API versioning negotiation / deprecation headers yet.
+- Endpoints are not rate-limited beyond what the wrapped server fns already do.
