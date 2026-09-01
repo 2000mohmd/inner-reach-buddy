@@ -71,6 +71,9 @@ export async function handle(fn: () => Promise<Response>): Promise<Response> {
     if (/^unauthorized/i.test(message)) {
       return json({ error: "Unauthorized" }, 401);
     }
+    if (/not found$/i.test(message)) {
+      return json({ error: message }, 404);
+    }
     if (/not implemented/i.test(message)) {
       return json({ error: message }, 501);
     }

@@ -10,7 +10,7 @@ identically to the web.
 - **Transport:** file-based API routes under `src/routes/api/v1/` (the pattern in
   `src/routes/api/public/hooks/evaluate-nudges.ts`). Not a separate Edge
   Functions project.
-- **Status:** Phase 1 shipped and tested. Phases 2–3 below are the agreed
+- **Status:** Phases 1 & 2 shipped and tested. Phase 3 below is the agreed
   contract; endpoints land incrementally and this file is updated as they do.
 
 ---
@@ -141,31 +141,36 @@ a valid token is sent) → English.
 
 ---
 
-## Phase 2 — screeners, entitlements, chat reads (in progress)
-
-Contracts below are agreed; wiring lands next. Each wraps existing logic as-is.
+## Phase 2 — screeners, entitlements, chat reads (shipped)
 
 ### `POST /api/v1/screeners/:type/responses`
 
-Wraps `submitScreenerCore` (`src/lib/screeners.server.ts`), **including the PHQ-9
-item-9 escalation** (item 9 ≥ 1 triggers the crisis pathway regardless of total
-score). `:type` is `phq9` or `gad7`.
+Calls `submitScreenerCore` (`src/lib/screeners.server.ts`) as-is, **including the
+PHQ-9 item-9 escalation**: an item-9 answer ≥ 1 sets `crisisTriggered: true` and
+returns the structured `crisis` object regardless of total score (`item9 === 1` →
+`moderate`, `item9 ≥ 2` → `high`). Covered end-to-end through this endpoint by
+`src/routes/api/v1/-handlers.phase2.test.ts`.
+
+`:type` is `phq9` or `gad7` (in the path, not the body).
 
 **Auth:** required.
 
-**Request:** `{ "responses": number[] }` — 7 ints (GAD-7) or 9 ints (PHQ-9), each
-`0–3`.
+**Request:** `{ "responses": number[] }` — exactly 7 ints (GAD-7) or 9 (PHQ-9),
+each `0–3`. Wrong type → `400 "Unknown screener type"`; wrong count →
+`400 "<type> expects N responses"`.
 
 **Response `200`**
 
 ```json
-{ "id": "uuid", "total_score": 0, "severity": "…", "taken_at": "ISO-8601",
+{ "id": "uuid", "total_score": 0, "severity": "minimal|mild|moderate|…",
+  "taken_at": "ISO-8601",
   "crisisTriggered": false,
   "crisis": null }
 ```
 
 When `crisisTriggered` is `true`, `crisis` is the same structured object as the
-crisis reply above (`type`, `severity`, `message`, `resources`, `disclaimer`).
+crisis chat reply: `{ "type": "crisis", "severity", "message", "matched",
+"resources": [ { "name", "contact", "detail" } ], "disclaimer" }`.
 
 ### `GET /api/v1/entitlements`
 
@@ -185,30 +190,42 @@ real "N messages left today" indicator instead of guessing.
 }
 ```
 
-`liveSessions` is always `false` (not built — see [Out of scope](#out-of-scope)).
+For premium/org, `unlimited` is `true` and `dailyCredits` / `remainingToday` are
+`null`. `liveSessions` is always `false` (not built — see
+[Out of scope](#out-of-scope)).
 
 ### `GET /api/v1/chat/threads`
 
-Wraps `listThreads`. **Auth:** required.
+Wraps `listThreadsCore`. **Auth:** required. Newest activity first.
 
 ```json
 [ { "id": "uuid", "title": "…", "created_at": "ISO-8601", "updated_at": "ISO-8601" } ]
 ```
 
-### `GET /api/v1/chat/threads/:id/messages`
+There is no thread-create endpoint: a thread is created by
+`POST /api/v1/chat/messages` with no `thread_id`, and its id comes back on the
+response.
 
-Wraps `getThreadHistory`. **Auth:** required. Paginated (params: `?limit=` default
-50, `?before=` ISO cursor — final shape confirmed on delivery). `404` if the
-thread isn't owned by the caller.
+### `GET /api/v1/chat/threads/:id/messages?limit=&before=`
+
+Wraps `getThreadMessagesPageCore`. **Auth:** required. Keyset-paginated,
+**newest-first internally but returned ascending for display**. `limit` defaults
+to 50 (clamped 1–200); `before` is the previous page's `nextBefore` (an exclusive
+ISO `created_at` cursor). `404` if the thread isn't owned by the caller; `400`
+for a non-uuid id.
 
 ```json
 {
   "thread": { "id": "uuid", "title": "…", "created_at": "ISO-8601", "updated_at": "ISO-8601" },
   "messages": [ { "id": "uuid", "sender": "user | assistant | system", "content": "…",
                   "content_type": "text | …", "exercise_slug": null,
-                  "flagged_crisis": false, "quick_action": null, "created_at": "ISO-8601" } ]
+                  "flagged_crisis": false, "quick_action": null, "created_at": "ISO-8601" } ],
+  "nextBefore": "ISO-8601 | null"
 }
 ```
+
+`nextBefore: null` means the first (oldest) message is in this page — stop
+paging.
 
 ---
 
@@ -291,3 +308,11 @@ this pass:
   `src/routes/api/v1/-handlers.test.ts` (10),
   `src/lib/chat-messages-ordering.test.ts` (2). `POST /api/v1/chat/send` (earlier
   scaffold) renamed to `POST /api/v1/chat/messages`.
+- **Phase 2** — `POST /api/v1/screeners/:type/responses`, `GET /api/v1/entitlements`,
+  `GET /api/v1/chat/threads`, `GET /api/v1/chat/threads/:id/messages`.
+  `listThreads` / `getThreadHistory` bodies extracted to `listThreadsCore` /
+  `getThreadHistoryCore`, plus a new `getThreadMessagesPageCore` for keyset
+  pagination. `handle()` now maps `"… not found"` → `404`. The old
+  `GET /api/v1/chat/history?thread_id=` still exists but is superseded by
+  `…/threads/:id/messages`. Tests: `src/routes/api/v1/-handlers.phase2.test.ts`
+  (14), including the PHQ-9 item-9 escalation through the endpoint.

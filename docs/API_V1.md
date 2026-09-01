@@ -34,10 +34,12 @@ implemented (billing), `500` otherwise (`{"error":"Internal error"}`, logged).
 | GET · POST · PATCH | `/api/v1/habits`                  | `listHabits` · `createHabit` · `logHabit` |                                                                                                |
 | GET · POST         | `/api/v1/exercises`               | `listExercises` · `completeExercise`      |                                                                                                |
 | GET · POST         | `/api/v1/screeners`               | `getScreenerState` · `submitScreener`     | PHQ-9 / GAD-7                                                                                  |
+| POST               | `/api/v1/screeners/$type/responses` | `submitScreenerCore`                    | `:type` = phq9/gad7 in path; body `{ responses }`; PHQ-9 item-9 escalation                    |
 | GET · DELETE       | `/api/v1/export`                  | `buildMyReport` · `deleteMyData`          | therapist-shareable text report / wipe                                                         |
 | GET                | `/api/v1/crisis-resources?lang=`  | `crisisCopy`                              | **public, never gated**                                                                        |
-| GET · POST         | `/api/v1/chat/threads`            | `listThreads` · `createThread`            |                                                                                                |
-| GET                | `/api/v1/chat/history?thread_id=` | `getThreadHistory`                        |                                                                                                |
+| GET                | `/api/v1/chat/threads`            | `listThreadsCore`                         | create a thread via `chat/messages` with no `thread_id`                                         |
+| GET                | `/api/v1/chat/threads/$id/messages` | `getThreadMessagesPageCore`             | keyset-paginated `?limit=&before=`; returns `nextBefore`                                        |
+| GET                | `/api/v1/chat/history?thread_id=` | `getThreadHistory`                        | superseded by `chat/threads/$id/messages`                                                       |
 | POST               | `/api/v1/chat/messages`           | `sendMessage`                             | body `{ thread_id?, content, quick_action? }`; runs the full crisis gate + rate limiter        |
 | POST               | `/api/v1/billing/verify-receipt`  | `getReceiptValidator().validate`          | **stub — returns 501** until store integration lands (`src/lib/billing/receipt-validation.ts`) |
 

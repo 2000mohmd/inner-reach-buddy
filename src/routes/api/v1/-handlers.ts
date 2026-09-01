@@ -3,8 +3,12 @@
 // `(request: Request) => Promise<Response>` function that can be unit-tested
 // without a running server. The route files under this folder are thin bindings.
 
-import { sendMessageCore } from "@/lib/chat.functions";
+import { z } from "zod";
+import { getThreadMessagesPageCore, listThreadsCore, sendMessageCore } from "@/lib/chat.functions";
 import { CRISIS_DISCLAIMER, crisisCopy } from "@/lib/crisis";
+import { getEntitlementsFor } from "@/lib/entitlements.server";
+import { SCREENERS, type ScreenerType } from "@/lib/screeners";
+import { submitScreenerCore } from "@/lib/screeners.server";
 import { normalizeLanguage } from "@/lib/i18n/languages";
 import { authenticateBearer } from "@/lib/api-auth.server";
 import { ApiError, handle, json, requireAuth } from "./-shared";
@@ -80,5 +84,99 @@ export function handleCrisisResources(request: Request): Promise<Response> {
       resources: copy.resources,
       disclaimer: copy.disclaimer ?? CRISIS_DISCLAIMER,
     });
+  });
+}
+
+/**
+ * GET /api/v1/entitlements — the caller's current tier, chat-credit state
+ * (used/remaining today, reset time) and feature flags. Wraps getEntitlementsFor.
+ */
+export function handleEntitlements(request: Request): Promise<Response> {
+  return handle(async () => {
+    const { supabase, userId } = await requireAuth(request);
+    return json(await getEntitlementsFor(supabase, userId));
+  });
+}
+
+/** GET /api/v1/chat/threads — the caller's threads, newest activity first. */
+export function handleChatThreads(request: Request): Promise<Response> {
+  return handle(async () => {
+    const { supabase, userId } = await requireAuth(request);
+    return json(await listThreadsCore(supabase, userId));
+  });
+}
+
+/**
+ * GET /api/v1/chat/threads/:id/messages?limit=&before=
+ *
+ * Keyset-paginated, newest-first page (returned ascending for display).
+ * `before` is an ISO cursor from the previous page's `nextBefore`. 404 if the
+ * thread isn't owned by the caller.
+ */
+export function handleChatThreadMessages(request: Request, threadId: string): Promise<Response> {
+  return handle(async () => {
+    const { supabase, userId } = await requireAuth(request);
+    const parsed = z.string().uuid().safeParse(threadId);
+    if (!parsed.success) throw new ApiError(400, "Invalid thread id");
+
+    const url = new URL(request.url);
+    const limitRaw = url.searchParams.get("limit");
+    const limit = limitRaw === null ? undefined : Number(limitRaw);
+    if (limit !== undefined && !Number.isFinite(limit)) {
+      throw new ApiError(400, "limit must be a number");
+    }
+    const before = url.searchParams.get("before");
+
+    return json(
+      await getThreadMessagesPageCore(supabase, userId, {
+        thread_id: parsed.data,
+        ...(limit !== undefined ? { limit } : {}),
+        before,
+      }),
+    );
+  });
+}
+
+/**
+ * POST /api/v1/screeners/:type/responses  (:type = phq9 | gad7)
+ *
+ * Wraps submitScreenerCore as-is, INCLUDING the PHQ-9 item-9 escalation: an
+ * item-9 answer >= 1 sets `crisisTriggered: true` and returns the structured
+ * `crisis` object regardless of total score. Body: { responses: number[] }.
+ */
+export function handleScreenerResponses(request: Request, type: string): Promise<Response> {
+  return handle(async () => {
+    const { supabase, userId } = await requireAuth(request);
+
+    if (type !== "phq9" && type !== "gad7") {
+      throw new ApiError(400, "Unknown screener type");
+    }
+    const screenerType = type as ScreenerType;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      throw new ApiError(400, "Invalid JSON body");
+    }
+    const parsed = z
+      .object({ responses: z.array(z.number().int().min(0).max(3)).min(7).max(9) })
+      .safeParse(body);
+    if (!parsed.success) {
+      throw new ApiError(400, "Validation failed", parsed.error.flatten());
+    }
+    if (parsed.data.responses.length !== SCREENERS[screenerType].items.length) {
+      throw new ApiError(
+        400,
+        `${screenerType} expects ${SCREENERS[screenerType].items.length} responses`,
+      );
+    }
+
+    return json(
+      await submitScreenerCore(supabase, userId, {
+        screener_type: screenerType,
+        responses: parsed.data.responses,
+      }),
+    );
   });
 }

@@ -27,18 +27,19 @@ export const getChatUsage = createServerFn({ method: "GET" })
     return getRateLimiter(supabase).getUsage(userId);
   });
 
+export async function listThreadsCore(supabase: SupabaseClient<Database>, userId: string) {
+  const { data, error } = await supabase
+    .from("chat_threads")
+    .select("id, title, created_at, updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export const listThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data, error } = await supabase
-      .from("chat_threads")
-      .select("id, title, created_at, updated_at")
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false });
-    if (error) throw error;
-    return data ?? [];
-  });
+  .handler(({ context }) => listThreadsCore(context.supabase, context.userId));
 
 export const createThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -53,32 +54,86 @@ export const createThread = createServerFn({ method: "POST" })
     return data;
   });
 
+const MESSAGE_COLS =
+  "id, sender, content, content_type, exercise_slug, flagged_crisis, quick_action, created_at";
+
+async function loadOwnedThread(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  threadId: string,
+) {
+  const thread = await supabase
+    .from("chat_threads")
+    .select("id, title, created_at, updated_at")
+    .eq("id", threadId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (thread.error) throw thread.error;
+  if (!thread.data) throw new Error("Thread not found");
+  return thread.data;
+}
+
+export async function getThreadHistoryCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: { thread_id: string },
+) {
+  const [thread, messages] = await Promise.all([
+    loadOwnedThread(supabase, userId, input.thread_id),
+    supabase
+      .from("chat_messages")
+      .select(MESSAGE_COLS)
+      .eq("thread_id", input.thread_id)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
+  ]);
+  if (messages.error) throw messages.error;
+  return { thread, messages: messages.data ?? [] };
+}
+
+/**
+ * Keyset-paginated newest-first page of a thread's messages, for the mobile
+ * infinite-scroll history view. `before` is an ISO `created_at` cursor (exclusive)
+ * from a previous page's `nextBefore`. Reuses the ownership check + column list
+ * from getThreadHistoryCore.
+ */
+export async function getThreadMessagesPageCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: { thread_id: string; limit?: number; before?: string | null },
+) {
+  const limit = Math.min(Math.max(Math.trunc(input.limit ?? 50), 1), 200);
+  const thread = await loadOwnedThread(supabase, userId, input.thread_id);
+
+  let query = supabase
+    .from("chat_messages")
+    .select(MESSAGE_COLS)
+    .eq("thread_id", input.thread_id)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
+  if (input.before) query = query.lt("created_at", input.before);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  return {
+    thread,
+    // ascending for display; the cursor is the oldest row we returned
+    messages: [...page].reverse(),
+    nextBefore: hasMore ? (page[page.length - 1]?.created_at ?? null) : null,
+  };
+}
+
 export const getThreadHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ thread_id: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const [thread, messages] = await Promise.all([
-      supabase
-        .from("chat_threads")
-        .select("id, title, created_at, updated_at")
-        .eq("id", data.thread_id)
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("chat_messages")
-        .select(
-          "id, sender, content, content_type, exercise_slug, flagged_crisis, quick_action, created_at",
-        )
-        .eq("thread_id", data.thread_id)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true }),
-    ]);
-    if (thread.error) throw thread.error;
-    if (messages.error) throw messages.error;
-    if (!thread.data) throw new Error("Thread not found");
-    return { thread: thread.data, messages: messages.data ?? [] };
-  });
+  .handler(({ data, context }) =>
+    getThreadHistoryCore(context.supabase, context.userId, { thread_id: data.thread_id }),
+  );
 
 export const deleteThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

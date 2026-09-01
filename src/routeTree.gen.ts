@@ -49,6 +49,8 @@ import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/b
 import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
 import { Route as ApiV1ChatMessagesRouteImport } from './routes/api/v1/chat/messages'
 import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
+import { Route as ApiV1ScreenersTypeResponsesRouteImport } from './routes/api/v1/screeners/$type/responses'
+import { Route as ApiV1ChatThreadsIdMessagesRouteImport } from './routes/api/v1/chat/threads/$id/messages'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -255,6 +257,18 @@ const ApiV1ChatThreadsRoute = ApiV1ChatThreadsRouteImport.update({
   path: '/api/v1/chat/threads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1ScreenersTypeResponsesRoute =
+  ApiV1ScreenersTypeResponsesRouteImport.update({
+    id: '/$type/responses',
+    path: '/$type/responses',
+    getParentRoute: () => ApiV1ScreenersRoute,
+  } as any)
+const ApiV1ChatThreadsIdMessagesRoute =
+  ApiV1ChatThreadsIdMessagesRouteImport.update({
+    id: '/$id/messages',
+    path: '/$id/messages',
+    getParentRoute: () => ApiV1ChatThreadsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -287,15 +301,17 @@ export interface FileRoutesByFullPath {
   '/api/v1/personas': typeof ApiV1PersonasRoute
   '/api/v1/preferences': typeof ApiV1PreferencesRoute
   '/api/v1/profile': typeof ApiV1ProfileRoute
-  '/api/v1/screeners': typeof ApiV1ScreenersRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
-  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -327,15 +343,17 @@ export interface FileRoutesByTo {
   '/api/v1/personas': typeof ApiV1PersonasRoute
   '/api/v1/preferences': typeof ApiV1PreferencesRoute
   '/api/v1/profile': typeof ApiV1ProfileRoute
-  '/api/v1/screeners': typeof ApiV1ScreenersRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
-  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -370,15 +388,17 @@ export interface FileRoutesById {
   '/api/v1/personas': typeof ApiV1PersonasRoute
   '/api/v1/preferences': typeof ApiV1PreferencesRoute
   '/api/v1/profile': typeof ApiV1ProfileRoute
-  '/api/v1/screeners': typeof ApiV1ScreenersRoute
+  '/api/v1/screeners': typeof ApiV1ScreenersRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
-  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
+  '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -422,6 +442,8 @@ export interface FileRouteTypes {
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/admin/users/'
+    | '/api/v1/screeners/$type/responses'
+    | '/api/v1/chat/threads/$id/messages'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -462,6 +484,8 @@ export interface FileRouteTypes {
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/admin/users'
+    | '/api/v1/screeners/$type/responses'
+    | '/api/v1/chat/threads/$id/messages'
   id:
     | '__root__'
     | '/'
@@ -504,6 +528,8 @@ export interface FileRouteTypes {
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/_authenticated/admin/users/'
+    | '/api/v1/screeners/$type/responses'
+    | '/api/v1/chat/threads/$id/messages'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -523,12 +549,12 @@ export interface RootRouteChildren {
   ApiV1PersonasRoute: typeof ApiV1PersonasRoute
   ApiV1PreferencesRoute: typeof ApiV1PreferencesRoute
   ApiV1ProfileRoute: typeof ApiV1ProfileRoute
-  ApiV1ScreenersRoute: typeof ApiV1ScreenersRoute
+  ApiV1ScreenersRoute: typeof ApiV1ScreenersRouteWithChildren
   ApiPublicHooksEvaluateNudgesRoute: typeof ApiPublicHooksEvaluateNudgesRoute
   ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
   ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
   ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRoute
-  ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRoute
+  ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -813,6 +839,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ChatThreadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/screeners/$type/responses': {
+      id: '/api/v1/screeners/$type/responses'
+      path: '/$type/responses'
+      fullPath: '/api/v1/screeners/$type/responses'
+      preLoaderRoute: typeof ApiV1ScreenersTypeResponsesRouteImport
+      parentRoute: typeof ApiV1ScreenersRoute
+    }
+    '/api/v1/chat/threads/$id/messages': {
+      id: '/api/v1/chat/threads/$id/messages'
+      path: '/$id/messages'
+      fullPath: '/api/v1/chat/threads/$id/messages'
+      preLoaderRoute: typeof ApiV1ChatThreadsIdMessagesRouteImport
+      parentRoute: typeof ApiV1ChatThreadsRoute
+    }
   }
 }
 
@@ -873,6 +913,29 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiV1ScreenersRouteChildren {
+  ApiV1ScreenersTypeResponsesRoute: typeof ApiV1ScreenersTypeResponsesRoute
+}
+
+const ApiV1ScreenersRouteChildren: ApiV1ScreenersRouteChildren = {
+  ApiV1ScreenersTypeResponsesRoute: ApiV1ScreenersTypeResponsesRoute,
+}
+
+const ApiV1ScreenersRouteWithChildren = ApiV1ScreenersRoute._addFileChildren(
+  ApiV1ScreenersRouteChildren,
+)
+
+interface ApiV1ChatThreadsRouteChildren {
+  ApiV1ChatThreadsIdMessagesRoute: typeof ApiV1ChatThreadsIdMessagesRoute
+}
+
+const ApiV1ChatThreadsRouteChildren: ApiV1ChatThreadsRouteChildren = {
+  ApiV1ChatThreadsIdMessagesRoute: ApiV1ChatThreadsIdMessagesRoute,
+}
+
+const ApiV1ChatThreadsRouteWithChildren =
+  ApiV1ChatThreadsRoute._addFileChildren(ApiV1ChatThreadsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -890,12 +953,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1PersonasRoute: ApiV1PersonasRoute,
   ApiV1PreferencesRoute: ApiV1PreferencesRoute,
   ApiV1ProfileRoute: ApiV1ProfileRoute,
-  ApiV1ScreenersRoute: ApiV1ScreenersRoute,
+  ApiV1ScreenersRoute: ApiV1ScreenersRouteWithChildren,
   ApiPublicHooksEvaluateNudgesRoute: ApiPublicHooksEvaluateNudgesRoute,
   ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
   ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
   ApiV1ChatMessagesRoute: ApiV1ChatMessagesRoute,
-  ApiV1ChatThreadsRoute: ApiV1ChatThreadsRoute,
+  ApiV1ChatThreadsRoute: ApiV1ChatThreadsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
