@@ -1,7 +1,14 @@
-# Mobile API — `/api/v1` (item 7)
+# Mobile API — `/api/v1` (endpoint inventory)
+
+> **`docs/MOBILE_API.md` is the canonical contract for the Flutter integration.**
+> This file is the fuller inventory of every `/api/v1/*` route that exists,
+> including ones outside the mobile spec's scope (preferences, personas, profile,
+> mood, habits, exercises, export, billing). Where the two disagree on a path or
+> shape, `MOBILE_API.md` wins. Notably `POST /api/v1/chat/send` is now
+> `POST /api/v1/chat/messages`.
 
 A thin JSON surface for the separate mobile app. Every handler forwards to the
-same `createServerFn` the web app uses — no business logic is duplicated.
+same server-side logic the web app uses — no business logic is duplicated.
 
 ## Auth
 
@@ -31,7 +38,7 @@ implemented (billing), `500` otherwise (`{"error":"Internal error"}`, logged).
 | GET                | `/api/v1/crisis-resources?lang=`  | `crisisCopy`                              | **public, never gated**                                                                        |
 | GET · POST         | `/api/v1/chat/threads`            | `listThreads` · `createThread`            |                                                                                                |
 | GET                | `/api/v1/chat/history?thread_id=` | `getThreadHistory`                        |                                                                                                |
-| POST               | `/api/v1/chat/send`               | `sendMessage`                             | body `{ thread_id?, content, quick_action? }`; runs the full crisis gate + rate limiter        |
+| POST               | `/api/v1/chat/messages`           | `sendMessage`                             | body `{ thread_id?, content, quick_action? }`; runs the full crisis gate + rate limiter        |
 | POST               | `/api/v1/billing/verify-receipt`  | `getReceiptValidator().validate`          | **stub — returns 501** until store integration lands (`src/lib/billing/receipt-validation.ts`) |
 
 ## Not done in this pass

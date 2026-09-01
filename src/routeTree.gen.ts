@@ -47,7 +47,7 @@ import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_aut
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
 import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/billing/verify-receipt'
 import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
-import { Route as ApiV1ChatSendRouteImport } from './routes/api/v1/chat/send'
+import { Route as ApiV1ChatMessagesRouteImport } from './routes/api/v1/chat/messages'
 import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
 
 const IndexRoute = IndexRouteImport.update({
@@ -245,9 +245,9 @@ const ApiV1ChatHistoryRoute = ApiV1ChatHistoryRouteImport.update({
   path: '/api/v1/chat/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1ChatSendRoute = ApiV1ChatSendRouteImport.update({
-  id: '/api/v1/chat/send',
-  path: '/api/v1/chat/send',
+const ApiV1ChatMessagesRoute = ApiV1ChatMessagesRouteImport.update({
+  id: '/api/v1/chat/messages',
+  path: '/api/v1/chat/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1ChatThreadsRoute = ApiV1ChatThreadsRouteImport.update({
@@ -293,7 +293,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
@@ -333,7 +333,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
 }
@@ -376,7 +376,7 @@ export interface FileRoutesById {
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/send': typeof ApiV1ChatSendRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRoute
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
 }
@@ -419,7 +419,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-nudges'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
-    | '/api/v1/chat/send'
+    | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
@@ -459,7 +459,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-nudges'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
-    | '/api/v1/chat/send'
+    | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/admin/users'
   id:
@@ -501,7 +501,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-nudges'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
-    | '/api/v1/chat/send'
+    | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
     | '/_authenticated/admin/users/'
   fileRoutesById: FileRoutesById
@@ -527,7 +527,7 @@ export interface RootRouteChildren {
   ApiPublicHooksEvaluateNudgesRoute: typeof ApiPublicHooksEvaluateNudgesRoute
   ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
   ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
-  ApiV1ChatSendRoute: typeof ApiV1ChatSendRoute
+  ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRoute
   ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRoute
 }
 
@@ -799,11 +799,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ChatHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/chat/send': {
-      id: '/api/v1/chat/send'
-      path: '/api/v1/chat/send'
-      fullPath: '/api/v1/chat/send'
-      preLoaderRoute: typeof ApiV1ChatSendRouteImport
+    '/api/v1/chat/messages': {
+      id: '/api/v1/chat/messages'
+      path: '/api/v1/chat/messages'
+      fullPath: '/api/v1/chat/messages'
+      preLoaderRoute: typeof ApiV1ChatMessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/chat/threads': {
@@ -894,7 +894,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEvaluateNudgesRoute: ApiPublicHooksEvaluateNudgesRoute,
   ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
   ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
-  ApiV1ChatSendRoute: ApiV1ChatSendRoute,
+  ApiV1ChatMessagesRoute: ApiV1ChatMessagesRoute,
   ApiV1ChatThreadsRoute: ApiV1ChatThreadsRoute,
 }
 export const routeTree = rootRouteImport

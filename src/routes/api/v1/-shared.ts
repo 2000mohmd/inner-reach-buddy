@@ -2,10 +2,15 @@
 //
 // These routes are a thin, Bearer-JWT-authenticated JSON surface for the
 // separate mobile app. They do NOT re-implement business logic: each handler
-// forwards to the same createServerFn used by the web app. Auth flows through
-// automatically — the server fn's requireSupabaseAuth middleware reads the
-// Authorization header off the current request.
+// forwards to the same server-side logic the web app uses.
+//
+// Auth: every protected route calls `requireAuth(request)` first — an explicit,
+// independently-tested bearer-token check (see src/lib/api-auth.server.ts). The
+// wrapped createServerFns also run their own `requireSupabaseAuth`; the explicit
+// check here fails fast with a clean 401 before any work and keeps auth
+// behaviour testable without a running server.
 import { z } from "zod";
+import { authenticateBearer, type ApiAuthSuccess } from "@/lib/api-auth.server";
 
 export function json(body: unknown, init: number | ResponseInit = 200): Response {
   const responseInit: ResponseInit = typeof init === "number" ? { status: init } : init;
@@ -37,6 +42,17 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+/**
+ * Resolve the caller from the `Authorization: Bearer <jwt>` header, or throw an
+ * ApiError(401). Returns `{ supabase, userId }` — the same shape the web RPC
+ * middleware produces — so handlers are transport-agnostic.
+ */
+export async function requireAuth(request: Request): Promise<ApiAuthSuccess> {
+  const result = await authenticateBearer(request);
+  if (!result.ok) throw new ApiError(result.status, result.error);
+  return result;
 }
 
 /**
