@@ -137,6 +137,8 @@ export type Database = {
         Row: {
           count: number
           created_at: string
+          day_count: number
+          day_start: string | null
           updated_at: string
           user_id: string
           window_start: string
@@ -144,6 +146,8 @@ export type Database = {
         Insert: {
           count?: number
           created_at?: string
+          day_count?: number
+          day_start?: string | null
           updated_at?: string
           user_id: string
           window_start?: string
@@ -151,6 +155,8 @@ export type Database = {
         Update: {
           count?: number
           created_at?: string
+          day_count?: number
+          day_start?: string | null
           updated_at?: string
           user_id?: string
           window_start?: string
@@ -176,6 +182,42 @@ export type Database = {
           created_at?: string
           id?: string
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_usage: {
+        Row: {
+          day: string
+          day_input_tokens: number
+          day_messages: number
+          day_output_tokens: number
+          lifetime_input_tokens: number
+          lifetime_messages: number
+          lifetime_output_tokens: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          day_input_tokens?: number
+          day_messages?: number
+          day_output_tokens?: number
+          lifetime_input_tokens?: number
+          lifetime_messages?: number
+          lifetime_output_tokens?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          day?: string
+          day_input_tokens?: number
+          day_messages?: number
+          day_output_tokens?: number
+          lifetime_input_tokens?: number
+          lifetime_messages?: number
+          lifetime_output_tokens?: number
           updated_at?: string
           user_id?: string
         }
@@ -558,6 +600,45 @@ export type Database = {
         }
         Relationships: []
       }
+      job_queue: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          dead_lettered: boolean
+          id: string
+          kind: string
+          last_error: string | null
+          locked_at: string | null
+          payload: Json
+          run_after: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          dead_lettered?: boolean
+          id?: string
+          kind: string
+          last_error?: string | null
+          locked_at?: string | null
+          payload?: Json
+          run_after?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          dead_lettered?: boolean
+          id?: string
+          kind?: string
+          last_error?: string | null
+          locked_at?: string | null
+          payload?: Json
+          run_after?: string
+        }
+        Relationships: []
+      }
       mood_logs: {
         Row: {
           created_at: string
@@ -806,6 +887,24 @@ export type Database = {
         }
         Relationships: []
       }
+      sweep_state: {
+        Row: {
+          cursor_value: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          cursor_value?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          cursor_value?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       thread_summaries: {
         Row: {
           created_at: string
@@ -951,6 +1050,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_jobs: {
+        Args: { p_limit: number }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          dead_lettered: boolean
+          id: string
+          kind: string
+          last_error: string | null
+          locked_at: string | null
+          payload: Json
+          run_after: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "job_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
