@@ -2,11 +2,7 @@
 // with native Claude tool use. The deterministic crisis gate (detectCrisis in
 // crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
-import {
-  callCompanionModel,
-  type LlmContentBlock,
-  type LlmMessage,
-} from "./llm-provider.server";
+import { callCompanionModel, type LlmContentBlock, type LlmMessage } from "./llm-provider.server";
 import {
   CHAT_TOOLS,
   NUDGE_TOOLS,
@@ -19,7 +15,6 @@ import {
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
 const MAX_TOOL_ITERATIONS = 3;
-
 
 export type CompanionContext = {
   preferredName: string | null;
@@ -39,7 +34,6 @@ export type CompanionContext = {
   dailyPromptResponses?: { prompt: string; response: string; when: string }[];
 };
 
-
 const QUICK_ACTION_GUIDANCE: Record<string, string> = {
   anxious:
     "The person selected 'I'm feeling anxious'. Start by slowing the pace: validate the anxiety, then offer one small, concrete regulating step (breath, body, or naming what's happening) before any exploration.",
@@ -49,8 +43,7 @@ const QUICK_ACTION_GUIDANCE: Record<string, string> = {
     "The person selected 'I need a grounding exercise'. Guide one short grounding practice step by step (e.g. 5-4-3-2-1 senses or feet-on-floor), one instruction per line, and check in at the end.",
   sleep:
     "The person selected 'I can't sleep'. Keep the reply short, low-stimulation and soothing. Offer one wind-down practice and avoid problem-solving spirals.",
-  vent:
-    "The person selected 'I just want to vent'. Mostly listen and reflect. Do not offer exercises or advice unless they ask.",
+  vent: "The person selected 'I just want to vent'. Mostly listen and reflect. Do not offer exercises or advice unless they ask.",
 };
 
 export function buildSystemPrompt(ctx: CompanionContext): string {
@@ -81,7 +74,6 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     "--- PERSON CONTEXT ---",
   ];
 
-
   if (ctx.preferredName) lines.push(`Preferred name: ${ctx.preferredName}`);
   if (ctx.accountType === "teen") {
     lines.push(
@@ -93,8 +85,7 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
   if (ctx.stressors.length) lines.push(`Current stressors: ${ctx.stressors.join(", ")}`);
   if (ctx.communicationPreference)
     lines.push(`How they like to be spoken to: ${ctx.communicationPreference}`);
-  if (ctx.topicsToAvoid)
-    lines.push(`NEVER bring up these topics unprompted: ${ctx.topicsToAvoid}`);
+  if (ctx.topicsToAvoid) lines.push(`NEVER bring up these topics unprompted: ${ctx.topicsToAvoid}`);
   if (ctx.inProfessionalCare)
     lines.push(
       "They are already working with a professional — support that relationship, never contradict or replace it.",
@@ -169,7 +160,6 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     "- Never announce that you are using a tool. Just do it, then mention plainly what you saved or opened.",
   );
 
-
   if (ctx.quickAction && QUICK_ACTION_GUIDANCE[ctx.quickAction]) {
     lines.push("", `QUICK ACTION: ${QUICK_ACTION_GUIDANCE[ctx.quickAction]}`);
   } else if (ctx.history.length === 0) {
@@ -179,13 +169,17 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     );
   }
 
-
   return lines.join("\n");
 }
 
 type AnthropicContentBlock = LlmContentBlock;
 type AnthropicMessage = LlmMessage;
-type AnthropicResponse = { content?: AnthropicContentBlock[]; stop_reason?: string | null };
+type AnthropicResponse = {
+  content?: AnthropicContentBlock[];
+  stop_reason?: string | null;
+  usage: { inputTokens: number; outputTokens: number };
+  provider: "openrouter" | "lovable";
+};
 
 /** Anthropic first, automatic Lovable AI fallback — same tools either way. */
 async function callAnthropic(
@@ -196,7 +190,6 @@ async function callAnthropic(
   return callCompanionModel({ model: MODEL, maxTokens: MAX_TOKENS, system, messages, tools });
 }
 
-
 function collectText(blocks: AnthropicContentBlock[] | undefined) {
   return (blocks ?? [])
     .filter((block): block is { type: "text"; text: string } => block.type === "text")
@@ -205,7 +198,19 @@ function collectText(blocks: AnthropicContentBlock[] | undefined) {
     .trim();
 }
 
-export type CompanionReply = { text: string; actions: CompanionAction[] };
+export type CompanionUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  provider: string;
+  model: string;
+};
+
+export type CompanionReply = {
+  text: string;
+  actions: CompanionAction[];
+  /** Summed token usage across every provider call in the tool loop. */
+  usage: CompanionUsage;
+};
 
 /**
  * Runs the standard Anthropic tool-use loop: send with tools, execute any
@@ -229,20 +234,37 @@ export async function generateCompanionReply(
 
   const actions: CompanionAction[] = [];
   let lastText = "";
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let provider = "openrouter";
+  const reply = (text: string): CompanionReply => ({
+    text,
+    actions,
+    usage: { inputTokens, outputTokens, provider, model: MODEL },
+  });
 
   for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
     const payload = await callAnthropic(system, messages, CHAT_TOOLS);
+    inputTokens += payload.usage.inputTokens;
+    outputTokens += payload.usage.outputTokens;
+    provider = payload.provider;
     const blocks = payload.content ?? [];
     const text = collectText(blocks);
     if (text) lastText = text;
 
     const toolUses = blocks.filter(
-      (block): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+      (
+        block,
+      ): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
         block.type === "tool_use",
     );
 
-    if (payload.stop_reason !== "tool_use" || toolUses.length === 0 || iteration === MAX_TOOL_ITERATIONS) {
-      if (lastText) return { text: lastText, actions };
+    if (
+      payload.stop_reason !== "tool_use" ||
+      toolUses.length === 0 ||
+      iteration === MAX_TOOL_ITERATIONS
+    ) {
+      if (lastText) return reply(lastText);
       break;
     }
 
@@ -263,7 +285,7 @@ export async function generateCompanionReply(
     messages.push({ role: "user", content: results });
   }
 
-  if (lastText) return { text: lastText, actions };
+  if (lastText) return reply(lastText);
   throw new Error("The companion couldn't reply just now. Please try again.");
 }
 
@@ -301,7 +323,9 @@ export async function generateNudgeMessage(
     if (text) lastText = text;
 
     const toolUses = blocks.filter(
-      (block): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+      (
+        block,
+      ): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
         block.type === "tool_use",
     );
 
@@ -332,4 +356,3 @@ export async function generateNudgeMessage(
   if (!lastText) throw new Error("Could not generate a nudge right now.");
   return lastText;
 }
-

@@ -43,6 +43,8 @@ export type LlmResponse = {
   stop_reason: string | null;
   /** Which provider actually answered — useful for logs. */
   provider: "openrouter" | "lovable";
+  /** Token counts for this single call (0 when the provider omits `usage`). */
+  usage: { inputTokens: number; outputTokens: number };
 };
 
 export class LlmError extends Error {}
@@ -132,10 +134,7 @@ function toGatewayTools(tools: LlmTool[]) {
   }));
 }
 
-function parseOpenAiPayload(
-  payload: unknown,
-  provider: LlmResponse["provider"],
-): LlmResponse {
+function parseOpenAiPayload(payload: unknown, provider: LlmResponse["provider"]): LlmResponse {
   const typed = payload as {
     choices?: {
       finish_reason?: string;
@@ -144,6 +143,7 @@ function parseOpenAiPayload(
         tool_calls?: { id: string; function?: { name?: string; arguments?: string } }[];
       };
     }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
   };
 
   const choice = typed.choices?.[0];
@@ -165,6 +165,10 @@ function parseOpenAiPayload(
     content: blocks,
     stop_reason: hasToolUse ? "tool_use" : (choice?.finish_reason ?? null),
     provider,
+    usage: {
+      inputTokens: typed.usage?.prompt_tokens ?? 0,
+      outputTokens: typed.usage?.completion_tokens ?? 0,
+    },
   };
 }
 
