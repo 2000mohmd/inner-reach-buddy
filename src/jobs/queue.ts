@@ -32,10 +32,7 @@ type JobRow = { id: string; kind: string; payload: Job; attempts: number };
 export async function enqueueJob(fallbackClient: ServiceClient, job: Job): Promise<void> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // `job_queue` is not in the generated Database types until `supabase gen
-    // types` is re-run after the migration.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await supabaseAdmin
       .from("job_queue")
       .insert({ kind: job.kind, payload: job });
     if (error) throw error;
@@ -65,14 +62,18 @@ export async function drainJobs(
   opts: { budgetMs: number; max: number },
 ): Promise<DrainResult> {
   const deadline = Date.now() + Math.max(0, opts.budgetMs);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = admin as any;
+  const db = admin;
 
   let claimedRows: JobRow[] = [];
   try {
     const { data, error } = await db.rpc("claim_jobs", { p_limit: Math.max(0, opts.max) });
     if (error) throw error;
-    claimedRows = (data ?? []) as JobRow[];
+    claimedRows = (data ?? []).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      attempts: row.attempts,
+      payload: row.payload as unknown as Job,
+    }));
   } catch (err) {
     console.error("claim_jobs unavailable — job queue not drained this sweep", err);
     return { claimed: 0, completed: 0, failed: 0, timedOut: false };

@@ -78,8 +78,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
         }
 
         // --- 3. Per-user coaching pass, cursor + budget bounded. ---
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const kv = supabaseAdmin as any;
+        const kv = supabaseAdmin;
         const since = new Date(Date.now() - ACTIVE_WINDOW_DAYS * 86_400_000).toISOString();
 
         let cursor: string | null = null;
