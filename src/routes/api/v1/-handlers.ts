@@ -3,7 +3,7 @@
 // `(request: Request) => Promise<Response>` function that can be unit-tested
 // without a running server. The route files under this folder are thin bindings.
 
-import { sendMessage } from "@/lib/chat.functions";
+import { sendMessageCore } from "@/lib/chat.functions";
 import { CRISIS_DISCLAIMER, crisisCopy } from "@/lib/crisis";
 import { normalizeLanguage } from "@/lib/i18n/languages";
 import { authenticateBearer } from "@/lib/api-auth.server";
@@ -26,16 +26,16 @@ import { ApiError, handle, json, requireAuth } from "./-shared";
  */
 export function handleChatMessages(request: Request): Promise<Response> {
   return handle(async () => {
-    await requireAuth(request);
+    const { supabase, userId } = await requireAuth(request);
     let body: unknown;
     try {
       body = await request.json();
     } catch {
       throw new ApiError(400, "Invalid JSON body");
     }
-    // `sendMessage` validates the shape (thread_id/content/quick_action) and
+    // sendMessageCore validates the shape (thread_id/content/quick_action) and
     // runs the crisis gate before the rate limiter. We add nothing before it.
-    const result = await sendMessage({ data: body });
+    const result = await sendMessageCore(supabase, userId, body);
     return json(result);
   });
 }

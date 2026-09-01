@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendMessageMock = vi.fn();
 vi.mock("@/lib/chat.functions", () => ({
-  sendMessage: (args: unknown) => sendMessageMock(args),
+  sendMessageCore: (...args: unknown[]) => sendMessageMock(...args),
 }));
 
 let authImpl: (request: Request) => Promise<unknown>;
@@ -40,7 +40,7 @@ beforeEach(() => {
 // --- POST /api/v1/chat/messages -------------------------------------------------
 
 describe("handleChatMessages", () => {
-  it("passes the body straight to sendMessage and returns its result verbatim", async () => {
+  it("passes the body straight to sendMessageCore and returns its result verbatim", async () => {
     const normal = {
       thread_id: "t-1",
       userMessage: {
@@ -57,7 +57,11 @@ describe("handleChatMessages", () => {
     const res = await handleChatMessages(post({ thread_id: "t-1", content: "hi" }));
     expect(res.status).toBe(200);
     expect(sendMessageMock).toHaveBeenCalledTimes(1);
-    expect(sendMessageMock).toHaveBeenCalledWith({ data: { thread_id: "t-1", content: "hi" } });
+    // (authedClient, userId, rawBody) — no reshaping of the body.
+    expect(sendMessageMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      thread_id: "t-1",
+      content: "hi",
+    });
     expect(await res.json()).toEqual(normal);
   });
 

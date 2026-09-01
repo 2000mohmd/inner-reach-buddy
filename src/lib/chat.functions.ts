@@ -5,6 +5,8 @@ import { triageCrisis, type CrisisResponse } from "./crisis";
 import { QUICK_ACTION_IDS } from "./quick-actions";
 import { getRateLimiter, RATE_LIMIT_MESSAGE } from "./rate-limit";
 import type { CompanionAction } from "./companion-tools.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const HISTORY_LIMIT = 20;
 
@@ -112,265 +114,283 @@ export type SendMessageResult = {
     | (CrisisResponse & { id: string; created_at: string });
 };
 
-export const sendMessage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SendInput.parse(input))
-  .handler(async ({ data, context }): Promise<SendMessageResult> => {
-    const { supabase, userId } = context;
+/**
+ * The core of sendMessage, decoupled from transport. Both the web RPC
+ * (`sendMessage` below) and the mobile route (src/routes/api/v1/chat/messages.ts)
+ * call this with an already-authenticated Supabase client + userId, so the
+ * crisis gate / rate limiter / companion logic behaves identically regardless of
+ * which entry point the request came through.
+ *
+ * ORDERING GUARANTEE — DO NOT REORDER: the crisis gate (runCrisisGate) runs
+ * BEFORE the per-user rate limiter. Tested against runCrisisGate directly in
+ * crisis-gate.test.ts and through this function (via the mobile handler) in
+ * chat-messages-ordering.test.ts.
+ */
+export async function sendMessageCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: unknown,
+): Promise<SendMessageResult> {
+  const data = SendInput.parse(input);
 
-    // Resolve or create the thread.
-    let threadId = data.thread_id ?? null;
-    if (threadId) {
-      const owned = await supabase
-        .from("chat_threads")
-        .select("id")
-        .eq("id", threadId)
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (owned.error) throw owned.error;
-      if (!owned.data) throw new Error("Thread not found");
-    } else {
-      const created = await supabase
-        .from("chat_threads")
-        .insert({ user_id: userId, title: data.content.slice(0, 60) })
-        .select("id")
-        .single();
-      if (created.error) throw created.error;
-      threadId = created.data.id;
-    }
-
-    // --- Crisis gate: runs BEFORE any companion LLM call and BEFORE the
-    // per-user rate limiter (see crisis-gate.server.ts). DO NOT REORDER. ---
-    const triage = triageCrisis(data.content);
-
-    const savedUser = await supabase
-      .from("chat_messages")
-      .insert({
-        thread_id: threadId,
-        user_id: userId,
-        sender: "user",
-        content: data.content,
-        flagged_crisis: triage.matched.length > 0,
-        quick_action: data.quick_action ?? null,
-      })
-      .select("id, content, flagged_crisis, created_at")
+  // Resolve or create the thread.
+  let threadId = data.thread_id ?? null;
+  if (threadId) {
+    const owned = await supabase
+      .from("chat_threads")
+      .select("id")
+      .eq("id", threadId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (owned.error) throw owned.error;
+    if (!owned.data) throw new Error("Thread not found");
+  } else {
+    const created = await supabase
+      .from("chat_threads")
+      .insert({ user_id: userId, title: data.content.slice(0, 60) })
+      .select("id")
       .single();
-    if (savedUser.error) throw savedUser.error;
+    if (created.error) throw created.error;
+    threadId = created.data.id;
+  }
 
-    // Fetched in parallel with recentTurns so the crisis gate gets the user's
-    // locale (for localized crisis copy) without adding a round trip. A failure
-    // here just falls back to English copy — never blocks the gate.
-    const [recentTurns, profileLang] = await Promise.all([
-      supabase
-        .from("chat_messages")
-        .select("sender, content")
-        .eq("thread_id", threadId)
-        .eq("user_id", userId)
-        .neq("id", savedUser.data.id)
-        .order("created_at", { ascending: false })
-        .limit(2),
-      supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
-    ]);
+  // --- Crisis gate: runs BEFORE any companion LLM call and BEFORE the
+  // per-user rate limiter (see crisis-gate.server.ts). DO NOT REORDER. ---
+  const triage = triageCrisis(data.content);
 
-    const { runCrisisGate } = await import("./crisis-gate.server");
-    const gated = await runCrisisGate(supabase, {
-      userId,
-      threadId,
-      messageId: savedUser.data.id,
+  const savedUser = await supabase
+    .from("chat_messages")
+    .insert({
+      thread_id: threadId,
+      user_id: userId,
+      sender: "user",
       content: data.content,
-      language: profileLang.data?.language ?? null,
-      recentTurns: (recentTurns.data ?? [])
-        .reverse()
-        .map((row) => ({ sender: row.sender, content: row.content })),
-    });
+      flagged_crisis: triage.matched.length > 0,
+      quick_action: data.quick_action ?? null,
+    })
+    .select("id, content, flagged_crisis, created_at")
+    .single();
+  if (savedUser.error) throw savedUser.error;
 
-    if (gated) {
-      return {
-        thread_id: threadId,
-        userMessage: {
-          ...savedUser.data,
-          flagged_crisis: true,
-          sender: "user" as const,
-        },
-        reply: {
-          ...gated.crisis,
-          id: gated.systemMessage.id,
-          created_at: gated.systemMessage.created_at,
-        },
-      };
-    }
+  // Fetched in parallel with recentTurns so the crisis gate gets the user's
+  // locale (for localized crisis copy) without adding a round trip. A failure
+  // here just falls back to English copy — never blocks the gate.
+  const [recentTurns, profileLang] = await Promise.all([
+    supabase
+      .from("chat_messages")
+      .select("sender, content")
+      .eq("thread_id", threadId)
+      .eq("user_id", userId)
+      .neq("id", savedUser.data.id)
+      .order("created_at", { ascending: false })
+      .limit(2),
+    supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
+  ]);
 
-    // --- Per-user rate limit (normal chat path only; never gates crisis).
-    // Both crisis checks above have already run and come up clear. Enforces a
-    // short sliding window AND a daily message cap; fails open. ---
-    const rateLimiter = getRateLimiter(supabase);
-    const limit = await rateLimiter.checkAndConsume(userId);
-    if (!limit.allowed) {
-      const savedLimit = await supabase
-        .from("chat_messages")
-        .insert({
-          thread_id: threadId,
-          user_id: userId,
-          sender: "system",
-          content: limit.message ?? RATE_LIMIT_MESSAGE,
-        })
-        .select("id, content, created_at")
-        .single();
-      if (savedLimit.error) throw savedLimit.error;
+  const { runCrisisGate } = await import("./crisis-gate.server");
+  const gated = await runCrisisGate(supabase, {
+    userId,
+    threadId,
+    messageId: savedUser.data.id,
+    content: data.content,
+    language: profileLang.data?.language ?? null,
+    recentTurns: (recentTurns.data ?? [])
+      .reverse()
+      .map((row) => ({ sender: row.sender, content: row.content })),
+  });
 
-      return {
-        thread_id: threadId,
-        userMessage: { ...savedUser.data, sender: "user" as const },
-        reply: {
-          type: "message",
-          id: savedLimit.data.id,
-          content: savedLimit.data.content,
-          created_at: savedLimit.data.created_at,
-          actions: [],
-        },
-      };
-    }
-
-    // --- Cross-session memory: summarizing the thread they just left is slow
-    // (an LLM call plus the Phase 11 session-drift sweep) and must never delay
-    // this reply. Enqueue it and move on — enqueueJob does a fast insert, or an
-    // immediate non-blocking fallback. The per-message crisis gate has already
-    // run above, before the rate limiter; the drift sweep it defers is post-hoc
-    // and best-effort, so deferring it does not weaken crisis handling. ---
-    const { fetchRecentSummaries } = await import("./thread-summary.server");
-    try {
-      const { enqueueJob } = await import("@/jobs");
-      await enqueueJob(supabase, {
-        kind: "summarize_thread",
-        userId,
-        sinceThreadId: threadId,
-      });
-    } catch (error) {
-      console.error("thread summary enqueue failed", error);
-    }
-
-    // --- Normal path: assemble personalized context, then call the model ---
-
-    const { getScreenersDue } = await import("./screeners.server");
-    const { computeEngagementStreak } = await import("./streak.server");
-
-    const [profile, intro, moods, history, pastSummaries, screeners, streakDays, dailyPrompts] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select("preferred_name, account_type, ai_context_consent")
-          .eq("id", userId)
-          .maybeSingle(),
-        supabase
-          .from("user_profiles")
-          .select(
-            "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
-          )
-          .eq("user_id", userId)
-          .maybeSingle(),
-        supabase
-          .from("mood_logs")
-          .select("score, note, tags, logged_at")
-          .eq("user_id", userId)
-          .order("logged_at", { ascending: false })
-          .limit(7),
-        supabase
-          .from("chat_messages")
-          .select("sender, content, created_at")
-          .eq("thread_id", threadId)
-          .eq("user_id", userId)
-          .neq("id", savedUser.data.id)
-          .order("created_at", { ascending: false })
-          .limit(HISTORY_LIMIT),
-        fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
-        getScreenersDue(supabase, userId).catch(() => []),
-        computeEngagementStreak(supabase, userId).catch(() => 0),
-        supabase
-          .from("daily_prompt_responses")
-          .select("response_text, responded_at, daily_prompts(prompt_text)")
-          .eq("user_id", userId)
-          .order("responded_at", { ascending: false })
-          .limit(3),
-      ]);
-
-    const consented = profile.data?.ai_context_consent !== false;
-    const { generateCompanionReply } = await import("./ai-companion.server");
-
-    const reply = await generateCompanionReply(
-      {
-        preferredName: profile.data?.preferred_name ?? null,
-        accountType: profile.data?.account_type ?? null,
-        introText: consented ? (intro.data?.intro_text ?? null) : null,
-        goals: consented ? (intro.data?.goals ?? []) : [],
-        stressors: consented ? (intro.data?.stressors ?? []) : [],
-        communicationPreference: intro.data?.communication_preference ?? null,
-        topicsToAvoid: intro.data?.topics_to_avoid ?? null,
-        inProfessionalCare: intro.data?.in_professional_care ?? false,
-        recentMoods: consented ? (moods.data ?? []) : [],
-        history: (history.data ?? [])
-          .filter((entry) => entry.sender !== "system")
-          .reverse()
-          .map((entry) => ({ sender: entry.sender, content: entry.content })),
-        quickAction: data.quick_action ?? null,
-        pastSummaries: consented ? pastSummaries : [],
-        streakDays,
-        dailyPromptResponses: consented
-          ? (dailyPrompts.data ?? []).map((row) => ({
-              prompt: (row.daily_prompts as { prompt_text: string } | null)?.prompt_text ?? "",
-              response: row.response_text,
-              when: row.responded_at.slice(0, 10),
-            }))
-          : [],
-        screenersDue: screeners.map((entry) => ({
-          label: entry.label,
-          due: entry.due,
-          lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
-        })),
+  if (gated) {
+    return {
+      thread_id: threadId,
+      userMessage: {
+        ...savedUser.data,
+        flagged_crisis: true,
+        sender: "user" as const,
       },
-      data.content,
-      { supabase, userId, threadId },
-    );
+      reply: {
+        ...gated.crisis,
+        id: gated.systemMessage.id,
+        created_at: gated.systemMessage.created_at,
+      },
+    };
+  }
 
-    // Token/cost counter — fire-and-forget, never blocks or fails the reply.
-    void rateLimiter.recordUsage(userId, {
-      inputTokens: reply.usage.inputTokens,
-      outputTokens: reply.usage.outputTokens,
-      provider: reply.usage.provider,
-      model: reply.usage.model,
-    });
-
-    // Make tool-driven actions visible in the transcript, never silent.
-    const actionLines = reply.actions.map((action) => `• ${action.summary}`);
-    const replyText = actionLines.length
-      ? `${reply.text}\n\n${actionLines.join("\n")}`
-      : reply.text;
-
-    const savedReply = await supabase
+  // --- Per-user rate limit (normal chat path only; never gates crisis).
+  // Both crisis checks above have already run and come up clear. Enforces a
+  // short sliding window AND a daily message cap; fails open. ---
+  const rateLimiter = getRateLimiter(supabase);
+  const limit = await rateLimiter.checkAndConsume(userId);
+  if (!limit.allowed) {
+    const savedLimit = await supabase
       .from("chat_messages")
       .insert({
         thread_id: threadId,
         user_id: userId,
-        sender: "assistant",
-        content: replyText,
+        sender: "system",
+        content: limit.message ?? RATE_LIMIT_MESSAGE,
       })
       .select("id, content, created_at")
       .single();
-    if (savedReply.error) throw savedReply.error;
-
-    await supabase
-      .from("chat_threads")
-      .update({ updated_at: new Date().toISOString() })
-      .eq("id", threadId);
+    if (savedLimit.error) throw savedLimit.error;
 
     return {
       thread_id: threadId,
       userMessage: { ...savedUser.data, sender: "user" as const },
       reply: {
         type: "message",
-        id: savedReply.data.id,
-        content: savedReply.data.content,
-        created_at: savedReply.data.created_at,
-        actions: reply.actions,
+        id: savedLimit.data.id,
+        content: savedLimit.data.content,
+        created_at: savedLimit.data.created_at,
+        actions: [],
       },
     };
+  }
+
+  // --- Cross-session memory: summarizing the thread they just left is slow
+  // (an LLM call plus the Phase 11 session-drift sweep) and must never delay
+  // this reply. Enqueue it and move on — enqueueJob does a fast insert, or an
+  // immediate non-blocking fallback. The per-message crisis gate has already
+  // run above, before the rate limiter; the drift sweep it defers is post-hoc
+  // and best-effort, so deferring it does not weaken crisis handling. ---
+  const { fetchRecentSummaries } = await import("./thread-summary.server");
+  try {
+    const { enqueueJob } = await import("@/jobs");
+    await enqueueJob(supabase, {
+      kind: "summarize_thread",
+      userId,
+      sinceThreadId: threadId,
+    });
+  } catch (error) {
+    console.error("thread summary enqueue failed", error);
+  }
+
+  // --- Normal path: assemble personalized context, then call the model ---
+
+  const { getScreenersDue } = await import("./screeners.server");
+  const { computeEngagementStreak } = await import("./streak.server");
+
+  const [profile, intro, moods, history, pastSummaries, screeners, streakDays, dailyPrompts] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("preferred_name, account_type, ai_context_consent")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select(
+          "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
+        )
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("mood_logs")
+        .select("score, note, tags, logged_at")
+        .eq("user_id", userId)
+        .order("logged_at", { ascending: false })
+        .limit(7),
+      supabase
+        .from("chat_messages")
+        .select("sender, content, created_at")
+        .eq("thread_id", threadId)
+        .eq("user_id", userId)
+        .neq("id", savedUser.data.id)
+        .order("created_at", { ascending: false })
+        .limit(HISTORY_LIMIT),
+      fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
+      getScreenersDue(supabase, userId).catch(() => []),
+      computeEngagementStreak(supabase, userId).catch(() => 0),
+      supabase
+        .from("daily_prompt_responses")
+        .select("response_text, responded_at, daily_prompts(prompt_text)")
+        .eq("user_id", userId)
+        .order("responded_at", { ascending: false })
+        .limit(3),
+    ]);
+
+  const consented = profile.data?.ai_context_consent !== false;
+  const { generateCompanionReply } = await import("./ai-companion.server");
+
+  const reply = await generateCompanionReply(
+    {
+      preferredName: profile.data?.preferred_name ?? null,
+      accountType: profile.data?.account_type ?? null,
+      introText: consented ? (intro.data?.intro_text ?? null) : null,
+      goals: consented ? (intro.data?.goals ?? []) : [],
+      stressors: consented ? (intro.data?.stressors ?? []) : [],
+      communicationPreference: intro.data?.communication_preference ?? null,
+      topicsToAvoid: intro.data?.topics_to_avoid ?? null,
+      inProfessionalCare: intro.data?.in_professional_care ?? false,
+      recentMoods: consented ? (moods.data ?? []) : [],
+      history: (history.data ?? [])
+        .filter((entry) => entry.sender !== "system")
+        .reverse()
+        .map((entry) => ({ sender: entry.sender, content: entry.content })),
+      quickAction: data.quick_action ?? null,
+      pastSummaries: consented ? pastSummaries : [],
+      streakDays,
+      dailyPromptResponses: consented
+        ? (dailyPrompts.data ?? []).map((row) => ({
+            prompt: (row.daily_prompts as { prompt_text: string } | null)?.prompt_text ?? "",
+            response: row.response_text,
+            when: row.responded_at.slice(0, 10),
+          }))
+        : [],
+      screenersDue: screeners.map((entry) => ({
+        label: entry.label,
+        due: entry.due,
+        lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
+      })),
+    },
+    data.content,
+    { supabase, userId, threadId },
+  );
+
+  // Token/cost counter — fire-and-forget, never blocks or fails the reply.
+  void rateLimiter.recordUsage(userId, {
+    inputTokens: reply.usage.inputTokens,
+    outputTokens: reply.usage.outputTokens,
+    provider: reply.usage.provider,
+    model: reply.usage.model,
   });
+
+  // Make tool-driven actions visible in the transcript, never silent.
+  const actionLines = reply.actions.map((action) => `• ${action.summary}`);
+  const replyText = actionLines.length ? `${reply.text}\n\n${actionLines.join("\n")}` : reply.text;
+
+  const savedReply = await supabase
+    .from("chat_messages")
+    .insert({
+      thread_id: threadId,
+      user_id: userId,
+      sender: "assistant",
+      content: replyText,
+    })
+    .select("id, content, created_at")
+    .single();
+  if (savedReply.error) throw savedReply.error;
+
+  await supabase
+    .from("chat_threads")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", threadId);
+
+  return {
+    thread_id: threadId,
+    userMessage: { ...savedUser.data, sender: "user" as const },
+    reply: {
+      type: "message",
+      id: savedReply.data.id,
+      content: savedReply.data.content,
+      created_at: savedReply.data.created_at,
+      actions: reply.actions,
+    },
+  };
+}
+
+export const sendMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => SendInput.parse(input))
+  .handler(({ data, context }): Promise<SendMessageResult> =>
+    sendMessageCore(context.supabase, context.userId, data),
+  );

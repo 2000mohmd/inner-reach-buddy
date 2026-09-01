@@ -51,10 +51,15 @@ In Flutter that token is `Supabase.instance.client.auth.currentSession!.accessTo
 
 ### `POST /api/v1/chat/messages`
 
-Wraps `sendMessage` (`src/lib/chat.functions.ts`) **as-is**. The deterministic
-crisis gate + semantic backstop run **before** the per-user rate limiter, inside
-`sendMessage`; this endpoint adds nothing ahead of that call. Guarantee is
-covered by `src/lib/crisis-gate.test.ts` and by `src/routes/api/v1/-handlers.test.ts`.
+Calls `sendMessageCore` (`src/lib/chat.functions.ts`) — the transport-decoupled
+core that the web RPC `sendMessage` also calls, so behaviour is identical on both
+paths. The deterministic crisis gate + semantic backstop run **before** the
+per-user rate limiter; this endpoint adds nothing ahead of that call. The
+ordering guarantee is covered three ways: `runCrisisGate` directly
+(`crisis-gate.test.ts`), the HTTP wrapper adds no pre-check
+(`src/routes/api/v1/-handlers.test.ts`), and end-to-end through this endpoint
+with a client that throws if `chat_rate_limits` is read
+(`src/lib/chat-messages-ordering.test.ts`).
 
 **Auth:** required.
 
@@ -280,6 +285,9 @@ this pass:
 ## Changelog
 
 - **Phase 1** — `authenticateBearer` + `POST /api/v1/chat/messages` +
-  `GET /api/v1/crisis-resources`. Tests: `src/lib/api-auth.test.ts`,
-  `src/routes/api/v1/-handlers.test.ts`. `POST /api/v1/chat/send` (earlier
+  `GET /api/v1/crisis-resources`. `sendMessage`'s body was extracted to
+  `sendMessageCore(supabase, userId, input)` so both transports share one code
+  path with no ambient-context dependency. Tests: `src/lib/api-auth.test.ts` (11),
+  `src/routes/api/v1/-handlers.test.ts` (10),
+  `src/lib/chat-messages-ordering.test.ts` (2). `POST /api/v1/chat/send` (earlier
   scaffold) renamed to `POST /api/v1/chat/messages`.
