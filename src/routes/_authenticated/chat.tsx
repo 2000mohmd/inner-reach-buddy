@@ -127,7 +127,7 @@ function ChatPage() {
 
   // Chat is the default authenticated landing page, so it also carries the
   // onboarding guard the old dashboard landing had.
-  const { data: profileData } = useQuery({
+  const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => fetchProfile(),
   });
@@ -295,9 +295,11 @@ function ChatPage() {
                   <Leaf className="size-6 text-primary" aria-hidden />
                 </span>
                 <h2 className="font-display text-3xl">
-                  {preferredName
-                    ? t("chat.greetingNamed", { name: preferredName })
-                    : t("chat.greeting")}
+                  {profileLoading
+                    ? " "
+                    : preferredName
+                      ? t("chat.greetingNamed", { name: preferredName })
+                      : t("chat.greeting")}
                 </h2>
                 <p className="max-w-sm text-sm text-muted-foreground">{t("chat.emptyPrompt")}</p>
                 <div className="w-full max-w-md pt-4 text-left">

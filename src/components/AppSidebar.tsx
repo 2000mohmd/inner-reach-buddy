@@ -49,7 +49,7 @@ export function AppSidebar({
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const fetchProfile = useServerFn(getMyProfile);
-  const { data: profileData } = useQuery({
+  const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => fetchProfile(),
   });
@@ -136,12 +136,12 @@ export function AppSidebar({
         }`}
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-          {(preferredName ?? "K").slice(0, 2).toUpperCase()}
+          {profileLoading ? "" : (preferredName ?? "K").slice(0, 2).toUpperCase()}
         </span>
         {open && (
           <>
             <span className="min-w-0 flex-1 truncate text-sm">
-              {preferredName ?? t("nav.yourAccount")}
+              {profileLoading ? "" : (preferredName ?? t("nav.yourAccount"))}
             </span>
             <button
               type="button"

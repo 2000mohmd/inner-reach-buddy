@@ -1,8 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Leaf, MessageCircleHeart, LineChart, Sparkles, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SafetyFooter } from "@/components/SafetyFooter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -33,6 +35,16 @@ const PILLARS = [
 
 function Index() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  // Signed-in users who land here (e.g. the "Back" link on /crisis and /legal)
+  // are sent to the app, mirroring /auth. Keeps "Back to home" correct for both.
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/chat", replace: true });
+    });
+  }, [navigate]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex justify-end px-6 pt-4">
