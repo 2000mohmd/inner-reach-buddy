@@ -62,14 +62,18 @@ export async function drainJobs(
   opts: { budgetMs: number; max: number },
 ): Promise<DrainResult> {
   const deadline = Date.now() + Math.max(0, opts.budgetMs);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = admin as any;
+  const db = admin;
 
   let claimedRows: JobRow[] = [];
   try {
     const { data, error } = await db.rpc("claim_jobs", { p_limit: Math.max(0, opts.max) });
     if (error) throw error;
-    claimedRows = (data ?? []) as JobRow[];
+    claimedRows = (data ?? []).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      attempts: row.attempts,
+      payload: row.payload as unknown as Job,
+    }));
   } catch (err) {
     console.error("claim_jobs unavailable — job queue not drained this sweep", err);
     return { claimed: 0, completed: 0, failed: 0, timedOut: false };
