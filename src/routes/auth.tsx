@@ -175,7 +175,18 @@ function AuthPage() {
                     >
                       {mode === "signup" ? "Create account" : "Sign in"}
                     </Button>
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleForgotPassword()}
+                        className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                      >
+                        {resetSent ? "Reset link sent — send again" : "Forgot your password?"}
+                      </button>
+                    )}
                   </TabsContent>
+
                 ))}
               </Tabs>
             )}
