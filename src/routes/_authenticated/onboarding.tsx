@@ -147,7 +147,7 @@ function OnboardingPage() {
     <div className="flex min-h-screen flex-col breathe-gradient">
       <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-12">
         <div className="mb-8 flex items-center gap-2 font-display text-xl">
-          <Leaf className="size-5 text-primary" aria-hidden />
+          <KalmLogo className="size-5 text-primary" aria-hidden />
           Kalm
         </div>
 

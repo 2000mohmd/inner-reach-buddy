@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Leaf, MessageCircleHeart, LineChart, Sparkles, ShieldCheck } from "lucide-react";
+import { MessageCircleHeart, LineChart, Sparkles, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SafetyFooter } from "@/components/SafetyFooter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -54,7 +54,7 @@ function Index() {
         <section className="breathe-gradient">
           <div className="mx-auto max-w-4xl px-6 pb-24 pt-10 text-center sm:pb-32">
             <p className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-sm text-muted-foreground">
-              <Leaf className="size-4 text-primary" aria-hidden />
+              <KalmLogo className="size-4 text-primary" aria-hidden />
               Kalm
             </p>
             <h1 className="text-balance text-5xl leading-[1.05] sm:text-6xl">
