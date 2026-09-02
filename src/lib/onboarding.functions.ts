@@ -174,6 +174,24 @@ export const completeOnboarding = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => OnboardingInput.parse(input))
   .handler(({ data, context }) => completeOnboardingCore(context.supabase, context.userId, data));
 
+/**
+ * Proactive-email opt-out (Phase 2). One boolean; the full per-type preferences
+ * screen comes later. `email_opt_out` is added by migration
+ * 20260902000400 and not yet in the generated types.
+ */
+export const setEmailOptOut = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ opt_out: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ email_opt_out: data.opt_out } as never)
+      .eq("id", userId);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 export const deleteMyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

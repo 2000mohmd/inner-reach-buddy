@@ -3,7 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteMyAccount, deleteMyData, getMyProfile } from "@/lib/onboarding.functions";
+import {
+  deleteMyAccount,
+  deleteMyData,
+  getMyProfile,
+  setEmailOptOut,
+} from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/AppShell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { YourDataSection } from "@/components/YourDataSection";
@@ -13,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +64,7 @@ function SettingsPage() {
   const fetchProfile = useServerFn(getMyProfile);
   const wipeData = useServerFn(deleteMyData);
   const removeAccount = useServerFn(deleteMyAccount);
+  const emailPref = useServerFn(setEmailOptOut);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data, isPending } = useQuery({
@@ -87,8 +94,17 @@ function SettingsPage() {
     onError: () => toast.error("We couldn't delete your account right now. Please try again."),
   });
 
+  // Distinct from `mutation` / `accountDeletion`: just flips the proactive-email
+  // opt-out. `email_opt_out` isn't in the generated profile type yet.
+  const emailMutation = useMutation({
+    mutationFn: (opt_out: boolean) => emailPref({ data: { opt_out } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-profile"] }),
+    onError: () => toast.error("We couldn't save that just now. Please try again."),
+  });
+
   const profile = data?.profile;
   const intro = data?.intro;
+  const emailOptOut = (profile as { email_opt_out?: boolean } | null)?.email_opt_out ?? false;
 
   return (
     <AppShell>
@@ -132,6 +148,24 @@ function SettingsPage() {
             <div className="mt-4">
               <LanguageSwitcher />
             </div>
+          </section>
+
+          <section className="surface-soft p-6">
+            <h2 className="text-lg">Emails from Kalm</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Occasional gentle check-ins and a weekly reflection, sent to your account email. They
+              never mention how you've been feeling — just a nudge to open the app. Crisis-safety
+              and account emails are always sent.
+            </p>
+            <label className="mt-4 flex items-center justify-between gap-4">
+              <span className="text-sm">Send me check-in &amp; weekly reflection emails</span>
+              <Switch
+                checked={!emailOptOut}
+                disabled={emailMutation.isPending || isPending}
+                onCheckedChange={(on) => emailMutation.mutate(!on)}
+                aria-label="Check-in and weekly reflection emails"
+              />
+            </label>
           </section>
 
           <section className="surface-soft p-6">

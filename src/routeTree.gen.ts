@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminCrisisRouteImport } from './routes/_authenticated/admin/crisis'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
+import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
 import { Route as ApiV1CrisisResourcesRouteImport } from './routes/api/v1/crisis-resources'
 import { Route as ApiV1EntitlementsRouteImport } from './routes/api/v1/entitlements'
 import { Route as ApiV1ExercisesRouteImport } from './routes/api/v1/exercises'
@@ -163,6 +164,11 @@ const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiPublicUnsubscribeRoute = ApiPublicUnsubscribeRouteImport.update({
+  id: '/api/public/unsubscribe',
+  path: '/api/public/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1CrisisResourcesRoute = ApiV1CrisisResourcesRouteImport.update({
   id: '/api/v1/crisis-resources',
   path: '/api/v1/crisis-resources',
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
   '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
   '/api/v1/exercises': typeof ApiV1ExercisesRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByTo {
   '/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
   '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
   '/api/v1/exercises': typeof ApiV1ExercisesRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/crisis': typeof AuthenticatedAdminCrisisRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/v1/crisis-resources': typeof ApiV1CrisisResourcesRoute
   '/api/v1/entitlements': typeof ApiV1EntitlementsRoute
   '/api/v1/exercises': typeof ApiV1ExercisesRoute
@@ -423,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin/crisis'
     | '/admin/support'
     | '/admin/team'
+    | '/api/public/unsubscribe'
     | '/api/v1/crisis-resources'
     | '/api/v1/entitlements'
     | '/api/v1/exercises'
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/admin/crisis'
     | '/admin/support'
     | '/admin/team'
+    | '/api/public/unsubscribe'
     | '/api/v1/crisis-resources'
     | '/api/v1/entitlements'
     | '/api/v1/exercises'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/crisis'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/team'
+    | '/api/public/unsubscribe'
     | '/api/v1/crisis-resources'
     | '/api/v1/entitlements'
     | '/api/v1/exercises'
@@ -539,6 +551,7 @@ export interface RootRouteChildren {
   CrisisRoute: typeof CrisisRoute
   LegalRoute: typeof LegalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
   ApiV1CrisisResourcesRoute: typeof ApiV1CrisisResourcesRoute
   ApiV1EntitlementsRoute: typeof ApiV1EntitlementsRoute
   ApiV1ExercisesRoute: typeof ApiV1ExercisesRoute
@@ -712,6 +725,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/team'
       preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/api/public/unsubscribe': {
+      id: '/api/public/unsubscribe'
+      path: '/api/public/unsubscribe'
+      fullPath: '/api/public/unsubscribe'
+      preLoaderRoute: typeof ApiPublicUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/v1/crisis-resources': {
       id: '/api/v1/crisis-resources'
@@ -943,6 +963,7 @@ const rootRouteChildren: RootRouteChildren = {
   CrisisRoute: CrisisRoute,
   LegalRoute: LegalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
   ApiV1CrisisResourcesRoute: ApiV1CrisisResourcesRoute,
   ApiV1EntitlementsRoute: ApiV1EntitlementsRoute,
   ApiV1ExercisesRoute: ApiV1ExercisesRoute,

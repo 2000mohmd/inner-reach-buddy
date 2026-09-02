@@ -77,6 +77,22 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
           console.error("job drain failed", jobError);
         }
 
+        // --- 2b. Deliver proactive email (nudges + weekly digests generated on
+        // earlier sweeps). Content-free "there's something for you in Kalm"
+        // only; respects profiles.email_opt_out; stamps emailed_at so nothing
+        // sends twice. Small budget slice — never starves the coaching pass. ---
+        let emails = { nudgeEmails: 0, digestEmails: 0, skippedOptOut: 0, failed: 0 };
+        try {
+          const { deliverProactiveEmails } = await import("@/lib/proactive-email.server");
+          emails = await deliverProactiveEmails(supabaseAdmin, {
+            budgetMs: Math.max(0, Math.floor(timeLeft() * 0.15)),
+            maxNudges: num("PROACTIVE_EMAIL_NUDGE_BATCH", 20),
+            maxDigests: num("PROACTIVE_EMAIL_DIGEST_BATCH", 20),
+          });
+        } catch (emailError) {
+          console.error("proactive email delivery failed", emailError);
+        }
+
         // --- 3. Per-user coaching pass, cursor + budget bounded. ---
         const kv = supabaseAdmin;
         const since = new Date(Date.now() - ACTIVE_WINDOW_DAYS * 86_400_000).toISOString();
@@ -198,6 +214,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
             recomputed,
             escalated,
             jobs,
+            emails,
           }),
           { headers: { "Content-Type": "application/json" } },
         );
