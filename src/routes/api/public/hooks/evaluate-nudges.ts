@@ -93,6 +93,25 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
           console.error("proactive email delivery failed", emailError);
         }
 
+        // --- 2c. Post-crisis follow-up: one gentle IN-APP check-in ~24h after a
+        // crisis event, once per event, skipped if the person was already
+        // active since. Off unless POST_CRISIS_FOLLOWUP_ENABLED is set. ---
+        let crisisFollowups = {
+          enabled: false,
+          sent: 0,
+          skippedActive: 0,
+          deferredBusy: 0,
+          failed: 0,
+        };
+        try {
+          const { deliverPostCrisisFollowups } = await import("@/lib/post-crisis-followup.server");
+          crisisFollowups = await deliverPostCrisisFollowups(supabaseAdmin, {
+            max: num("POST_CRISIS_FOLLOWUP_BATCH", 20),
+          });
+        } catch (followupError) {
+          console.error("post-crisis follow-up failed", followupError);
+        }
+
         // --- 3. Per-user coaching pass, cursor + budget bounded. ---
         const kv = supabaseAdmin;
         const since = new Date(Date.now() - ACTIVE_WINDOW_DAYS * 86_400_000).toISOString();
@@ -215,6 +234,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
             escalated,
             jobs,
             emails,
+            crisisFollowups,
           }),
           { headers: { "Content-Type": "application/json" } },
         );

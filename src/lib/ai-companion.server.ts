@@ -32,6 +32,8 @@ export type CompanionContext = {
   screenersDue?: { label: string; due: boolean; lastTaken: string | null }[];
   streakDays?: number;
   dailyPromptResponses?: { prompt: string; response: string; when: string }[];
+  /** Still-pending things the person said they'd try, from an earlier chat. */
+  openCommitments?: { description: string; ageDays: number }[];
 };
 
 const QUICK_ACTION_GUIDANCE: Record<string, string> = {
@@ -114,6 +116,19 @@ export function buildSystemPrompt(ctx: CompanionContext): string {
     lines.push(
       "You have summaries of recent past conversations above. Reference them naturally when relevant, the way someone remembers a past conversation with a person they check in with regularly — don't recite them verbatim or announce that you're reading notes.",
       "--- END RECENT PAST CONVERSATIONS ---",
+    );
+  }
+
+  if (ctx.openCommitments?.length) {
+    lines.push(
+      "",
+      "--- STILL OPEN FROM AN EARLIER CONVERSATION ---",
+      ...ctx.openCommitments.map(
+        (entry) =>
+          `"${entry.description}" — said about ${Math.round(entry.ageDays)} day(s) ago, not closed out yet.`,
+      ),
+      'These are things they once said they\'d try. Only bring one up if it flows naturally or they raise it themselves — the tone is a friend who genuinely remembered, never a task list or a check-up. If it didn\'t happen, be curious about what got in the way, never disappointed. If they tell you one is done, or that they\'ve let it go, call complete_commitment (status "done" or "skipped"). Never use the words "commitment", "task", "accountability" or streak language.',
+      "--- END STILL OPEN ---",
     );
   }
 

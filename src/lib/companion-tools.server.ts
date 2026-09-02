@@ -12,6 +12,13 @@ type Client = SupabaseClient<Database>;
 export type CompanionAction =
   | { type: "mood_logged"; score: number; tags: string[]; summary: string }
   | { type: "commitment_created"; id: string; description: string; summary: string }
+  | {
+      type: "commitment_completed";
+      id: string;
+      description: string;
+      status: "done" | "skipped";
+      summary: string;
+    }
   | { type: "exercise_launch"; slug: string; title: string; minutes: number; summary: string }
   | { type: "exercise_completed"; slug: string; title: string; summary: string }
   | { type: "exercise_widget"; slug: string; title: string; summary: string }
@@ -69,6 +76,23 @@ const CREATE_COMMITMENT: AnthropicTool = {
       },
     },
     required: ["description"],
+  },
+};
+
+const COMPLETE_COMMITMENT: AnthropicTool = {
+  name: "complete_commitment",
+  description:
+    'Close out something the person previously said they would try — ONLY when they\'ve told you where it stands. Use status "done" if they did it, status "skipped" if they\'ve decided to let it go (both are fine, neither is a failure). Optionally pass a few words from the original wording so the right one is matched; otherwise the most recent open one is used. Never use this to chase or pressure them.',
+  input_schema: {
+    type: "object",
+    properties: {
+      status: { type: "string", enum: ["done", "skipped"] },
+      description: {
+        type: "string",
+        description: "A few words from the original, to match the right open item",
+      },
+    },
+    required: ["status"],
   },
 };
 
@@ -167,6 +191,7 @@ const SUBMIT_SCREENER_IN_CHAT: AnthropicTool = {
 export const CHAT_TOOLS: AnthropicTool[] = [
   LOG_MOOD,
   CREATE_COMMITMENT,
+  COMPLETE_COMMITMENT,
   GET_EFFECTIVENESS_INSIGHTS,
   GET_EXERCISE_STEPS,
   SHOW_EXERCISE_WIDGET,
@@ -294,6 +319,63 @@ export async function runCompanionTool(
         id: data.id,
         description: data.description,
         summary: `Started tracking: "${data.description}".`,
+      },
+    };
+  }
+
+  if (name === "complete_commitment") {
+    const status = input["status"] === "skipped" ? "skipped" : "done";
+    const match = String(input["description"] ?? "")
+      .trim()
+      .toLowerCase();
+
+    const { data: open, error: readError } = await supabase
+      .from("commitments")
+      .select("id, description")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (readError) return { result: `Could not read open commitments: ${readError.message}` };
+    const list = open ?? [];
+
+    const target =
+      (match
+        ? list.find(
+            (row) =>
+              row.description.toLowerCase().includes(match) ||
+              match.includes(row.description.toLowerCase()),
+          )
+        : undefined) ?? list[0];
+    if (!target) {
+      return { result: "There's nothing open to close right now — don't invent one." };
+    }
+
+    const { error } = await supabase
+      .from("commitments")
+      .update({
+        status,
+        completed_at: status === "done" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", target.id)
+      .eq("user_id", userId);
+    if (error) return { result: `Could not update it: ${error.message}` };
+
+    return {
+      result:
+        status === "done"
+          ? `Closed out "${target.description}" as done. Reflect their news warmly and briefly; don't make a big deal of it.`
+          : `Closed out "${target.description}" as let go. Make clear that's completely fine — an intention that no longer fits is not a failure.`,
+      action: {
+        type: "commitment_completed",
+        id: target.id,
+        description: target.description,
+        status,
+        summary:
+          status === "done"
+            ? `Marked "${target.description}" as done.`
+            : `Let go of "${target.description}".`,
       },
     };
   }

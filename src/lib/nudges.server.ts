@@ -10,6 +10,9 @@ type Client = SupabaseClient<Database>;
 export const NUDGE_COOLDOWN_DAYS = 7;
 const LOW_MOOD_STREAK_DAYS = 5;
 const INACTIVITY_DAYS = 4;
+// A pending commitment with no explicit due date is treated as "worth a gentle
+// mention" once it's been sitting this long.
+const COMMITMENT_STALE_DAYS = 2;
 
 type TriggerType = Database["public"]["Tables"]["nudges"]["Row"]["trigger_type"];
 
@@ -31,43 +34,50 @@ function daysAgo(days: number) {
 }
 
 export async function evaluateNudgesFor(supabase: Client, userId: string) {
-  const [moods, habitLogs, screeners, recentNudges, profile, intro] = await Promise.all([
-    supabase
-      .from("mood_logs")
-      .select("score, note, tags, logged_at")
-      .eq("user_id", userId)
-      .gte("logged_at", daysAgo(30).toISOString())
-      .order("logged_at", { ascending: false }),
-    supabase
-      .from("habit_logs")
-      .select("log_date, completed")
-      .eq("user_id", userId)
-      .gte("log_date", isoDay(daysAgo(30)))
-      .order("log_date", { ascending: false }),
-    supabase
-      .from("screener_responses")
-      .select("screener_type, total_score, severity, taken_at")
-      .eq("user_id", userId)
-      .order("taken_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("nudges")
-      .select("trigger_type, created_at")
-      .eq("user_id", userId)
-      .gte("created_at", daysAgo(NUDGE_COOLDOWN_DAYS).toISOString()),
-    supabase
-      .from("profiles")
-      .select("preferred_name, account_type, ai_context_consent")
-      .eq("id", userId)
-      .maybeSingle(),
-    supabase
-      .from("user_profiles")
-      .select(
-        "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
-      )
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const [moods, habitLogs, screeners, recentNudges, profile, intro, commitments] =
+    await Promise.all([
+      supabase
+        .from("mood_logs")
+        .select("score, note, tags, logged_at")
+        .eq("user_id", userId)
+        .gte("logged_at", daysAgo(30).toISOString())
+        .order("logged_at", { ascending: false }),
+      supabase
+        .from("habit_logs")
+        .select("log_date, completed")
+        .eq("user_id", userId)
+        .gte("log_date", isoDay(daysAgo(30)))
+        .order("log_date", { ascending: false }),
+      supabase
+        .from("screener_responses")
+        .select("screener_type, total_score, severity, taken_at")
+        .eq("user_id", userId)
+        .order("taken_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("nudges")
+        .select("trigger_type, created_at")
+        .eq("user_id", userId)
+        .gte("created_at", daysAgo(NUDGE_COOLDOWN_DAYS).toISOString()),
+      supabase
+        .from("profiles")
+        .select("preferred_name, account_type, ai_context_consent")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select(
+          "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
+        )
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("commitments")
+        .select("description, due_at, created_at")
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: true }),
+    ]);
 
   const moodRows = moods.data ?? [];
   const onCooldown = new Set((recentNudges.data ?? []).map((row) => row.trigger_type));
@@ -146,6 +156,26 @@ export async function evaluateNudgesFor(supabase: Client, userId: string) {
     });
   }
 
+  // --- 4. Commitment follow-up: a due / overdue thing they said they'd try,
+  // never revisited. Surfaces the OLDEST still-pending one. Same 7-day cooldown
+  // as every other trigger (via `onCooldown`). ---
+  const pendingCommitments = commitments.data ?? [];
+  const oldestCommitment = pendingCommitments[0];
+  if (oldestCommitment) {
+    const dueAt = oldestCommitment.due_at ? new Date(oldestCommitment.due_at) : null;
+    const ageDays = (Date.now() - new Date(oldestCommitment.created_at).getTime()) / 86_400_000;
+    const overdue = dueAt ? dueAt.getTime() <= Date.now() : false;
+    const stale = !dueAt && ageDays >= COMMITMENT_STALE_DAYS;
+    if (overdue || stale) {
+      candidates.push({
+        trigger_type: "commitment_follow_up",
+        instruction: `A little while ago they said they would try: "${oldestCommitment.description}". It hasn't come up since. Bring it up the way a friend who genuinely remembered would — warm, light, curious, with no pressure and no scorekeeping. If it sounds like it didn't happen, be curious about what got in the way, never disappointed; an intention that slipped is information, not a failure. Make it easy for them to say it's done, not yet, or that they'd rather let it go. Do NOT call it a "commitment", "task" or "goal", and never use streak or accountability language.`,
+        suggested_exercise_slug: null,
+        stepUp: false,
+      });
+    }
+  }
+
   const pending = candidates.filter((candidate) => !onCooldown.has(candidate.trigger_type));
   if (pending.length === 0) return { created: 0 };
 
@@ -161,6 +191,10 @@ export async function evaluateNudgesFor(supabase: Client, userId: string) {
     inProfessionalCare: intro.data?.in_professional_care ?? false,
     recentMoods: consented ? moodRows.slice(0, 7) : [],
     history: [],
+    openCommitments: pendingCommitments.map((row) => ({
+      description: row.description,
+      ageDays: (Date.now() - new Date(row.created_at).getTime()) / 86_400_000,
+    })),
     quickAction: null,
   };
 

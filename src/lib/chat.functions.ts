@@ -341,44 +341,60 @@ export async function sendMessageCore(
   const { getScreenersDue } = await import("./screeners.server");
   const { computeEngagementStreak } = await import("./streak.server");
 
-  const [profile, intro, moods, history, pastSummaries, screeners, streakDays, dailyPrompts] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("preferred_name, account_type, ai_context_consent")
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("user_profiles")
-        .select(
-          "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
-        )
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("mood_logs")
-        .select("score, note, tags, logged_at")
-        .eq("user_id", userId)
-        .order("logged_at", { ascending: false })
-        .limit(7),
-      supabase
-        .from("chat_messages")
-        .select("sender, content, created_at")
-        .eq("thread_id", threadId)
-        .eq("user_id", userId)
-        .neq("id", savedUser.data.id)
-        .order("created_at", { ascending: false })
-        .limit(HISTORY_LIMIT),
-      fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
-      getScreenersDue(supabase, userId).catch(() => []),
-      computeEngagementStreak(supabase, userId).catch(() => 0),
-      supabase
-        .from("daily_prompt_responses")
-        .select("response_text, responded_at, daily_prompts(prompt_text)")
-        .eq("user_id", userId)
-        .order("responded_at", { ascending: false })
-        .limit(3),
-    ]);
+  const [
+    profile,
+    intro,
+    moods,
+    history,
+    pastSummaries,
+    screeners,
+    streakDays,
+    dailyPrompts,
+    openCommitments,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("preferred_name, account_type, ai_context_consent")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("user_profiles")
+      .select(
+        "intro_text, goals, stressors, communication_preference, topics_to_avoid, in_professional_care",
+      )
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("mood_logs")
+      .select("score, note, tags, logged_at")
+      .eq("user_id", userId)
+      .order("logged_at", { ascending: false })
+      .limit(7),
+    supabase
+      .from("chat_messages")
+      .select("sender, content, created_at")
+      .eq("thread_id", threadId)
+      .eq("user_id", userId)
+      .neq("id", savedUser.data.id)
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_LIMIT),
+    fetchRecentSummaries(supabase, userId, threadId).catch(() => []),
+    getScreenersDue(supabase, userId).catch(() => []),
+    computeEngagementStreak(supabase, userId).catch(() => 0),
+    supabase
+      .from("daily_prompt_responses")
+      .select("response_text, responded_at, daily_prompts(prompt_text)")
+      .eq("user_id", userId)
+      .order("responded_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("commitments")
+      .select("description, created_at")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
 
   const consented = profile.data?.ai_context_consent !== false;
   const { generateCompanionReply } = await import("./ai-companion.server");
@@ -413,6 +429,12 @@ export async function sendMessageCore(
         due: entry.due,
         lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
       })),
+      openCommitments: consented
+        ? (openCommitments.data ?? []).map((row) => ({
+            description: row.description,
+            ageDays: (Date.now() - new Date(row.created_at).getTime()) / 86_400_000,
+          }))
+        : [],
     },
     data.content,
     { supabase, userId, threadId },
