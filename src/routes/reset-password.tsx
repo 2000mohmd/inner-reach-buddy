@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Leaf } from "lucide-react";
+import { KalmLogo } from "@/components/KalmLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,7 @@ function ResetPasswordPage() {
             to="/"
             className="mb-8 flex items-center justify-center gap-2 font-display text-2xl"
           >
-            <Leaf className="size-5 text-primary" aria-hidden />
+            <KalmLogo className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
 

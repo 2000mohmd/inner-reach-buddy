@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Leaf } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { KalmLogo } from "@/components/KalmLogo";
 import { getMyLanguage } from "@/lib/language.functions";
 import { useTranslation } from "@/lib/i18n";
 import { SafetyFooter } from "./SafetyFooter";
@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile-only top bar; the rail takes over from md up. */}
         <header className="sticky top-0 z-20 flex items-center gap-1 border-b border-border/70 bg-background/85 px-3 py-2 backdrop-blur md:hidden">
           <Link to="/chat" className="mr-auto flex items-center gap-2 font-display text-lg">
-            <Leaf className="size-5 text-primary" aria-hidden />
+            <KalmLogo className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
           {SIDEBAR_NAV.map(({ to, labelKey, icon: Icon }) => (

@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { KalmLogo } from "@/components/KalmLogo";
 import { getMyProfile } from "@/lib/onboarding.functions";
 
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUp, Leaf, LifeBuoy, Loader2, Mic, PanelLeft, Square, Trash2 } from "lucide-react";
+import { ArrowUp, LifeBuoy, Loader2, Mic, PanelLeft, Square, Trash2 } from "lucide-react";
 import {
   createThread,
   deleteThread,
@@ -293,7 +294,7 @@ function ChatPage() {
             {empty && (
               <div className="flex flex-col items-center gap-4 py-16 text-center">
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary">
-                  <Leaf className="size-6 text-primary" aria-hidden />
+                  <KalmLogo className="size-6 text-primary" aria-hidden />
                 </span>
                 {profileLoading ? (
                   <Skeleton className="h-9 w-52 rounded-lg" />
@@ -337,7 +338,7 @@ function ChatPage() {
               ) : (
                 <div key={message.id} className="flex gap-3">
                   <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/12">
-                    <Leaf className="size-3.5 text-primary" aria-hidden />
+                    <KalmLogo className="size-3.5 text-primary" aria-hidden />
                   </span>
                   <p className="min-w-0 flex-1 whitespace-pre-line text-[0.95rem] leading-7">
                     {message.content}

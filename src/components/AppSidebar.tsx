@@ -2,7 +2,6 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Leaf,
   LineChart,
   LogOut,
   MessageCircle,
@@ -12,6 +11,7 @@ import {
   Wind,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { KalmLogo } from "@/components/KalmLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,7 +81,7 @@ export function AppSidebar({
       <div className={`flex items-center pt-4 ${open ? "justify-between px-4" : "justify-center"}`}>
         {open && (
           <Link to="/chat" className="flex items-center gap-2 font-display text-xl">
-            <Leaf className="size-5 text-primary" aria-hidden />
+            <KalmLogo className="size-5 text-primary" aria-hidden />
             Kalm
           </Link>
         )}
