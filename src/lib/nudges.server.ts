@@ -61,7 +61,7 @@ export async function evaluateNudgesFor(supabase: Client, userId: string) {
         .gte("created_at", daysAgo(NUDGE_COOLDOWN_DAYS).toISOString()),
       supabase
         .from("profiles")
-        .select("preferred_name, account_type, ai_context_consent")
+        .select("preferred_name, account_type, ai_context_consent, language")
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -199,14 +199,20 @@ export async function evaluateNudgesFor(supabase: Client, userId: string) {
   };
 
   // Step-up pathway resources: a small, relevant set — never a wall of links.
+  // Region-filtered by the person's language (see care-region.ts).
   const resources = await supabase
     .from("care_resources")
-    .select("id, resource_type")
+    .select("id, resource_type, region")
     .eq("is_active", true)
     .in("resource_type", ["directory", "low_cost", "crisis"])
     .order("sort_order", { ascending: true });
+  const { filterResourcesByRegion } = await import("./care-region");
+  const regionResources = filterResourcesByRegion(
+    resources.data ?? [],
+    profile.data?.language ?? null,
+  );
   const stepUpResourceIds = ["directory", "low_cost", "crisis"]
-    .map((type) => (resources.data ?? []).find((row) => row.resource_type === type)?.id)
+    .map((type) => regionResources.find((row) => row.resource_type === type)?.id)
     .filter((id): id is string => Boolean(id));
 
   let created = 0;

@@ -105,22 +105,44 @@ session-like chat behavior, in-chat guided exercises, commitments, effectiveness
 
 Not built yet:
 
-- **Subscriptions / gating** — `subscription_tier` exists but nothing enforces free vs.
-  premium limits; no Stripe, no message caps, no minute allowances.
+- **Billing / payments** — the daily message cap IS now tier-aware and enforced
+  (free 8/day, premium/org high cap; one source of truth in
+  `src/lib/chat-limits.ts`, surfaced by `GET /api/v1/entitlements`). What's still
+  missing: Stripe / receipt validation to actually _move_ someone between tiers,
+  and any minute allowances for live sessions.
 - **Workplace/org tier** — `org_id` and `employer_eap` placeholders exist; no
   `organizations` table, admin dashboard, aggregate analytics, or seat management.
 - **Live avatar/voice sessions** — no `live_sessions` table, no provider chosen,
   no real-time transcript crisis checks.
-- **Effectiveness engine scheduling** — insights are computed on demand in the tool;
-  no scheduled recompute writing to `effectiveness_insights`.
-- **Commitment follow-up loop** — commitments are created but never proactively
-  revisited at the next check-in.
-- **Localization** — `care_resources.region` unused; crisis resources are US-only.
-- **Mobile client** — no API keys/versioning story for an external app; server
-  functions are RPC-shaped for this web app.
-- **Data export** — a downloadable report exists (`src/lib/data-export.functions.ts` →
-  `buildMyReport`, surfaced in `YourDataSection`), but as plain **.txt**, not the
-  therapist-shareable **PDF** originally scoped.
+- **Data export as PDF** — a downloadable report exists
+  (`src/lib/data-export.functions.ts` → `buildMyReport`, surfaced in
+  `YourDataSection`), but as plain **.txt**, not the therapist-shareable **PDF**
+  originally scoped.
+- **Per-type email preferences** — proactive email (nudges + weekly digest) now
+  sends via Resend with a single `profiles.email_opt_out` boolean + a working
+  `/api/public/unsubscribe` route; a per-notification-type preferences screen is
+  still a follow-up. Post-crisis follow-up exists but ships **off** behind
+  `POST_CRISIS_FOLLOWUP_ENABLED`.
+- **Precise region signal** — `care_resources` are now region-filtered, but by an
+  interim heuristic keyed off the person's app language (`src/lib/care-region.ts`);
+  a real country field at onboarding is the proper fix.
+
+Recently built (was on this list):
+
+- **Tier-aware message caps** — see "Billing / payments" above.
+- **Effectiveness engine scheduling** — `computeEffectivenessFor` now runs in the
+  pg_cron sweep and via an `effectiveness_recompute` job enqueued on exercise
+  completion; the `get_effectiveness_insights` tool is a plain RLS-scoped read
+  (the on-demand admin recompute was removed).
+- **Commitment follow-up loop** — `commitment_follow_up` nudge trigger + a
+  `complete_commitment` companion tool; open commitments flow into the chat
+  context.
+- **Localization** — member-facing screens are EN/AR/FR; crisis resources are
+  localized (`crisisCopy()` — AR/FR drop US-only lines); `care_resources.region`
+  is now filtered (see "Precise region signal" above).
+- **Mobile API** — versioned HTTP surface under `src/routes/api/v1/*` with a
+  bearer-token auth bridge (`src/lib/api-auth.server.ts`); full contract in
+  `docs/MOBILE_API.md`.
 
 ## 7. Known risks / review areas for an outside reviewer
 

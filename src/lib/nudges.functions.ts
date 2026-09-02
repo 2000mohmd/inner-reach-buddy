@@ -78,11 +78,17 @@ export const updateNudge = createServerFn({ method: "POST" })
 export const listCareResources = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("care_resources")
-      .select("id, resource_type, name, description, contact_or_url, region")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-    if (error) throw error;
-    return data ?? [];
+    const { supabase, userId } = context;
+    const [resources, profile] = await Promise.all([
+      supabase
+        .from("care_resources")
+        .select("id, resource_type, name, description, contact_or_url, region")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+      supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
+    ]);
+    if (resources.error) throw resources.error;
+
+    const { filterResourcesByRegion } = await import("./care-region");
+    return filterResourcesByRegion(resources.data ?? [], profile.data?.language ?? null);
   });

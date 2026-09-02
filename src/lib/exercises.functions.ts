@@ -70,6 +70,19 @@ export const completeExercise = createServerFn({ method: "POST" })
       if (logged.error) console.error("mood log after exercise failed", logged.error);
     }
 
+    // A completion with a before/after mood is the highest-signal input to
+    // effectiveness_insights. Enqueue a recompute so the companion's
+    // get_effectiveness_insights read is fresh without recomputing on demand.
+    // Fire-and-forget (enqueueJob has an immediate non-blocking fallback).
+    if (typeof data.mood_before === "number" && typeof data.mood_after === "number") {
+      try {
+        const { enqueueJob } = await import("@/jobs");
+        await enqueueJob(supabase, { kind: "effectiveness_recompute", userId });
+      } catch (error) {
+        console.error("effectiveness recompute enqueue failed", error);
+      }
+    }
+
     // Completions shouldn't dead-end on the Exercises page: drop a compact
     // activity card into the person's active conversation, and — only when
     // there's a mood delta worth reacting to — a short companion reply.

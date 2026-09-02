@@ -16,9 +16,17 @@ export async function runJob(supabase: ServiceClient, job: Job): Promise<void> {
       await ensureThreadSummary(supabase, job.userId, previousThreadId);
       return;
     }
+    case "effectiveness_recompute": {
+      // Keeps effectiveness_insights fresh so the companion's
+      // get_effectiveness_insights tool is a plain RLS-scoped read, not an
+      // on-demand recompute. Idempotent upsert; safe to run more than once.
+      const { computeEffectivenessFor } = await import("@/lib/effectiveness.server");
+      await computeEffectivenessFor(supabase, job.userId);
+      return;
+    }
     default: {
-      const exhaustive: never = job.kind;
-      throw new Error(`unknown job kind: ${String(exhaustive)}`);
+      const exhaustive: never = job;
+      throw new Error(`unknown job kind: ${JSON.stringify(exhaustive)}`);
     }
   }
 }

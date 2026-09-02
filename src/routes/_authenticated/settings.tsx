@@ -10,6 +10,7 @@ import {
   setEmailOptOut,
 } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/AppShell";
+import { KalmMemoryPanel } from "@/components/KalmMemoryPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { YourDataSection } from "@/components/YourDataSection";
 import { useTranslation } from "@/lib/i18n";
@@ -205,6 +206,8 @@ function SettingsPage() {
               </Button>
             </div>
           </section>
+
+          <KalmMemoryPanel />
 
           <YourDataSection />
 

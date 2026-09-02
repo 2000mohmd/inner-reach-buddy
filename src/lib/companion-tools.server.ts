@@ -205,57 +205,6 @@ export const CHAT_TOOLS: AnthropicTool[] = [
 /** Nudges are one-shot generations: read-only tools only. */
 export const NUDGE_TOOLS: AnthropicTool[] = [GET_EFFECTIVENESS_INSIGHTS];
 
-/**
- * Recomputes the person's effectiveness insights from their own history.
- * Uses the admin client because the table is read-only to end users.
- */
-async function refreshEffectivenessInsights(userId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-  const [completions, exercises] = await Promise.all([
-    supabaseAdmin
-      .from("exercise_completions")
-      .select("exercise_id, mood_before, mood_after")
-      .eq("user_id", userId)
-      .not("mood_before", "is", null)
-      .not("mood_after", "is", null)
-      .limit(400),
-    supabaseAdmin.from("exercises").select("id, slug, title"),
-  ]);
-
-  const byExercise = new Map<string, number[]>();
-  for (const row of completions.data ?? []) {
-    const delta = (row.mood_after ?? 0) - (row.mood_before ?? 0);
-    byExercise.set(row.exercise_id, [...(byExercise.get(row.exercise_id) ?? []), delta]);
-  }
-  if (byExercise.size === 0) return;
-
-  const meta = new Map((exercises.data ?? []).map((row) => [row.id, row]));
-  const rows = [...byExercise.entries()].flatMap(([exerciseId, deltas]) => {
-    const info = meta.get(exerciseId);
-    if (!info) return [];
-    const average = deltas.reduce((sum, value) => sum + value, 0) / deltas.length;
-    return [
-      {
-        user_id: userId,
-        subject_type: "exercise",
-        subject_key: info.slug,
-        subject_label: info.title,
-        sample_size: deltas.length,
-        avg_mood_delta: Number(average.toFixed(2)),
-        confidence: deltas.length >= 5 ? "high" : deltas.length >= 3 ? "medium" : "low",
-        computed_at: new Date().toISOString(),
-      },
-    ];
-  });
-  if (rows.length === 0) return;
-
-  const { error } = await supabaseAdmin
-    .from("effectiveness_insights")
-    .upsert(rows, { onConflict: "user_id,subject_type,subject_key" });
-  if (error) console.error("effectiveness insight upsert failed", error);
-}
-
 export type ToolOutcome = { result: string; action?: CompanionAction };
 
 /** Executes one tool call and returns text for the model plus an optional user-visible action. */
@@ -381,9 +330,8 @@ export async function runCompanionTool(
   }
 
   if (name === "get_effectiveness_insights") {
-    await refreshEffectivenessInsights(userId).catch((error) =>
-      console.error("insight refresh failed", error),
-    );
+    // Reads only — effectiveness_insights is kept fresh by the scheduled
+    // effectiveness_recompute job + the sweep, so no on-demand admin recompute.
     const { data, error } = await supabase
       .from("effectiveness_insights")
       .select("subject_type, subject_key, subject_label, sample_size, avg_mood_delta, confidence")
@@ -513,6 +461,16 @@ export async function runCompanionTool(
       },
     });
     if (error) return { result: `Could not record the exercise: ${error.message}` };
+
+    // Keep effectiveness_insights fresh (see effectiveness_recompute job).
+    if (moodBefore != null && moodAfter != null) {
+      try {
+        const { enqueueJob } = await import("@/jobs");
+        await enqueueJob(supabase, { kind: "effectiveness_recompute", userId });
+      } catch (enqueueError) {
+        console.error("effectiveness recompute enqueue failed", enqueueError);
+      }
+    }
 
     return {
       result: `Recorded that they completed ${exercise.title} with you in chat. Mention plainly that you saved it, then stay with them.`,

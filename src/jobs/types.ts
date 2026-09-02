@@ -18,14 +18,19 @@ export type ServiceClient = SupabaseClient<Database>;
  * must be idempotent — a job can be retried or, in the degraded path, run more
  * than once.
  */
-export type Job = {
-  kind: "summarize_thread";
-  userId: string;
-  /** The thread the user just moved away from; the handler summarizes the
-   *  previous one relative to this. */
-  sinceThreadId: string;
-};
-// Future deferred work (weekly_digest, effectiveness_recompute, …) is added as
-// further members here once the queue transport is chosen.
+export type Job =
+  | {
+      kind: "summarize_thread";
+      userId: string;
+      /** The thread the user just moved away from; the handler summarizes the
+       *  previous one relative to this. */
+      sinceThreadId: string;
+    }
+  | {
+      kind: "effectiveness_recompute";
+      /** Recompute effectiveness_insights for this user (idempotent upsert). */
+      userId: string;
+    };
+// Future deferred work (weekly_digest, …) is added as further members here.
 
-export const JOB_KINDS = ["summarize_thread"] as const;
+export const JOB_KINDS = ["summarize_thread", "effectiveness_recompute"] as const;

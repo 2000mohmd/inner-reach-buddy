@@ -48,30 +48,43 @@ type InsightRow = {
   computed_at: string;
 };
 
-/** avg(mood_after - mood_before) per exercise category. */
-async function computeExerciseCategoryInsights(
-  supabase: Client,
-  userId: string,
-): Promise<InsightRow[]> {
+/**
+ * avg(mood_after - mood_before) per exercise, at two grains from one fetch:
+ *   - subject_type "exercise"          — keyed by slug (what launch_exercise needs)
+ *   - subject_type "exercise_category" — keyed by category
+ *
+ * The per-slug grain used to be recomputed on demand with an RLS-bypassing
+ * admin client inside the get_effectiveness_insights tool; it now lives here so
+ * the scheduled recompute is the single writer and the tool only reads.
+ */
+async function computeExerciseInsights(supabase: Client, userId: string): Promise<InsightRow[]> {
   const { data, error } = await supabase
     .from("exercise_completions")
-    .select("mood_before, mood_after, exercises(category)")
+    .select("mood_before, mood_after, exercises(slug, title, category)")
     .eq("user_id", userId)
     .not("mood_before", "is", null)
     .not("mood_after", "is", null);
   if (error) throw error;
 
   const byCategory = new Map<string, number[]>();
+  const bySlug = new Map<string, { deltas: number[]; title: string }>();
   for (const row of data ?? []) {
-    const category = (row.exercises as { category: string } | null)?.category;
-    if (!category || row.mood_before == null || row.mood_after == null) continue;
-    const list = byCategory.get(category) ?? [];
-    list.push(row.mood_after - row.mood_before);
-    byCategory.set(category, list);
+    const exercise = row.exercises as { slug: string; title: string; category: string } | null;
+    if (!exercise || row.mood_before == null || row.mood_after == null) continue;
+    const delta = row.mood_after - row.mood_before;
+
+    const catList = byCategory.get(exercise.category) ?? [];
+    catList.push(delta);
+    byCategory.set(exercise.category, catList);
+
+    const slugEntry = bySlug.get(exercise.slug) ?? { deltas: [], title: exercise.title };
+    slugEntry.deltas.push(delta);
+    bySlug.set(exercise.slug, slugEntry);
   }
 
   const now = new Date().toISOString();
   const rows: InsightRow[] = [];
+
   for (const [category, deltas] of byCategory) {
     if (deltas.length < MIN_SAMPLES) continue;
     rows.push({
@@ -85,6 +98,21 @@ async function computeExerciseCategoryInsights(
       computed_at: now,
     });
   }
+
+  for (const [slug, entry] of bySlug) {
+    if (entry.deltas.length < MIN_SAMPLES) continue;
+    rows.push({
+      user_id: userId,
+      subject_type: "exercise",
+      subject_key: slug,
+      subject_label: entry.title,
+      sample_size: entry.deltas.length,
+      avg_mood_delta: Number(average(entry.deltas).toFixed(2)),
+      confidence: confidenceFor(entry.deltas.length),
+      computed_at: now,
+    });
+  }
+
   return rows;
 }
 
@@ -171,7 +199,7 @@ async function computeHabitInsights(supabase: Client, userId: string): Promise<I
 /** Recomputes and upserts all insight rows for one user. */
 export async function computeEffectivenessFor(supabase: Client, userId: string) {
   const [exerciseRows, habitRows] = await Promise.all([
-    computeExerciseCategoryInsights(supabase, userId),
+    computeExerciseInsights(supabase, userId),
     computeHabitInsights(supabase, userId),
   ]);
   const rows = [...exerciseRows, ...habitRows];
