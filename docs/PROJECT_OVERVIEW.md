@@ -123,9 +123,13 @@ Not built yet:
   `/api/public/unsubscribe` route; a per-notification-type preferences screen is
   still a follow-up. Post-crisis follow-up exists but ships **off** behind
   `POST_CRISIS_FOLLOWUP_ENABLED`.
-- **Precise region signal** — `care_resources` are now region-filtered, but by an
-  interim heuristic keyed off the person's app language (`src/lib/care-region.ts`);
-  a real country field at onboarding is the proper fix.
+- **Regional care content + a precise location signal** — `care_resources` are
+  now region-filtered, but by an interim heuristic keyed off the person's app
+  language (`src/lib/care-region.ts`). Deliberately NOT upgrading to a country
+  field yet: the dataset is US-only + 2 universal fallbacks, so a precise signal
+  buys nothing until `care_resources` rows exist for other countries. When they
+  do, add `request.cf.country` (Cloudflare Worker, no onboarding friction) at the
+  same time.
 
 Recently built (was on this list):
 
