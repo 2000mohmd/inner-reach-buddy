@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { MessageCircleHeart, LineChart, Sparkles, ShieldCheck } from "lucide-react";
+import { KalmLogo } from "@/components/KalmLogo";
 import { Button } from "@/components/ui/button";
 import { SafetyFooter } from "@/components/SafetyFooter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";

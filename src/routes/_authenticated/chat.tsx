@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { KalmLogo } from "@/components/KalmLogo";
 import { getMyProfile } from "@/lib/onboarding.functions";
 
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUp, Leaf, LifeBuoy, Loader2, Mic, PanelLeft, Square, Trash2 } from "lucide-react";
+import { ArrowUp, LifeBuoy, Loader2, Mic, PanelLeft, Square, Trash2 } from "lucide-react";
 import {
   createThread,
   deleteThread,

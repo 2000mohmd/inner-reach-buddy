@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
+import { KalmLogo } from "@/components/KalmLogo";
 import { getMyLanguage } from "@/lib/language.functions";
 import { useTranslation } from "@/lib/i18n";
 import { SafetyFooter } from "./SafetyFooter";
