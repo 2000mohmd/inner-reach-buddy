@@ -65,7 +65,40 @@ function CrisisCard() {
   );
 }
 
-/** Microphone capture → base64, so the server can transcribe the note. */
+/** Encodes decoded PCM audio as a 16-bit mono WAV blob (16 kHz). */
+function encodeWav(samples: Float32Array, sampleRate: number): Uint8Array {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeText = (offset: number, text: string) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeText(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeText(8, "WAVE");
+  writeText(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeText(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i += 1) {
+    const clamped = Math.max(-1, Math.min(1, samples[i]!));
+    view.setInt16(44 + i * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+  }
+  return new Uint8Array(buffer);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
+  return btoa(binary);
+}
+
+/** Microphone capture → mono WAV base64, so any provider can transcribe it. */
 function useVoiceRecorder(onReady: (audio: string, mime: string) => void) {
   const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
@@ -90,10 +123,19 @@ function useVoiceRecorder(onReady: (audio: string, mime: string) => void) {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
         if (blob.size === 0) return;
         const buffer = await blob.arrayBuffer();
-        let binary = "";
-        const bytes = new Uint8Array(buffer);
-        for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
-        onReady(btoa(binary), recorder.mimeType.split(";")[0] ?? "audio/webm");
+        try {
+          const context = new AudioContext({ sampleRate: 16000 });
+          const decoded = await context.decodeAudioData(buffer.slice(0));
+          const mono = decoded.getChannelData(0);
+          await context.close();
+          onReady(toBase64(encodeWav(mono, decoded.sampleRate)), "audio/wav");
+        } catch {
+          // Decoding failed (rare) — send the raw recording instead.
+          onReady(
+            toBase64(new Uint8Array(buffer)),
+            recorder.mimeType.split(";")[0] ?? "audio/webm",
+          );
+        }
       };
       recorderRef.current = recorder;
       recorder.start();
