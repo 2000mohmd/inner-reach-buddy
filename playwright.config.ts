@@ -16,6 +16,9 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // `.e2e.ts`, not `.spec.ts` — keeps these out of vitest's default glob so the
+  // two runners never fight over the same files (Playwright isn't a tracked dep).
+  testMatch: "**/*.e2e.ts",
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 1 : 0,
