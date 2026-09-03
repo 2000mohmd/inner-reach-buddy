@@ -199,8 +199,9 @@
 }
 
 @utility surface-soft {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in oklch, var(--color-card) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.05);
+  border: 1px solid color-mix(in oklch, var(--color-border) 85%, transparent);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
 }
