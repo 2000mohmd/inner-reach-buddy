@@ -20,6 +20,12 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Playwright (installed on-demand, not tracked; see e2e/README.md)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Lock files — bun.lock is the single source of truth (Lovable's platform
 # package manager). Do not commit npm/pnpm/yarn lockfiles alongside it.
 package-lock.json
@@ -36,9 +42,3 @@ yarn.lock
 *.njsproj
 *.sln
 *.sw?
-
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
