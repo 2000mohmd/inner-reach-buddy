@@ -31,6 +31,15 @@ function hoursAgoIso(hours: number): string {
   return new Date(Date.now() - hours * 3600_000).toISOString();
 }
 
+// OFF by default. This proactively messages people who haven't been in chat for
+// ~12h, so — like the post-crisis follow-up (POST_CRISIS_FOLLOWUP_ENABLED) — it
+// stays behind a flag until a human decides to roll it out, and is a runtime
+// kill switch afterwards. Set CHAT_CHECKIN_ENABLED=true|1|yes to turn it on.
+function isEnabled(): boolean {
+  const raw = (process.env["CHAT_CHECKIN_ENABLED"] ?? "").toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
 /**
  * Finds users whose most recently active chat thread has been quiet for
  * QUIET_HOURS+, generates one warm "how are you feeling" message from the
@@ -41,7 +50,8 @@ function hoursAgoIso(hours: number): string {
 export async function runChatCheckinSweep(
   supabase: Client,
   options: { batch?: number } = {},
-): Promise<{ checked: number; sent: number }> {
+): Promise<{ enabled: boolean; checked: number; sent: number }> {
+  if (!isEnabled()) return { enabled: false, checked: 0, sent: 0 };
   const batch = options.batch ?? 25;
   const quietBefore = hoursAgoIso(QUIET_HOURS);
   const lookbackFloor = hoursAgoIso(LOOKBACK_DAYS * 24);
@@ -76,7 +86,7 @@ export async function runChatCheckinSweep(
     }
   }
 
-  return { checked: candidates.length, sent };
+  return { enabled: true, checked: candidates.length, sent };
 }
 
 async function sendChatCheckinIfDue(

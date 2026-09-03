@@ -198,7 +198,6 @@ async function callOpenRouter(
   return parseOpenAiPayload(payload, "openrouter");
 }
 
-
 // --- Streaming ---------------------------------------------------------
 // Same OpenAI-compatible wire format as above, but reading the response body
 // as an SSE stream (`data: {...}\n\n` lines, terminated by `data: [DONE]`) and
@@ -347,7 +346,6 @@ async function streamOpenRouter(
   }
   return consumeOpenAiStream(response, "openrouter", onDelta);
 }
-
 
 /**
  * Streaming counterpart to `callCompanionModel`: calls `onDelta` with text

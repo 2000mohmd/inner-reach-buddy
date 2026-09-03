@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-nudges")({
         // scan, small batch) and time-sensitive, so it also runs every
         // invocation rather than being folded into the cursor-paged per-user
         // pass below. ---
-        let chatCheckins = { checked: 0, sent: 0 };
+        let chatCheckins = { enabled: false, checked: 0, sent: 0 };
         try {
           const { runChatCheckinSweep } = await import("@/lib/chat-checkin.server");
           chatCheckins = await runChatCheckinSweep(supabaseAdmin);
