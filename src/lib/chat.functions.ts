@@ -6,6 +6,7 @@ import { QUICK_ACTION_IDS } from "./quick-actions";
 import { getRateLimiter, RATE_LIMIT_MESSAGE } from "./rate-limit";
 import { dailyMessageCap } from "./chat-limits";
 import type { CompanionAction } from "./companion-tools.server";
+import type { CompanionContext, CompanionReply } from "./ai-companion.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -177,23 +178,41 @@ export type SendMessageResult = {
     | (CrisisResponse & { id: string; created_at: string });
 };
 
+type PreparedTurn =
+  | { done: true; result: SendMessageResult }
+  | {
+      done: false;
+      threadId: string;
+      savedUser: { id: string; content: string; flagged_crisis: boolean; created_at: string };
+      context: CompanionContext;
+      content: string;
+      rateLimiter: ReturnType<typeof getRateLimiter>;
+    };
+
 /**
- * The core of sendMessage, decoupled from transport. Both the web RPC
- * (`sendMessage` below) and the mobile route (src/routes/api/v1/chat/messages.ts)
- * call this with an already-authenticated Supabase client + userId, so the
- * crisis gate / rate limiter / companion logic behaves identically regardless of
- * which entry point the request came through.
+ * Everything sendMessage does UP TO calling the model: resolve/create the
+ * thread, save the user's message, run the crisis gate, run the rate limiter,
+ * enqueue the thread-summary job, and assemble the personalized companion
+ * context. Both the blocking (`sendMessageCore`) and streaming
+ * (`sendMessageStreamCore`) paths call this — it is the single place the
+ * ORDERING GUARANTEE lives, so there is exactly one implementation to keep
+ * correct rather than two copies that could drift apart.
  *
  * ORDERING GUARANTEE — DO NOT REORDER: the crisis gate (runCrisisGate) runs
  * BEFORE the per-user rate limiter. Tested against runCrisisGate directly in
- * crisis-gate.test.ts and through this function (via the mobile handler) in
+ * crisis-gate.test.ts and through sendMessageCore (via the mobile handler) in
  * chat-messages-ordering.test.ts.
+ *
+ * Returns `{ done: true, result }` when the turn is already fully answered
+ * (a crisis reply or a rate-limit message — both fixed text, nothing to
+ * generate) — the caller returns `result` as-is. Otherwise returns
+ * `{ done: false, ... }` with everything needed to call the model.
  */
-export async function sendMessageCore(
+async function prepareChatTurn(
   supabase: SupabaseClient<Database>,
   userId: string,
   input: unknown,
-): Promise<SendMessageResult> {
+): Promise<PreparedTurn> {
   const data = SendInput.parse(input);
 
   // Resolve or create the thread.
@@ -264,16 +283,19 @@ export async function sendMessageCore(
 
   if (gated) {
     return {
-      thread_id: threadId,
-      userMessage: {
-        ...savedUser.data,
-        flagged_crisis: true,
-        sender: "user" as const,
-      },
-      reply: {
-        ...gated.crisis,
-        id: gated.systemMessage.id,
-        created_at: gated.systemMessage.created_at,
+      done: true,
+      result: {
+        thread_id: threadId,
+        userMessage: {
+          ...savedUser.data,
+          flagged_crisis: true,
+          sender: "user" as const,
+        },
+        reply: {
+          ...gated.crisis,
+          id: gated.systemMessage.id,
+          created_at: gated.systemMessage.created_at,
+        },
       },
     };
   }
@@ -303,17 +325,20 @@ export async function sendMessageCore(
     if (savedLimit.error) throw savedLimit.error;
 
     return {
-      thread_id: threadId,
-      userMessage: { ...savedUser.data, sender: "user" as const },
-      reply: {
-        type: "message",
-        id: savedLimit.data.id,
-        content: savedLimit.data.content,
-        created_at: savedLimit.data.created_at,
-        actions: [],
-        ...(decision.reason === "daily" && decision.limit
-          ? { limit: { reason: "daily" as const, ...decision.limit } }
-          : {}),
+      done: true,
+      result: {
+        thread_id: threadId,
+        userMessage: { ...savedUser.data, sender: "user" as const },
+        reply: {
+          type: "message",
+          id: savedLimit.data.id,
+          content: savedLimit.data.content,
+          created_at: savedLimit.data.created_at,
+          actions: [],
+          ...(decision.reason === "daily" && decision.limit
+            ? { limit: { reason: "daily" as const, ...decision.limit } }
+            : {}),
+        },
       },
     };
   }
@@ -397,48 +422,62 @@ export async function sendMessageCore(
   ]);
 
   const consented = profile.data?.ai_context_consent !== false;
-  const { generateCompanionReply } = await import("./ai-companion.server");
 
-  const reply = await generateCompanionReply(
-    {
-      preferredName: profile.data?.preferred_name ?? null,
-      accountType: profile.data?.account_type ?? null,
-      introText: consented ? (intro.data?.intro_text ?? null) : null,
-      goals: consented ? (intro.data?.goals ?? []) : [],
-      stressors: consented ? (intro.data?.stressors ?? []) : [],
-      communicationPreference: intro.data?.communication_preference ?? null,
-      topicsToAvoid: intro.data?.topics_to_avoid ?? null,
-      inProfessionalCare: intro.data?.in_professional_care ?? false,
-      recentMoods: consented ? (moods.data ?? []) : [],
-      history: (history.data ?? [])
-        .filter((entry) => entry.sender !== "system")
-        .reverse()
-        .map((entry) => ({ sender: entry.sender, content: entry.content })),
-      quickAction: data.quick_action ?? null,
-      pastSummaries: consented ? pastSummaries : [],
-      streakDays,
-      dailyPromptResponses: consented
-        ? (dailyPrompts.data ?? []).map((row) => ({
-            prompt: (row.daily_prompts as { prompt_text: string } | null)?.prompt_text ?? "",
-            response: row.response_text,
-            when: row.responded_at.slice(0, 10),
-          }))
-        : [],
-      screenersDue: screeners.map((entry) => ({
-        label: entry.label,
-        due: entry.due,
-        lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
-      })),
-      openCommitments: consented
-        ? (openCommitments.data ?? []).map((row) => ({
-            description: row.description,
-            ageDays: (Date.now() - new Date(row.created_at).getTime()) / 86_400_000,
-          }))
-        : [],
-    },
-    data.content,
-    { supabase, userId, threadId },
-  );
+  const context: CompanionContext = {
+    preferredName: profile.data?.preferred_name ?? null,
+    accountType: profile.data?.account_type ?? null,
+    introText: consented ? (intro.data?.intro_text ?? null) : null,
+    goals: consented ? (intro.data?.goals ?? []) : [],
+    stressors: consented ? (intro.data?.stressors ?? []) : [],
+    communicationPreference: intro.data?.communication_preference ?? null,
+    topicsToAvoid: intro.data?.topics_to_avoid ?? null,
+    inProfessionalCare: intro.data?.in_professional_care ?? false,
+    recentMoods: consented ? (moods.data ?? []) : [],
+    history: (history.data ?? [])
+      .filter((entry) => entry.sender !== "system")
+      .reverse()
+      .map((entry) => ({ sender: entry.sender, content: entry.content })),
+    quickAction: data.quick_action ?? null,
+    pastSummaries: consented ? pastSummaries : [],
+    streakDays,
+    dailyPromptResponses: consented
+      ? (dailyPrompts.data ?? []).map((row) => ({
+          prompt: (row.daily_prompts as { prompt_text: string } | null)?.prompt_text ?? "",
+          response: row.response_text,
+          when: row.responded_at.slice(0, 10),
+        }))
+      : [],
+    screenersDue: screeners.map((entry) => ({
+      label: entry.label,
+      due: entry.due,
+      lastTaken: entry.latest ? entry.latest.taken_at.slice(0, 10) : null,
+    })),
+    openCommitments: consented
+      ? (openCommitments.data ?? []).map((row) => ({
+          description: row.description,
+          ageDays: (Date.now() - new Date(row.created_at).getTime()) / 86_400_000,
+        }))
+      : [],
+  };
+
+  return {
+    done: false,
+    threadId,
+    savedUser: savedUser.data,
+    context,
+    content: data.content,
+    rateLimiter,
+  };
+}
+
+/** Shared tail: persist the model's reply, record usage, bump the thread. */
+async function finalizeReply(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  prepared: Extract<PreparedTurn, { done: false }>,
+  reply: CompanionReply,
+): Promise<SendMessageResult> {
+  const { threadId, savedUser, rateLimiter } = prepared;
 
   // Token/cost counter — fire-and-forget, never blocks or fails the reply.
   void rateLimiter.recordUsage(userId, {
@@ -471,7 +510,7 @@ export async function sendMessageCore(
 
   return {
     thread_id: threadId,
-    userMessage: { ...savedUser.data, sender: "user" as const },
+    userMessage: { ...savedUser, sender: "user" as const },
     reply: {
       type: "message",
       id: savedReply.data.id,
@@ -480,6 +519,63 @@ export async function sendMessageCore(
       actions: reply.actions,
     },
   };
+}
+
+/**
+ * The core of sendMessage, decoupled from transport. Both the web RPC
+ * (`sendMessage` below) and the mobile route (src/routes/api/v1/chat/messages.ts)
+ * call this with an already-authenticated Supabase client + userId, so the
+ * crisis gate / rate limiter / companion logic behaves identically regardless of
+ * which entry point the request came through.
+ */
+export async function sendMessageCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: unknown,
+): Promise<SendMessageResult> {
+  const prepared = await prepareChatTurn(supabase, userId, input);
+  if (prepared.done) return prepared.result;
+
+  const { generateCompanionReply } = await import("./ai-companion.server");
+  const reply = await generateCompanionReply(prepared.context, prepared.content, {
+    supabase,
+    userId,
+    threadId: prepared.threadId,
+  });
+
+  return finalizeReply(supabase, userId, prepared, reply);
+}
+
+/**
+ * Streaming variant used by POST /api/v1/chat/messages/stream (see -handlers.ts).
+ * Runs the identical pipeline through `prepareChatTurn` — the crisis gate and
+ * rate limiter behave exactly as in sendMessageCore, since it's the same
+ * function — then streams the companion's reply text as it comes off the
+ * model via `onDelta`, instead of waiting for the whole reply.
+ *
+ * `onDelta` is never called for a short-circuited turn (crisis reply or
+ * rate-limit message): those are fixed, already-written text with nothing to
+ * generate, and the crisis reply in particular must reach the client whole
+ * and immediately, never staged out piece by piece.
+ */
+export async function sendMessageStreamCore(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: unknown,
+  onDelta: (text: string) => void,
+): Promise<SendMessageResult> {
+  const prepared = await prepareChatTurn(supabase, userId, input);
+  if (prepared.done) return prepared.result;
+
+  const { generateCompanionReplyStream } = await import("./ai-companion.server");
+  const reply = await generateCompanionReplyStream(
+    prepared.context,
+    prepared.content,
+    { supabase, userId, threadId: prepared.threadId },
+    onDelta,
+  );
+
+  return finalizeReply(supabase, userId, prepared, reply);
 }
 
 export const sendMessage = createServerFn({ method: "POST" })

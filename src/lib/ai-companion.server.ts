@@ -2,7 +2,12 @@
 // with native Claude tool use. The deterministic crisis gate (detectCrisis in
 // crisis.ts) runs BEFORE any of this and is never delegated to the model.
 import { CRISIS_DISCLAIMER } from "./crisis";
-import { callCompanionModel, type LlmContentBlock, type LlmMessage } from "./llm-provider.server";
+import {
+  callCompanionModel,
+  streamCompanionModel,
+  type LlmContentBlock,
+  type LlmMessage,
+} from "./llm-provider.server";
 import {
   CHAT_TOOLS,
   NUDGE_TOOLS,
@@ -301,6 +306,99 @@ export async function generateCompanionReply(
   }
 
   if (lastText) return reply(lastText);
+  throw new Error("The companion couldn't reply just now. Please try again.");
+}
+
+/**
+ * Streaming counterpart to generateCompanionReply, used by the
+ * POST /api/v1/chat/messages/stream path (see chat.functions.ts's
+ * sendMessageStreamCore). Same tool-use loop and same tools; the only
+ * difference is that each iteration streams its text via `onDelta` as it's
+ * generated, through streamCompanionModel, instead of waiting for the whole
+ * completion.
+ *
+ * TEXT ACCUMULATION DIFFERS FROM generateCompanionReply ON PURPOSE: the
+ * non-streaming version keeps only the LAST iteration's text (any preamble an
+ * earlier iteration produced before deciding to call a tool is discarded,
+ * since the user never saw it). Here, every iteration's text has already been
+ * streamed live to the client as it was generated — discarding an earlier
+ * iteration's text would leave the persisted message shorter than what the
+ * person actually watched appear on screen. So streamed text is
+ * concatenated across iterations instead of overwritten.
+ */
+export async function generateCompanionReplyStream(
+  ctx: CompanionContext,
+  userMessage: string,
+  toolContext: ToolContext,
+  onDelta: (text: string) => void,
+): Promise<CompanionReply> {
+  const system = buildSystemPrompt(ctx);
+
+  const messages: AnthropicMessage[] = [
+    ...ctx.history.map((entry) => ({
+      role: entry.sender === "assistant" ? ("assistant" as const) : ("user" as const),
+      content: entry.content,
+    })),
+    { role: "user" as const, content: userMessage },
+  ];
+
+  const actions: CompanionAction[] = [];
+  const textParts: string[] = [];
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let provider = "openrouter";
+  const reply = (): CompanionReply => ({
+    text: textParts.join("\n\n").trim(),
+    actions,
+    usage: { inputTokens, outputTokens, provider, model: MODEL },
+  });
+
+  for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration += 1) {
+    const payload = await streamCompanionModel(
+      { model: MODEL, maxTokens: MAX_TOKENS, system, messages, tools: CHAT_TOOLS },
+      onDelta,
+    );
+    inputTokens += payload.usage.inputTokens;
+    outputTokens += payload.usage.outputTokens;
+    provider = payload.provider;
+    const blocks = payload.content ?? [];
+    const text = collectText(blocks);
+    if (text) textParts.push(text);
+
+    const toolUses = blocks.filter(
+      (
+        block,
+      ): block is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+        block.type === "tool_use",
+    );
+
+    if (
+      payload.stop_reason !== "tool_use" ||
+      toolUses.length === 0 ||
+      iteration === MAX_TOOL_ITERATIONS
+    ) {
+      if (textParts.length) return reply();
+      break;
+    }
+
+    messages.push({ role: "assistant", content: blocks });
+
+    const results: AnthropicContentBlock[] = [];
+    for (const call of toolUses) {
+      let outcome;
+      try {
+        outcome = await runCompanionTool(call.name, call.input ?? {}, toolContext);
+      } catch (error) {
+        console.error("companion tool failed", call.name, error);
+        outcome = { result: "That action failed. Continue the conversation without it." };
+      }
+      if (outcome.action) actions.push(outcome.action);
+      results.push({ type: "tool_result", tool_use_id: call.id, content: outcome.result });
+    }
+    messages.push({ role: "user", content: results });
+  }
+
+  if (textParts.length) return reply();
   throw new Error("The companion couldn't reply just now. Please try again.");
 }
 

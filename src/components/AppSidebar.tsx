@@ -1,15 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  LineChart,
-  LogOut,
-  MessageCircle,
-  PanelLeft,
-  Plus,
-  Settings,
-  Wind,
-} from "lucide-react";
+import { LineChart, LogOut, MessageCircle, PanelLeft, Plus, Settings, Wind } from "lucide-react";
 import type { ReactNode } from "react";
 import { KalmLogo } from "@/components/KalmLogo";
 import { supabase } from "@/integrations/supabase/client";

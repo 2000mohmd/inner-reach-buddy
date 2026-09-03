@@ -243,6 +243,228 @@ async function callGateway(
   return parseOpenAiPayload(payload, "lovable");
 }
 
+// --- Streaming ---------------------------------------------------------
+// Same OpenAI-compatible wire format as above, but reading the response body
+// as an SSE stream (`data: {...}\n\n` lines, terminated by `data: [DONE]`) and
+// emitting text as it arrives instead of waiting for the full completion.
+// Tool-call deltas arrive fragmented (arguments streamed as partial JSON
+// strings, keyed by `index`) and are accumulated here into the same
+// LlmContentBlock[] shape callCompanionModel returns, so callers that already
+// handle tool_use blocks don't need to know the difference.
+
+type StreamToolCallAccumulator = { id: string; name: string; arguments: string };
+
+async function* readSseEvents(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let separatorIndex: number;
+
+      while ((separatorIndex = buffer.indexOf("\n\n")) !== -1) {
+        const chunk = buffer.slice(0, separatorIndex);
+        buffer = buffer.slice(separatorIndex + 2);
+        for (const line of chunk.split("\n")) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data:")) yield trimmed.slice(5).trim();
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
+ * Consumes an OpenAI-compatible SSE stream, calling `onDelta` with each text
+ * fragment as it arrives, and returns the fully-accumulated LlmResponse once
+ * the stream ends (mirroring parseOpenAiPayload's shape).
+ */
+async function consumeOpenAiStream(
+  response: Response,
+  provider: LlmResponse["provider"],
+  onDelta: (text: string) => void,
+): Promise<LlmResponse> {
+  if (!response.body) throw new LlmError("Streaming response had no body");
+
+  let text = "";
+  let finishReason: string | null = null;
+  let inputTokens = 0;
+  let outputTokens = 0;
+  const toolCalls = new Map<number, StreamToolCallAccumulator>();
+
+  for await (const data of readSseEvents(response.body)) {
+    if (data === "[DONE]") break;
+    let event: {
+      choices?: {
+        delta?: {
+          content?: string | null;
+          tool_calls?: {
+            index: number;
+            id?: string;
+            function?: { name?: string; arguments?: string };
+          }[];
+        };
+        finish_reason?: string | null;
+      }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    try {
+      event = JSON.parse(data);
+    } catch {
+      continue; // a stray keep-alive/comment line — ignore rather than fail the whole reply
+    }
+
+    const choice = event.choices?.[0];
+    const delta = choice?.delta?.content;
+    if (delta) {
+      text += delta;
+      onDelta(delta);
+    }
+    for (const call of choice?.delta?.tool_calls ?? []) {
+      const existing = toolCalls.get(call.index) ?? { id: "", name: "", arguments: "" };
+      if (call.id) existing.id = call.id;
+      if (call.function?.name) existing.name = call.function.name;
+      if (call.function?.arguments) existing.arguments += call.function.arguments;
+      toolCalls.set(call.index, existing);
+    }
+    if (choice?.finish_reason) finishReason = choice.finish_reason;
+    if (event.usage) {
+      inputTokens = event.usage.prompt_tokens ?? inputTokens;
+      outputTokens = event.usage.completion_tokens ?? outputTokens;
+    }
+  }
+
+  const blocks: LlmContentBlock[] = [];
+  if (text) blocks.push({ type: "text", text });
+  for (const call of toolCalls.values()) {
+    let input: Record<string, unknown> = {};
+    try {
+      input = call.arguments ? JSON.parse(call.arguments) : {};
+    } catch {
+      input = {};
+    }
+    blocks.push({ type: "tool_use", id: call.id, name: call.name, input });
+  }
+
+  return {
+    content: blocks,
+    stop_reason: toolCalls.size > 0 ? "tool_use" : finishReason,
+    provider,
+    usage: { inputTokens, outputTokens },
+  };
+}
+
+async function streamOpenRouter(
+  apiKey: string,
+  model: string,
+  maxTokens: number,
+  system: string,
+  messages: LlmMessage[],
+  tools: LlmTool[],
+  onDelta: (text: string) => void,
+): Promise<LlmResponse> {
+  const response = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "X-Title": "Kalm",
+    },
+    body: JSON.stringify({
+      model: toOpenRouterModel(model),
+      max_tokens: maxTokens,
+      messages: toGatewayMessages(system, messages),
+      stream: true,
+      stream_options: { include_usage: true },
+      ...(tools.length ? { tools: toGatewayTools(tools) } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new LlmError(`OpenRouter error ${response.status}: ${body.slice(0, 300)}`);
+  }
+  return consumeOpenAiStream(response, "openrouter", onDelta);
+}
+
+async function streamGateway(
+  model: string,
+  maxTokens: number,
+  system: string,
+  messages: LlmMessage[],
+  tools: LlmTool[],
+  onDelta: (text: string) => void,
+): Promise<LlmResponse> {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey) throw new LlmError("The AI companion isn't configured yet.");
+
+  const response = await fetch(GATEWAY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Lovable-API-Key": apiKey,
+      "X-Lovable-AIG-SDK": "fetch",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      messages: toGatewayMessages(system, messages),
+      stream: true,
+      ...(tools.length ? { tools: toGatewayTools(tools) } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    console.error("Lovable AI gateway error", response.status, body);
+    if (response.status === 429)
+      throw new LlmError("Kalm is a little busy right now. Please try again in a moment.");
+    if (response.status === 402)
+      throw new LlmError("The AI companion is out of credits. Please top up to keep chatting.");
+    throw new LlmError("The companion couldn't reply just now. Please try again.");
+  }
+  return consumeOpenAiStream(response, "lovable", onDelta);
+}
+
+/**
+ * Streaming counterpart to `callCompanionModel`: same automatic
+ * OpenRouter -> Lovable AI fallback, but calls `onDelta` with text fragments
+ * as they arrive instead of returning only once the full reply is ready.
+ *
+ * If OpenRouter's stream fails PARTWAY THROUGH (after some deltas already
+ * reached the caller via onDelta), falling back to a second full call would
+ * duplicate the start of the reply — so unlike callCompanionModel, streaming
+ * failures do not retry on the fallback provider; the caller sees the error.
+ * A failure before any bytes arrive is rare in practice (OpenRouter runs the
+ * same auth/billing checks up front, before it starts streaming anything), so
+ * this trade-off favors never showing duplicated/garbled text over the
+ * fallback's extra resilience.
+ */
+export async function streamCompanionModel(
+  options: {
+    model: string;
+    maxTokens: number;
+    system: string;
+    messages: LlmMessage[];
+    tools?: LlmTool[];
+  },
+  onDelta: (text: string) => void,
+): Promise<LlmResponse> {
+  const { model, maxTokens, system, messages } = options;
+  const tools = options.tools ?? [];
+  const key = openRouterKey();
+
+  if (key) {
+    return streamOpenRouter(key, model, maxTokens, system, messages, tools, onDelta);
+  }
+  return streamGateway(GATEWAY_MODEL, maxTokens, system, messages, tools, onDelta);
+}
+
 /**
  * Try OpenRouter (Claude), then automatically fall back to Lovable AI.
  * Callers keep a single Anthropic-shaped contract.

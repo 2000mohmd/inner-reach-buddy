@@ -4,7 +4,12 @@
 // without a running server. The route files under this folder are thin bindings.
 
 import { z } from "zod";
-import { getThreadMessagesPageCore, listThreadsCore, sendMessageCore } from "@/lib/chat.functions";
+import {
+  getThreadMessagesPageCore,
+  listThreadsCore,
+  sendMessageCore,
+  sendMessageStreamCore,
+} from "@/lib/chat.functions";
 import { CRISIS_DISCLAIMER, crisisCopy } from "@/lib/crisis";
 import { getEntitlementsFor } from "@/lib/entitlements.server";
 import { completeOnboardingCore } from "@/lib/onboarding.functions";
@@ -43,6 +48,76 @@ export function handleChatMessages(request: Request): Promise<Response> {
     const result = await sendMessageCore(supabase, userId, body);
     return json(result);
   });
+}
+
+/**
+ * POST /api/v1/chat/messages/stream
+ *
+ * Same request shape and same pipeline as handleChatMessages (they share
+ * prepareChatTurn inside chat.functions.ts, so the crisis gate / rate limiter
+ * ordering guarantee holds here too) — the difference is the response: an
+ * `text/event-stream` of `delta` events carrying the companion's reply text as
+ * the model generates it, followed by exactly one `done` event carrying the
+ * same JSON shape handleChatMessages returns in one shot (so a client can use
+ * either endpoint against the same response type), or one `error` event if
+ * generation fails after the stream has already started (too late to send a
+ * normal HTTP error status at that point).
+ *
+ * A crisis or rate-limit reply is never split into deltas — sendMessageStreamCore
+ * only calls onDelta for a normal generated reply — so those still arrive
+ * whole and immediately, as a single `done` event with nothing preceding it.
+ */
+export function handleChatMessagesStream(request: Request): Promise<Response> {
+  return (async () => {
+    let auth;
+    try {
+      auth = await requireAuth(request);
+    } catch (err) {
+      if (err instanceof ApiError) return json({ error: err.message }, err.status);
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const { supabase, userId } = auth;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const send = (event: string, data: unknown) => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        try {
+          const result = await sendMessageStreamCore(supabase, userId, body, (text) => {
+            send("delta", { text });
+          });
+          send("done", result);
+        } catch (err) {
+          console.error("chat stream failed", err);
+          const message =
+            err instanceof Error ? err.message : "The companion couldn't reply just now.";
+          send("error", { error: message });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        // Disables response buffering on proxies (e.g. nginx) that would
+        // otherwise wait for the stream to end before forwarding any of it.
+        "X-Accel-Buffering": "no",
+      },
+    });
+  })();
 }
 
 /**

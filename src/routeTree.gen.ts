@@ -46,10 +46,15 @@ import { Route as ApiV1ScreenersRouteImport } from './routes/api/v1/screeners'
 import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin/users/index'
 import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_authenticated/admin/users/$userId'
 import { Route as ApiPublicHooksEvaluateNudgesRouteImport } from './routes/api/public/hooks/evaluate-nudges'
+import { Route as ApiPublicHooksStripeWebhookRouteImport } from './routes/api/public/hooks/stripe-webhook'
+import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing/checkout'
+import { Route as ApiV1BillingPortalRouteImport } from './routes/api/v1/billing/portal'
 import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/billing/verify-receipt'
 import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
 import { Route as ApiV1ChatMessagesRouteImport } from './routes/api/v1/chat/messages'
 import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
+import { Route as ApiV1PushRegisterTokenRouteImport } from './routes/api/v1/push/register-token'
+import { Route as ApiV1ChatMessagesStreamRouteImport } from './routes/api/v1/chat/messages/stream'
 import { Route as ApiV1ScreenersTypeResponsesRouteImport } from './routes/api/v1/screeners/$type/responses'
 import { Route as ApiV1ChatThreadsIdMessagesRouteImport } from './routes/api/v1/chat/threads/$id/messages'
 
@@ -242,6 +247,22 @@ const ApiPublicHooksEvaluateNudgesRoute =
     path: '/api/public/hooks/evaluate-nudges',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksStripeWebhookRoute =
+  ApiPublicHooksStripeWebhookRouteImport.update({
+    id: '/api/public/hooks/stripe-webhook',
+    path: '/api/public/hooks/stripe-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
+  id: '/api/v1/billing/checkout',
+  path: '/api/v1/billing/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingPortalRoute = ApiV1BillingPortalRouteImport.update({
+  id: '/api/v1/billing/portal',
+  path: '/api/v1/billing/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1BillingVerifyReceiptRoute =
   ApiV1BillingVerifyReceiptRouteImport.update({
     id: '/api/v1/billing/verify-receipt',
@@ -262,6 +283,16 @@ const ApiV1ChatThreadsRoute = ApiV1ChatThreadsRouteImport.update({
   id: '/api/v1/chat/threads',
   path: '/api/v1/chat/threads',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PushRegisterTokenRoute = ApiV1PushRegisterTokenRouteImport.update({
+  id: '/api/v1/push/register-token',
+  path: '/api/v1/push/register-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ChatMessagesStreamRoute = ApiV1ChatMessagesStreamRouteImport.update({
+  id: '/stream',
+  path: '/stream',
+  getParentRoute: () => ApiV1ChatMessagesRoute,
 } as any)
 const ApiV1ScreenersTypeResponsesRoute =
   ApiV1ScreenersTypeResponsesRouteImport.update({
@@ -312,11 +343,16 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/public/hooks/stripe-webhook': typeof ApiPublicHooksStripeWebhookRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
+  '/api/v1/push/register-token': typeof ApiV1PushRegisterTokenRoute
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -355,11 +391,16 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/public/hooks/stripe-webhook': typeof ApiPublicHooksStripeWebhookRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
+  '/api/v1/push/register-token': typeof ApiV1PushRegisterTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -401,11 +442,16 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/evaluate-nudges': typeof ApiPublicHooksEvaluateNudgesRoute
+  '/api/public/hooks/stripe-webhook': typeof ApiPublicHooksStripeWebhookRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
-  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRoute
+  '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
+  '/api/v1/push/register-token': typeof ApiV1PushRegisterTokenRoute
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
+  '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -447,11 +493,16 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/public/hooks/stripe-webhook'
+    | '/api/v1/billing/checkout'
+    | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
+    | '/api/v1/push/register-token'
     | '/admin/users/'
+    | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesByTo: FileRoutesByTo
@@ -490,11 +541,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/public/hooks/stripe-webhook'
+    | '/api/v1/billing/checkout'
+    | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
+    | '/api/v1/push/register-token'
     | '/admin/users'
+    | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
     | '/api/v1/chat/threads/$id/messages'
   id:
@@ -535,11 +591,16 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/evaluate-nudges'
+    | '/api/public/hooks/stripe-webhook'
+    | '/api/v1/billing/checkout'
+    | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
+    | '/api/v1/push/register-token'
     | '/_authenticated/admin/users/'
+    | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesById: FileRoutesById
@@ -564,10 +625,14 @@ export interface RootRouteChildren {
   ApiV1ProfileRoute: typeof ApiV1ProfileRoute
   ApiV1ScreenersRoute: typeof ApiV1ScreenersRouteWithChildren
   ApiPublicHooksEvaluateNudgesRoute: typeof ApiPublicHooksEvaluateNudgesRoute
+  ApiPublicHooksStripeWebhookRoute: typeof ApiPublicHooksStripeWebhookRoute
+  ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
+  ApiV1BillingPortalRoute: typeof ApiV1BillingPortalRoute
   ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
   ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
-  ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRoute
+  ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRouteWithChildren
   ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRouteWithChildren
+  ApiV1PushRegisterTokenRoute: typeof ApiV1PushRegisterTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -831,6 +896,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEvaluateNudgesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/stripe-webhook': {
+      id: '/api/public/hooks/stripe-webhook'
+      path: '/api/public/hooks/stripe-webhook'
+      fullPath: '/api/public/hooks/stripe-webhook'
+      preLoaderRoute: typeof ApiPublicHooksStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/checkout': {
+      id: '/api/v1/billing/checkout'
+      path: '/api/v1/billing/checkout'
+      fullPath: '/api/v1/billing/checkout'
+      preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/portal': {
+      id: '/api/v1/billing/portal'
+      path: '/api/v1/billing/portal'
+      fullPath: '/api/v1/billing/portal'
+      preLoaderRoute: typeof ApiV1BillingPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/billing/verify-receipt': {
       id: '/api/v1/billing/verify-receipt'
       path: '/api/v1/billing/verify-receipt'
@@ -858,6 +944,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/v1/chat/threads'
       preLoaderRoute: typeof ApiV1ChatThreadsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/push/register-token': {
+      id: '/api/v1/push/register-token'
+      path: '/api/v1/push/register-token'
+      fullPath: '/api/v1/push/register-token'
+      preLoaderRoute: typeof ApiV1PushRegisterTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/chat/messages/stream': {
+      id: '/api/v1/chat/messages/stream'
+      path: '/stream'
+      fullPath: '/api/v1/chat/messages/stream'
+      preLoaderRoute: typeof ApiV1ChatMessagesStreamRouteImport
+      parentRoute: typeof ApiV1ChatMessagesRoute
     }
     '/api/v1/screeners/$type/responses': {
       id: '/api/v1/screeners/$type/responses'
@@ -945,6 +1045,17 @@ const ApiV1ScreenersRouteWithChildren = ApiV1ScreenersRoute._addFileChildren(
   ApiV1ScreenersRouteChildren,
 )
 
+interface ApiV1ChatMessagesRouteChildren {
+  ApiV1ChatMessagesStreamRoute: typeof ApiV1ChatMessagesStreamRoute
+}
+
+const ApiV1ChatMessagesRouteChildren: ApiV1ChatMessagesRouteChildren = {
+  ApiV1ChatMessagesStreamRoute: ApiV1ChatMessagesStreamRoute,
+}
+
+const ApiV1ChatMessagesRouteWithChildren =
+  ApiV1ChatMessagesRoute._addFileChildren(ApiV1ChatMessagesRouteChildren)
+
 interface ApiV1ChatThreadsRouteChildren {
   ApiV1ChatThreadsIdMessagesRoute: typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -976,10 +1087,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1ProfileRoute: ApiV1ProfileRoute,
   ApiV1ScreenersRoute: ApiV1ScreenersRouteWithChildren,
   ApiPublicHooksEvaluateNudgesRoute: ApiPublicHooksEvaluateNudgesRoute,
+  ApiPublicHooksStripeWebhookRoute: ApiPublicHooksStripeWebhookRoute,
+  ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
+  ApiV1BillingPortalRoute: ApiV1BillingPortalRoute,
   ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
   ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
-  ApiV1ChatMessagesRoute: ApiV1ChatMessagesRoute,
+  ApiV1ChatMessagesRoute: ApiV1ChatMessagesRouteWithChildren,
   ApiV1ChatThreadsRoute: ApiV1ChatThreadsRouteWithChildren,
+  ApiV1PushRegisterTokenRoute: ApiV1PushRegisterTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
