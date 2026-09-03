@@ -1,17 +1,11 @@
-// Model provider with automatic fallback.
-//
-// Primary: OpenRouter (OpenAI-compatible) serving Anthropic Claude models.
-// Fallback: Lovable AI Gateway (also OpenAI-compatible), used automatically
-// whenever the OpenRouter key is missing or OpenRouter rejects the request
-// (auth, billing, overload, network).
+// Model provider: OpenRouter only (OpenAI-compatible) serving Anthropic Claude
+// models. OPENROUTER_API_KEY is required; there is no secondary provider.
 //
 // The rest of the app talks in Anthropic block shapes; this module translates
 // them both ways so tool-calling behavior is identical on both paths.
 // Nothing here touches crisis handling — detectCrisis() runs before any call.
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const GATEWAY_MODEL = "google/gemini-3.6-flash";
 
 /** Bare Anthropic model ids used across the app → OpenRouter model slugs. */
 const OPENROUTER_MODEL_MAP: Record<string, string> = {
@@ -42,7 +36,7 @@ export type LlmResponse = {
   content: LlmContentBlock[];
   stop_reason: string | null;
   /** Which provider actually answered — useful for logs. */
-  provider: "openrouter" | "lovable";
+  provider: "openrouter";
   /** Token counts for this single call (0 when the provider omits `usage`). */
   usage: { inputTokens: number; outputTokens: number };
 };
@@ -204,44 +198,6 @@ async function callOpenRouter(
   return parseOpenAiPayload(payload, "openrouter");
 }
 
-async function callGateway(
-  model: string,
-  maxTokens: number,
-  system: string,
-  messages: LlmMessage[],
-  tools: LlmTool[],
-): Promise<LlmResponse> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new LlmError("The AI companion isn't configured yet.");
-
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      messages: toGatewayMessages(system, messages),
-      ...(tools.length ? { tools: toGatewayTools(tools) } : {}),
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    console.error("Lovable AI gateway error", response.status, body);
-    if (response.status === 429)
-      throw new LlmError("Kalm is a little busy right now. Please try again in a moment.");
-    if (response.status === 402)
-      throw new LlmError("The AI companion is out of credits. Please top up to keep chatting.");
-    throw new LlmError("The companion couldn't reply just now. Please try again.");
-  }
-
-  const payload = await response.json();
-  return parseOpenAiPayload(payload, "lovable");
-}
 
 // --- Streaming ---------------------------------------------------------
 // Same OpenAI-compatible wire format as above, but reading the response body
@@ -392,58 +348,10 @@ async function streamOpenRouter(
   return consumeOpenAiStream(response, "openrouter", onDelta);
 }
 
-async function streamGateway(
-  model: string,
-  maxTokens: number,
-  system: string,
-  messages: LlmMessage[],
-  tools: LlmTool[],
-  onDelta: (text: string) => void,
-): Promise<LlmResponse> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new LlmError("The AI companion isn't configured yet.");
-
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      messages: toGatewayMessages(system, messages),
-      stream: true,
-      ...(tools.length ? { tools: toGatewayTools(tools) } : {}),
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    console.error("Lovable AI gateway error", response.status, body);
-    if (response.status === 429)
-      throw new LlmError("Kalm is a little busy right now. Please try again in a moment.");
-    if (response.status === 402)
-      throw new LlmError("The AI companion is out of credits. Please top up to keep chatting.");
-    throw new LlmError("The companion couldn't reply just now. Please try again.");
-  }
-  return consumeOpenAiStream(response, "lovable", onDelta);
-}
 
 /**
- * Streaming counterpart to `callCompanionModel`: same automatic
- * OpenRouter -> Lovable AI fallback, but calls `onDelta` with text fragments
- * as they arrive instead of returning only once the full reply is ready.
- *
- * If OpenRouter's stream fails PARTWAY THROUGH (after some deltas already
- * reached the caller via onDelta), falling back to a second full call would
- * duplicate the start of the reply — so unlike callCompanionModel, streaming
- * failures do not retry on the fallback provider; the caller sees the error.
- * A failure before any bytes arrive is rare in practice (OpenRouter runs the
- * same auth/billing checks up front, before it starts streaming anything), so
- * this trade-off favors never showing duplicated/garbled text over the
- * fallback's extra resilience.
+ * Streaming counterpart to `callCompanionModel`: calls `onDelta` with text
+ * fragments as they arrive instead of returning only once the reply is ready.
  */
 export async function streamCompanionModel(
   options: {
@@ -458,16 +366,13 @@ export async function streamCompanionModel(
   const { model, maxTokens, system, messages } = options;
   const tools = options.tools ?? [];
   const key = openRouterKey();
+  if (!key) throw new LlmError("The AI companion isn't configured yet.");
 
-  if (key) {
-    return streamOpenRouter(key, model, maxTokens, system, messages, tools, onDelta);
-  }
-  return streamGateway(GATEWAY_MODEL, maxTokens, system, messages, tools, onDelta);
+  return streamOpenRouter(key, model, maxTokens, system, messages, tools, onDelta);
 }
 
 /**
- * Try OpenRouter (Claude), then automatically fall back to Lovable AI.
- * Callers keep a single Anthropic-shaped contract.
+ * Call OpenRouter (Claude). Callers keep a single Anthropic-shaped contract.
  */
 export async function callCompanionModel(options: {
   model: string;
@@ -479,17 +384,7 @@ export async function callCompanionModel(options: {
   const { model, maxTokens, system, messages } = options;
   const tools = options.tools ?? [];
   const key = openRouterKey();
+  if (!key) throw new LlmError("The AI companion isn't configured yet.");
 
-  if (key) {
-    try {
-      return await callOpenRouter(key, model, maxTokens, system, messages, tools);
-    } catch (error) {
-      console.error(
-        "OpenRouter unavailable, falling back to Lovable AI:",
-        error instanceof Error ? error.message : error,
-      );
-    }
-  }
-
-  return callGateway(GATEWAY_MODEL, maxTokens, system, messages, tools);
+  return callOpenRouter(key, model, maxTokens, system, messages, tools);
 }
