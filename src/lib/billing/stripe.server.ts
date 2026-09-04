@@ -30,7 +30,7 @@ function toForm(params: Record<string, string | number | undefined>): string {
 }
 
 async function stripeRequest<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "DELETE",
   path: string,
   params?: Record<string, string | number | undefined>,
 ): Promise<T> {
@@ -43,7 +43,9 @@ async function stripeRequest<T>(
       // this integration's request/response shape underneath us.
       "Stripe-Version": "2024-06-20",
     },
-    ...(method === "POST" ? { body: toForm(params ?? {}) } : {}),
+    // Stripe accepts a form-encoded body on DELETE too (e.g. subscription
+    // cancellation's optional `prorate`/`invoice_now`), so only GET omits one.
+    ...(method !== "GET" ? { body: toForm(params ?? {}) } : {}),
   });
 
   const payload = (await response.json()) as T & { error?: { message?: string } };
@@ -108,6 +110,16 @@ export async function createCheckoutSession(input: {
     "metadata[user_id]": input.userId,
     allow_promotion_codes: "true" as unknown as undefined, // Stripe wants the literal string "true"
   });
+}
+
+/**
+ * Cancels a subscription immediately (not at period end) — used when an
+ * account is being deleted, so nobody keeps getting billed for a plan they
+ * have no account left to manage. Best-effort by design: callers should
+ * catch and log rather than let a Stripe hiccup block account deletion.
+ */
+export async function cancelStripeSubscription(subscriptionId: string): Promise<void> {
+  await stripeRequest("DELETE", `/subscriptions/${subscriptionId}`);
 }
 
 /** Stripe Billing Portal — lets a subscribed user manage/cancel from a hosted page. */
