@@ -135,10 +135,10 @@ Not built yet:
 Recently built (was on this list):
 
 - **Voice notes** — the chat mic records, converts to mono 16 kHz WAV in the
-  browser, and transcribes server-side via the Lovable AI gateway with an
-  OpenRouter (Gemini audio) fallback. Both providers require AI credits; with
-  none available the user sees a "needs credits" message instead of a silent
-  failure.
+  browser, and transcribes server-side through OpenRouter (Gemini audio input).
+  OpenRouter is the only provider; with no credits the user sees a "needs
+  credits" message instead of a silent failure.
+
 - **Tier-aware message caps** — see "Billing / payments" above.
 
 - **Effectiveness engine scheduling** — `computeEffectivenessFor` now runs in the
