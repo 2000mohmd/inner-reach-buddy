@@ -25,7 +25,7 @@ a separate mobile app is intended to consume the same backend later.
 | Styling       | Tailwind v4 tokens in `src/styles.css` (Soft Glass lavender/blue-violet oklch palette, frosted surfaces, Fraunces + Nunito Sans)                                                                                                                                                                                                                                                                                                                                          |
 | Branding      | Shared `KalmLogo` abstract four-petal bloom used across landing, auth, onboarding, chat, and the collapsible member rail                                                                                                                                                                                                                                                                                                                                                   |
 | UI kit        | shadcn/ui + Radix, lucide icons, recharts, sonner                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| LLM           | Provider layer in `src/lib/llm-provider.server.ts`: **primary** OpenRouter (`OPENROUTER_API_KEY`, OpenAI-compatible) serving `anthropic/claude-sonnet-4.5` (companion, summaries, digests) and `anthropic/claude-haiku-4.5` (crisis classifier); **automatic fallback** to the Lovable AI Gateway (`LOVABLE_API_KEY`, `google/gemini-3.6-flash`) whenever the OpenRouter key is missing or the request fails. Native tool use on both paths. No direct Anthropic API call. |
+| LLM           | Provider layer in `src/lib/llm-provider.server.ts`: **OpenRouter only** (`OPENROUTER_API_KEY`, OpenAI-compatible) serving `anthropic/claude-sonnet-4.5` (companion, summaries, digests) and `anthropic/claude-haiku-4.5` (crisis classifier). Native tool use, streaming supported. No Lovable AI gateway, no direct Anthropic API call. Speech-to-text also goes through OpenRouter (`google/gemini-2.5-flash` audio input). |
 | Runtime       | Cloudflare Worker (edge); no Node-only packages                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## 3. Routes
@@ -135,10 +135,10 @@ Not built yet:
 Recently built (was on this list):
 
 - **Voice notes** — the chat mic records, converts to mono 16 kHz WAV in the
-  browser, and transcribes server-side via the Lovable AI gateway with an
-  OpenRouter (Gemini audio) fallback. Both providers require AI credits; with
-  none available the user sees a "needs credits" message instead of a silent
-  failure.
+  browser, and transcribes server-side through OpenRouter (Gemini audio input).
+  OpenRouter is the only provider; with no credits the user sees a "needs
+  credits" message instead of a silent failure.
+
 - **Tier-aware message caps** — see "Billing / payments" above.
 
 - **Effectiveness engine scheduling** — `computeEffectivenessFor` now runs in the
