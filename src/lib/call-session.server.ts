@@ -54,7 +54,11 @@ async function assertLiveSessionsAllowed(supabase: Client, userId: string): Prom
   }
 }
 
-async function loadCallContext(supabase: Client, userId: string): Promise<CompanionContext> {
+async function loadCallContext(
+  supabase: Client,
+  userId: string,
+  threadId: string,
+): Promise<CompanionContext> {
   const [profile, userProfile, moods, summaries] = await Promise.all([
     supabase
       .from("profiles")
@@ -74,7 +78,7 @@ async function loadCallContext(supabase: Client, userId: string): Promise<Compan
       .eq("user_id", userId)
       .order("logged_at", { ascending: false })
       .limit(5),
-    fetchRecentSummaries(supabase, userId, 2).catch(() => []),
+    fetchRecentSummaries(supabase, userId, threadId, 2).catch(() => []),
   ]);
 
   const up = userProfile.data;
@@ -154,7 +158,7 @@ export async function startCallSessionCore(
   }
 
   const voice = input.voice?.trim() || DEFAULT_VOICE;
-  const instructions = buildSystemPrompt(await loadCallContext(supabase, userId)) + VOICE_ADDENDUM;
+  const instructions = buildSystemPrompt(await loadCallContext(supabase, userId, threadId)) + VOICE_ADDENDUM;
 
   const session = await supabase
     .from("call_sessions")
@@ -316,7 +320,7 @@ export async function appendCallTurnCore(
       transcript,
       turn_count: transcript.length,
       ...(crisis
-        ? { crisis_triggered: true, crisis_severity: crisis.severity ?? "high" }
+        ? { crisis_triggered: true, crisis_severity: crisis.severity }
         : {}),
     })
     .eq("id", session.id)
