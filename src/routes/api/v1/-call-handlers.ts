@@ -18,8 +18,8 @@ function mapError(err: unknown): never {
 }
 
 const startSchema = z.object({
-  thread_id: z.string().uuid().optional(),
-  voice: z.string().min(1).max(40).optional(),
+  thread_id: z.string().uuid().nullish(),
+  voice: z.string().min(1).max(40).nullish(),
 });
 
 /**
@@ -37,7 +37,13 @@ export function handleStartCallSession(request: Request): Promise<Response> {
       throw err;
     });
     try {
-      return json(await startCallSessionCore(supabase, userId, body), 201);
+      return json(
+        await startCallSessionCore(supabase, userId, {
+          thread_id: body.thread_id ?? null,
+          voice: body.voice ?? null,
+        }),
+        201,
+      );
     } catch (err) {
       mapError(err);
     }

@@ -296,9 +296,9 @@ export async function appendCallTurnCore(
     if (message.error) throw message.error;
 
     const { data: profile } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("language")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .maybeSingle();
 
     const gate = await runCrisisGate(supabase, {
