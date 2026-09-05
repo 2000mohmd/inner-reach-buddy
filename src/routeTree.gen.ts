@@ -51,6 +51,7 @@ import { Route as ApiPublicHooksStripeWebhookRouteImport } from './routes/api/pu
 import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing/checkout'
 import { Route as ApiV1BillingPortalRouteImport } from './routes/api/v1/billing/portal'
 import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/billing/verify-receipt'
+import { Route as ApiV1CallsSessionsRouteImport } from './routes/api/v1/calls/sessions'
 import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
 import { Route as ApiV1ChatMessagesRouteImport } from './routes/api/v1/chat/messages'
 import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
@@ -275,6 +276,11 @@ const ApiV1BillingVerifyReceiptRoute =
     path: '/api/v1/billing/verify-receipt',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1CallsSessionsRoute = ApiV1CallsSessionsRouteImport.update({
+  id: '/api/v1/calls/sessions',
+  path: '/api/v1/calls/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ChatHistoryRoute = ApiV1ChatHistoryRouteImport.update({
   id: '/api/v1/chat/history',
   path: '/api/v1/chat/history',
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRoute
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -642,6 +654,7 @@ export interface RootRouteChildren {
   ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1BillingPortalRoute: typeof ApiV1BillingPortalRoute
   ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
+  ApiV1CallsSessionsRoute: typeof ApiV1CallsSessionsRoute
   ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
   ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRouteWithChildren
   ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRouteWithChildren
@@ -944,6 +957,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingVerifyReceiptRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/calls/sessions': {
+      id: '/api/v1/calls/sessions'
+      path: '/api/v1/calls/sessions'
+      fullPath: '/api/v1/calls/sessions'
+      preLoaderRoute: typeof ApiV1CallsSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/chat/history': {
       id: '/api/v1/chat/history'
       path: '/api/v1/chat/history'
@@ -1112,6 +1132,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1BillingPortalRoute: ApiV1BillingPortalRoute,
   ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
+  ApiV1CallsSessionsRoute: ApiV1CallsSessionsRoute,
   ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
   ApiV1ChatMessagesRoute: ApiV1ChatMessagesRouteWithChildren,
   ApiV1ChatThreadsRoute: ApiV1ChatThreadsRouteWithChildren,
