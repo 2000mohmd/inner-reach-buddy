@@ -58,6 +58,7 @@ import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threa
 import { Route as ApiV1PushRegisterTokenRouteImport } from './routes/api/v1/push/register-token'
 import { Route as ApiV1ChatMessagesStreamRouteImport } from './routes/api/v1/chat/messages/stream'
 import { Route as ApiV1ScreenersTypeResponsesRouteImport } from './routes/api/v1/screeners/$type/responses'
+import { Route as ApiV1CallsSessionsIdEndRouteImport } from './routes/api/v1/calls/sessions/$id/end'
 import { Route as ApiV1CallsSessionsIdTurnsRouteImport } from './routes/api/v1/calls/sessions/$id/turns'
 import { Route as ApiV1ChatThreadsIdMessagesRouteImport } from './routes/api/v1/chat/threads/$id/messages'
 
@@ -313,6 +314,11 @@ const ApiV1ScreenersTypeResponsesRoute =
     path: '/$type/responses',
     getParentRoute: () => ApiV1ScreenersRoute,
   } as any)
+const ApiV1CallsSessionsIdEndRoute = ApiV1CallsSessionsIdEndRouteImport.update({
+  id: '/$id/end',
+  path: '/$id/end',
+  getParentRoute: () => ApiV1CallsSessionsRoute,
+} as any)
 const ApiV1CallsSessionsIdTurnsRoute =
   ApiV1CallsSessionsIdTurnsRouteImport.update({
     id: '/$id/turns',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
   '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -426,6 +433,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
   '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -480,6 +488,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
   '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
@@ -534,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
     | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesByTo: FileRoutesByTo
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
     | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   id:
@@ -638,6 +649,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users/'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
     | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesById: FileRoutesById
@@ -1019,6 +1031,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ScreenersTypeResponsesRouteImport
       parentRoute: typeof ApiV1ScreenersRoute
     }
+    '/api/v1/calls/sessions/$id/end': {
+      id: '/api/v1/calls/sessions/$id/end'
+      path: '/$id/end'
+      fullPath: '/api/v1/calls/sessions/$id/end'
+      preLoaderRoute: typeof ApiV1CallsSessionsIdEndRouteImport
+      parentRoute: typeof ApiV1CallsSessionsRoute
+    }
     '/api/v1/calls/sessions/$id/turns': {
       id: '/api/v1/calls/sessions/$id/turns'
       path: '/$id/turns'
@@ -1106,10 +1125,12 @@ const ApiV1ScreenersRouteWithChildren = ApiV1ScreenersRoute._addFileChildren(
 )
 
 interface ApiV1CallsSessionsRouteChildren {
+  ApiV1CallsSessionsIdEndRoute: typeof ApiV1CallsSessionsIdEndRoute
   ApiV1CallsSessionsIdTurnsRoute: typeof ApiV1CallsSessionsIdTurnsRoute
 }
 
 const ApiV1CallsSessionsRouteChildren: ApiV1CallsSessionsRouteChildren = {
+  ApiV1CallsSessionsIdEndRoute: ApiV1CallsSessionsIdEndRoute,
   ApiV1CallsSessionsIdTurnsRoute: ApiV1CallsSessionsIdTurnsRoute,
 }
 
