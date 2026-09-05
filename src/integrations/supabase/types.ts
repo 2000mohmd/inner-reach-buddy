@@ -44,6 +44,74 @@ export type Database = {
         }
         Relationships: []
       }
+      call_sessions: {
+        Row: {
+          created_at: string
+          crisis_severity: string | null
+          crisis_triggered: boolean
+          duration_seconds: number
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          model: string
+          provider: string
+          started_at: string
+          status: string
+          summary: string | null
+          thread_id: string
+          transcript: Json
+          turn_count: number
+          user_id: string
+          voice: string
+        }
+        Insert: {
+          created_at?: string
+          crisis_severity?: string | null
+          crisis_triggered?: boolean
+          duration_seconds?: number
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          model?: string
+          provider?: string
+          started_at?: string
+          status?: string
+          summary?: string | null
+          thread_id: string
+          transcript?: Json
+          turn_count?: number
+          user_id: string
+          voice?: string
+        }
+        Update: {
+          created_at?: string
+          crisis_severity?: string | null
+          crisis_triggered?: boolean
+          duration_seconds?: number
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          model?: string
+          provider?: string
+          started_at?: string
+          status?: string
+          summary?: string | null
+          thread_id?: string
+          transcript?: Json
+          turn_count?: number
+          user_id?: string
+          voice?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_sessions_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       care_resources: {
         Row: {
           contact_or_url: string
