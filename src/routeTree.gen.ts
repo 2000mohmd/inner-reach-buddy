@@ -51,12 +51,15 @@ import { Route as ApiPublicHooksStripeWebhookRouteImport } from './routes/api/pu
 import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing/checkout'
 import { Route as ApiV1BillingPortalRouteImport } from './routes/api/v1/billing/portal'
 import { Route as ApiV1BillingVerifyReceiptRouteImport } from './routes/api/v1/billing/verify-receipt'
+import { Route as ApiV1CallsSessionsRouteImport } from './routes/api/v1/calls/sessions'
 import { Route as ApiV1ChatHistoryRouteImport } from './routes/api/v1/chat/history'
 import { Route as ApiV1ChatMessagesRouteImport } from './routes/api/v1/chat/messages'
 import { Route as ApiV1ChatThreadsRouteImport } from './routes/api/v1/chat/threads'
 import { Route as ApiV1PushRegisterTokenRouteImport } from './routes/api/v1/push/register-token'
 import { Route as ApiV1ChatMessagesStreamRouteImport } from './routes/api/v1/chat/messages/stream'
 import { Route as ApiV1ScreenersTypeResponsesRouteImport } from './routes/api/v1/screeners/$type/responses'
+import { Route as ApiV1CallsSessionsIdEndRouteImport } from './routes/api/v1/calls/sessions/$id/end'
+import { Route as ApiV1CallsSessionsIdTurnsRouteImport } from './routes/api/v1/calls/sessions/$id/turns'
 import { Route as ApiV1ChatThreadsIdMessagesRouteImport } from './routes/api/v1/chat/threads/$id/messages'
 
 const IndexRoute = IndexRouteImport.update({
@@ -275,6 +278,11 @@ const ApiV1BillingVerifyReceiptRoute =
     path: '/api/v1/billing/verify-receipt',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1CallsSessionsRoute = ApiV1CallsSessionsRouteImport.update({
+  id: '/api/v1/calls/sessions',
+  path: '/api/v1/calls/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ChatHistoryRoute = ApiV1ChatHistoryRouteImport.update({
   id: '/api/v1/chat/history',
   path: '/api/v1/chat/history',
@@ -305,6 +313,17 @@ const ApiV1ScreenersTypeResponsesRoute =
     id: '/$type/responses',
     path: '/$type/responses',
     getParentRoute: () => ApiV1ScreenersRoute,
+  } as any)
+const ApiV1CallsSessionsIdEndRoute = ApiV1CallsSessionsIdEndRouteImport.update({
+  id: '/$id/end',
+  path: '/$id/end',
+  getParentRoute: () => ApiV1CallsSessionsRoute,
+} as any)
+const ApiV1CallsSessionsIdTurnsRoute =
+  ApiV1CallsSessionsIdTurnsRouteImport.update({
+    id: '/$id/turns',
+    path: '/$id/turns',
+    getParentRoute: () => ApiV1CallsSessionsRoute,
   } as any)
 const ApiV1ChatThreadsIdMessagesRoute =
   ApiV1ChatThreadsIdMessagesRouteImport.update({
@@ -354,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRouteWithChildren
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -361,6 +381,8 @@ export interface FileRoutesByFullPath {
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
+  '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRoutesByTo {
@@ -403,6 +425,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRouteWithChildren
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -410,6 +433,8 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
+  '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRoutesById {
@@ -455,6 +480,7 @@ export interface FileRoutesById {
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/portal': typeof ApiV1BillingPortalRoute
   '/api/v1/billing/verify-receipt': typeof ApiV1BillingVerifyReceiptRoute
+  '/api/v1/calls/sessions': typeof ApiV1CallsSessionsRouteWithChildren
   '/api/v1/chat/history': typeof ApiV1ChatHistoryRoute
   '/api/v1/chat/messages': typeof ApiV1ChatMessagesRouteWithChildren
   '/api/v1/chat/threads': typeof ApiV1ChatThreadsRouteWithChildren
@@ -462,6 +488,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/api/v1/chat/messages/stream': typeof ApiV1ChatMessagesStreamRoute
   '/api/v1/screeners/$type/responses': typeof ApiV1ScreenersTypeResponsesRoute
+  '/api/v1/calls/sessions/$id/end': typeof ApiV1CallsSessionsIdEndRoute
+  '/api/v1/calls/sessions/$id/turns': typeof ApiV1CallsSessionsIdTurnsRoute
   '/api/v1/chat/threads/$id/messages': typeof ApiV1ChatThreadsIdMessagesRoute
 }
 export interface FileRouteTypes {
@@ -507,6 +535,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -514,6 +543,8 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
+    | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -556,6 +587,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -563,6 +595,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
+    | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   id:
     | '__root__'
@@ -607,6 +641,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/portal'
     | '/api/v1/billing/verify-receipt'
+    | '/api/v1/calls/sessions'
     | '/api/v1/chat/history'
     | '/api/v1/chat/messages'
     | '/api/v1/chat/threads'
@@ -614,6 +649,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users/'
     | '/api/v1/chat/messages/stream'
     | '/api/v1/screeners/$type/responses'
+    | '/api/v1/calls/sessions/$id/end'
+    | '/api/v1/calls/sessions/$id/turns'
     | '/api/v1/chat/threads/$id/messages'
   fileRoutesById: FileRoutesById
 }
@@ -642,6 +679,7 @@ export interface RootRouteChildren {
   ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1BillingPortalRoute: typeof ApiV1BillingPortalRoute
   ApiV1BillingVerifyReceiptRoute: typeof ApiV1BillingVerifyReceiptRoute
+  ApiV1CallsSessionsRoute: typeof ApiV1CallsSessionsRouteWithChildren
   ApiV1ChatHistoryRoute: typeof ApiV1ChatHistoryRoute
   ApiV1ChatMessagesRoute: typeof ApiV1ChatMessagesRouteWithChildren
   ApiV1ChatThreadsRoute: typeof ApiV1ChatThreadsRouteWithChildren
@@ -944,6 +982,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingVerifyReceiptRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/calls/sessions': {
+      id: '/api/v1/calls/sessions'
+      path: '/api/v1/calls/sessions'
+      fullPath: '/api/v1/calls/sessions'
+      preLoaderRoute: typeof ApiV1CallsSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/chat/history': {
       id: '/api/v1/chat/history'
       path: '/api/v1/chat/history'
@@ -985,6 +1030,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/v1/screeners/$type/responses'
       preLoaderRoute: typeof ApiV1ScreenersTypeResponsesRouteImport
       parentRoute: typeof ApiV1ScreenersRoute
+    }
+    '/api/v1/calls/sessions/$id/end': {
+      id: '/api/v1/calls/sessions/$id/end'
+      path: '/$id/end'
+      fullPath: '/api/v1/calls/sessions/$id/end'
+      preLoaderRoute: typeof ApiV1CallsSessionsIdEndRouteImport
+      parentRoute: typeof ApiV1CallsSessionsRoute
+    }
+    '/api/v1/calls/sessions/$id/turns': {
+      id: '/api/v1/calls/sessions/$id/turns'
+      path: '/$id/turns'
+      fullPath: '/api/v1/calls/sessions/$id/turns'
+      preLoaderRoute: typeof ApiV1CallsSessionsIdTurnsRouteImport
+      parentRoute: typeof ApiV1CallsSessionsRoute
     }
     '/api/v1/chat/threads/$id/messages': {
       id: '/api/v1/chat/threads/$id/messages'
@@ -1065,6 +1124,19 @@ const ApiV1ScreenersRouteWithChildren = ApiV1ScreenersRoute._addFileChildren(
   ApiV1ScreenersRouteChildren,
 )
 
+interface ApiV1CallsSessionsRouteChildren {
+  ApiV1CallsSessionsIdEndRoute: typeof ApiV1CallsSessionsIdEndRoute
+  ApiV1CallsSessionsIdTurnsRoute: typeof ApiV1CallsSessionsIdTurnsRoute
+}
+
+const ApiV1CallsSessionsRouteChildren: ApiV1CallsSessionsRouteChildren = {
+  ApiV1CallsSessionsIdEndRoute: ApiV1CallsSessionsIdEndRoute,
+  ApiV1CallsSessionsIdTurnsRoute: ApiV1CallsSessionsIdTurnsRoute,
+}
+
+const ApiV1CallsSessionsRouteWithChildren =
+  ApiV1CallsSessionsRoute._addFileChildren(ApiV1CallsSessionsRouteChildren)
+
 interface ApiV1ChatMessagesRouteChildren {
   ApiV1ChatMessagesStreamRoute: typeof ApiV1ChatMessagesStreamRoute
 }
@@ -1112,6 +1184,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1BillingPortalRoute: ApiV1BillingPortalRoute,
   ApiV1BillingVerifyReceiptRoute: ApiV1BillingVerifyReceiptRoute,
+  ApiV1CallsSessionsRoute: ApiV1CallsSessionsRouteWithChildren,
   ApiV1ChatHistoryRoute: ApiV1ChatHistoryRoute,
   ApiV1ChatMessagesRoute: ApiV1ChatMessagesRouteWithChildren,
   ApiV1ChatThreadsRoute: ApiV1ChatThreadsRouteWithChildren,
